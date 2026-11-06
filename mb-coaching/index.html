@@ -1023,7 +1023,7 @@ function contactsView() {
   (S.teams || []).forEach((tm) => (tm.custom || []).forEach((c) => { if (c.name || c.phone || c.email) rows.push({ grp: 8, name: c.name || '(senza nome)', role: (c.label || 'Contatto') + ' · ' + tm.name, phone: c.phone, email: c.email }); }));
   const mode = S.contactSort || 'last';
   const lastOf = (n) => n.trim().split(/\s+/).slice(-1)[0] || '';
-  rows.sort((a, b) => mode === 'role' ? a.grp - b.grp || a.name.localeCompare(b.name) : mode === 'first' ? a.name.localeCompare(b.name) : lastOf(a.name).localeCompare(lastOf(b.name)) || a.name.localeCompare(b.name));
+  rows.sort((a, b) => mode === 'role' ? a.grp - b.grp || (a.grp === 7 ? (a.role || '').localeCompare(b.role || '') : 0) || a.name.localeCompare(b.name) : mode === 'first' ? a.name.localeCompare(b.name) : lastOf(a.name).localeCompare(lastOf(b.name)) || a.name.localeCompare(b.name));
   S._crows = rows;
   const cols = { 1: '#39ff14', 2: '#b388ff', 3: '#ff8fb1', 4: '#ffd54a', 5: '#4da3ff', 6: '#2ee6c5', 7: '#ffffff', 8: '#ff9f43' };
   const ini = (n) => n.split(/\s+/).map((x) => x[0] || '').slice(0, 2).join('').toUpperCase();
@@ -2783,13 +2783,19 @@ function xcImportView() {
   const canPick = !!(navigator.contacts && navigator.contacts.select);
   openModal('Importa dalla rubrica del telefono', `<div id="impbox">
     ${canPick ? '<button class="btn primary" type="button" id="imppick" style="width:100%;margin-bottom:10px">📱 Scegli dalla rubrica del telefono</button><p class="subtle" style="text-align:center;margin:0 0 10px">oppure</p>' : ''}
-    <label class="f"><span>Carica un file contatti (.vcf)</span><input type="file" id="impfile" accept=".vcf,text/vcard,text/x-vcard" multiple></label>
-    <p class="subtle" style="margin:6px 0 0">${canPick ? '' : 'Su iPhone: apri Contatti, tocca un contatto → Condividi contatto → Salva su File; poi scegli il file qui. '}Da un file .vcf entrano anche più contatti insieme.</p>
+    <label class="f"><span>Apri il file dei contatti (.vcf)</span><input type="file" id="impfile" accept=".vcf,text/vcard,text/x-vcard" multiple></label>
+    <p class="subtle" style="margin:6px 0 0">${canPick ? '' : 'Su iPhone: apri Contatti, tocca un contatto → Condividi contatto → Salva su File; poi scegli il file qui. '}Poi scegli tu quali importare e con quale ruolo.</p>
     <div id="impprev"></div></div>`);
+  const labels = () => [...new Set(['Direttore sportivo', 'Logistica', 'Hospitality', 'Amministrazione', 'Stampa', 'Hotel', 'Noleggio auto', 'Team manager', 'Ingegnere', 'Meccanico', 'Assistente', ...(S.xcontacts || []).map((x) => x.label)].filter(Boolean))];
   const prev = () => {
     const list = S._imp || [];
-    document.getElementById('impprev').innerHTML = list.length ? `<div class="lbl" style="margin:12px 0 4px">${list.length} contatti trovati: togli la spunta a quelli che non vuoi</div><div style="max-height:260px;overflow:auto">${list.map((c, i) => `<label class="chk" style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--gb)"><input type="checkbox" data-imp="${i}" checked><span><b>${esc(c.name)}</b><br><span class="subtle">${esc(c.phone || '')} ${esc(c.email || '')}</span></span></label>`).join('')}</div>
-      <label class="f" style="margin-top:10px"><span>Etichetta</span><input id="implab" value="Rubrica telefono"></label><button class="btn primary" type="button" data-act="xcimpgo" style="width:100%">Importa</button>` : '<p class="subtle">Nessun contatto trovato.</p>';
+    document.getElementById('impprev').innerHTML = list.length ? `<div class="lbl" style="margin:12px 0 4px">${list.length} contatti nel file. Cerca, spunta solo quelli che vuoi e scrivi il ruolo.</div>
+      <input id="impq" placeholder="Cerca per nome o numero…" style="margin-bottom:6px"><datalist id="implabs">${labels().map((x) => `<option value="${esc(x)}">`).join('')}</datalist>
+      <div id="implist" style="max-height:300px;overflow:auto">${list.map((c, i) => `<div class="impr" data-q="${esc((c.name + ' ' + (c.phone || '')).toLowerCase())}" style="padding:8px 0;border-bottom:1px solid var(--gb)"><label class="chk" style="display:flex;gap:8px"><input type="checkbox" data-imp="${i}"><span><b>${esc(c.name)}</b><br><span class="subtle">${esc(c.phone || '')} ${esc(c.email || '')}</span></span></label><input data-implab="${i}" list="implabs" placeholder="Ruolo (es. Hospitality)" style="margin-top:6px;height:38px"></div>`).join('')}</div>
+      <button class="btn primary" type="button" data-act="xcimpgo" style="width:100%;margin-top:10px">Importa i selezionati</button>` : '<p class="subtle">Nessun contatto trovato.</p>';
+    const q = document.getElementById('impq');
+    if (q) q.oninput = () => { const t = q.value.toLowerCase(); document.querySelectorAll('.impr').forEach((r) => { r.style.display = !t || r.dataset.q.includes(t) ? '' : 'none'; }); };
+    document.querySelectorAll('[data-implab]').forEach((inp) => { inp.oninput = () => { const cb = document.querySelector('[data-imp="' + inp.dataset.implab + '"]'); if (cb && inp.value.trim()) cb.checked = true; }; });
   };
   const f = document.getElementById('impfile');
   f.onchange = async () => { let all = []; for (const file of f.files) { try { all = all.concat(parseVcf(await file.text())); } catch (e) {} } S._imp = all; prev(); };
@@ -2797,16 +2803,17 @@ function xcImportView() {
   if (pk) pk.onclick = async () => { try { const r = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: true }); S._imp = r.map((c) => ({ name: (c.name || [])[0] || '', phone: (c.tel || [])[0] || '', email: (c.email || [])[0] || '' })).filter((c) => c.name || c.phone || c.email); prev(); } catch (e) { toast('Importazione annullata', true); } };
 }
 async function xcImportGo() {
-  const lab = (document.getElementById('implab').value || '').trim() || 'Rubrica telefono';
-  const sel = [...document.querySelectorAll('[data-imp]')].filter((c) => c.checked).map((c) => S._imp[Number(c.dataset.imp)]);
+  const sel = [...document.querySelectorAll('[data-imp]')].filter((c) => c.checked).map((c) => ({ c: S._imp[Number(c.dataset.imp)], lab: (document.querySelector('[data-implab="' + c.dataset.imp + '"]').value || '').trim() }));
+  if (!sel.length) return toast('Spunta almeno un contatto', true);
+  if (sel.some((x) => !x.lab)) return toast('Scrivi il ruolo per ogni contatto spuntato', true);
   const have = new Set((S.xcontacts || []).map((x) => (x.name || '').toLowerCase() + '|' + (x.phone || '').replace(/\s/g, '')));
   let n = 0;
-  for (const c of sel) {
+  for (const { c, lab } of sel) {
     const k = (c.name || '').toLowerCase() + '|' + (c.phone || '').replace(/\s/g, '');
     if (have.has(k)) continue; have.add(k);
     await put('xcontacts', { id: uuid(), label: lab, name: c.name, phone: c.phone || '', email: c.email || '' }); n++;
   }
-  closeModal(); render(); toast(n + ' contatti importati');
+  closeModal(); S.contactSort = 'role'; render(); toast(n + ' contatti importati');
 }
 async function saveXContact(f) {
   const fd = new FormData(f), v = (n) => (fd.get(n) || '').toString().trim();
