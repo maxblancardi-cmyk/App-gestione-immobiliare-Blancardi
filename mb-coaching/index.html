@@ -500,6 +500,17 @@ button, [data-act], .hcard, .nav, .pinpad * { -webkit-user-select: none; user-se
 .main { padding-bottom: calc(90px + var(--safe-b)); }
 @media print{body.printing>*:not(#print-root){display:none!important}body.printing #print-root{display:block!important}body.printing{background:#fff!important}}
 #print-root{display:none}
+
+.evcard{padding:16px!important}
+.evpls{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.evpl{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:var(--card2);border:1px solid var(--line);cursor:pointer}
+.evpn{font-size:20px;font-weight:800;line-height:1.15}
+.evgrid{display:grid;grid-template-columns:1fr;gap:0}
+.evi{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.evi:first-child{border-top:0}
+.evic{width:36px;height:36px;border-radius:12px;background:var(--neon-dim,#0002);display:grid;place-items:center;font-size:18px;flex:none}
+.evv{font-size:17px;font-weight:700;line-height:1.25}
+@media (min-width:700px){.evgrid{grid-template-columns:1fr 1fr;column-gap:20px}.evi:nth-child(2){border-top:0}}
 </style>
 </head>
 <body>
@@ -1127,11 +1138,18 @@ function eventView() {
   const when = e0.start_date === e0.end_date ? full(e0.start_date) : `${full(e0.start_date)} – ${full(e0.end_date)}`;
   const state = days > 0 ? (days === 1 ? 'Domani' : 'Tra ' + days + ' giorni') : (todayS <= e0.end_date ? 'In corso' : 'Concluso');
   return `<div class="row" style="gap:8px;margin-bottom:14px;flex-wrap:wrap"><button class="tbn" data-act="go" data-v="${S.evBack || 'events'}">← Indietro</button><span class="pillbtn">⏱ ${state}</span><button type="button" class="pillbtn" data-act="go" data-v="today" style="cursor:pointer;border:0;background:#39ff14;color:#000;font-weight:800">🏠 Home</button></div>
-  <div class="bigcard" style="border-left-color:${evColor(e0)}">
-    ${(() => { const dv = evDove(e0); return `<div class="lbl">Dove</div><div class="val">${esc(dv.name)}${dv.rest ? '<br>' + esc(dv.rest) : ''}</div>`; })()}
-    <div class="lbl">Per chi</div><div class="val">${esc(evChi(g) || '—')}</div>
-    <div class="lbl">Per cosa</div><div class="val">${esc(evCosa(e0) || '—')}</div>
-    <div class="lbl">Quando</div><div class="val" style="margin-bottom:0">Dal ${esc(full(e0.start_date))}<br>Al ${esc(full(e0.end_date))}</div>
+  <div class="bigcard evcard" style="border-left-color:${evColor(e0)}">
+    ${(() => {
+      const dv = evDove(e0), nd = diffDays(e0.start_date, e0.end_date);
+      const pl = g.map((x) => { const d = driver(x.driver_id), tm = S.teams.find((z) => z.id === d?.team_id), ph = d && !d.virtual ? pphoto(d) : ''; return `<div class="evpl" data-act="event" data-id="${x.id}">${ph ? `<img class="avatar" src="${ph}" alt="">` : `<div class="avatar">${esc(initials(d) || '?')}</div>`}<div class="grow" style="min-width:0"><div class="evpn">${esc(dname(d))}</div><div class="subtle">${esc([tm?.name, d?.car_model].filter(Boolean).join(' · ') || (d?.virtual ? 'Cliente / team' : ''))}</div></div><span class="subtle">›</span></div>`; }).join('');
+      const row = (ic, lb, v, sub) => `<div class="evi"><div class="evic">${ic}</div><div class="grow" style="min-width:0"><div class="lbl" style="margin:0">${lb}</div><div class="evv">${v}</div>${sub ? `<div class="subtle">${sub}</div>` : ''}</div></div>`;
+      return `<div class="evpls">${pl}</div><div class="evgrid">`
+        + row('📍', 'Dove', esc(dv.name), esc(dv.rest))
+        + row('📅', 'Quando', e0.start_date === e0.end_date ? esc(full(e0.start_date)) : `${esc(full(e0.start_date))}<br>→ ${esc(full(e0.end_date))}`, nd + (nd === 1 ? ' giorno' : ' giorni'))
+        + row('🏁', 'Per cosa', esc(evCosa(e0) || '—'), c ? esc(c.name) : '')
+        + (evChi(g) ? row('👥', 'Per chi', esc(evChi(g)), '') : '')
+        + `</div>`;
+    })()}
   </div>
   <div class="section-title"><h2>⏱ Tempi e classifiche</h2><button class="btn small" data-act="sessimpev" data-id="${e0.id}">+ Importa</button></div>
   ${(() => { const ids = new Set(g.map((x) => x.id)); const ss = (S.sessions || []).filter((x) => ids.has(x.event_id)).sort((a, b) => (a.date || '').localeCompare(b.date || '') || SESS_TYPES.indexOf(a.type) - SESS_TYPES.indexOf(b.type)); return ss.length ? ss.map((x) => `<div class="card" style="margin-bottom:8px;cursor:pointer" data-act="sessopen" data-id="${x.id}"><div class="row between"><strong>${esc(x.type)}</strong><span class="subtle">${x.date ? fmtShort(x.date) : ''}</span></div>${g.map((e) => { const d = driver(e.driver_id), r = sessMatch(x, d); return r ? `<div class="irow"><span>${esc(dname(d))}</span><b>${esc(/^\d+$/.test(r.pos) ? 'P' + r.pos : r.pos || '—')}${r.best ? ' · ' + esc(r.best) : ''}</b></div>` : ''; }).join('')}</div>`).join('') : '<p class="muted">Nessun tempo importato per questo evento.</p>'; })()}
