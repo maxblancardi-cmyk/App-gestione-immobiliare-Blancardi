@@ -1279,8 +1279,8 @@ function eventForm(id, defaults = {}) {
     <label class="f"><span>Nome libero (se non è un pilota né un team)</span><input name="who_other" value="${esc(other)}" placeholder="es. cliente, gruppo, ospite"></label>`; })()}
     <div class="lbl" style="margin:4px 0 6px">Quando</div>
     <div class="grid3">
-      <label class="f"><span>Dal</span><input type="date" name="start_date" value="${v.start_date}" required></label>
-      <label class="f"><span>Al</span><input type="date" name="end_date" value="${v.end_date}" required></label>
+      <label class="f"><span>Dal</span><input type="date" name="start_date" value="${v.start_date}"></label>
+      <label class="f"><span>Al</span><input type="date" name="end_date" value="${v.end_date}"></label>
       <label class="f"><span>Giorni</span><input type="number" min="1" name="days" value="${v.days}"></label>
     </div>
     <div class="lbl" style="margin:4px 0 6px">Dove</div>
@@ -1392,7 +1392,9 @@ async function saveEvent(f) {
     hotel_name: val('hotel_name'), hotel_address: val('hotel_address'), hotel_arrive: val('hotel_arrive'), hotel_depart: val('hotel_depart'), hotel_conf: val('hotel_conf'), flights: '', hotel_phone: val('hotel_phone'), flights_hh: val('flights_hh'), flights_mb: val('flights_mb'), flights_other_name: val('flights_other_name'), flights_other: val('flights_other'), car_rental: val('car_rental'), car_conf: val('car_conf'), car_notes: val('car_notes'),
     paid: fd.get('paid') === 'on', notes: val('notes'), program: val('program'), dirty: true
   };
-  if (!p.driver_id) return toast('Scegli un pilota, un team o scrivi un nome', true);
+  if (!p.driver_id) p.driver_id = 'x:Da definire';
+  if (!p.start_date) p.start_date = p.end_date || iso(new Date());
+  if (!p.end_date || p.end_date < p.start_date) p.end_date = p.start_date;
   const isNew = !f.dataset.id;
   const id = f.dataset.id || uuid();
   const old = S.events.find((x) => x.id === id);
