@@ -919,6 +919,26 @@ async function loadAll() {
   S.loaded = true;
 }
 let PUTQ = Promise.resolve();
+async function syncLite() {
+  if (document.hidden || !S.loaded || !window.__started) return;
+  if (document.querySelector('#modal-root .overlay')) return;
+  const a = document.activeElement; if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+  try {
+    await PUTQ;
+    const keys = ['events', 'teams', 'champs', 'agenda', 'planev', 'deadlines'];
+    let changed = false;
+    for (const k of keys) {
+      if (!TABLES[k]) continue;
+      const snap = await DB.collection(TABLES[k]).get();
+      const rows = snap.docs.map((d) => ({ ...d.data(), id: d.id }));
+      const norm = (arr) => JSON.stringify(arr.slice().sort((x, y) => String(x.id).localeCompare(String(y.id))));
+      if (norm(rows) !== norm(S[k] || [])) { S[k] = rows; changed = true; }
+    }
+    if (changed) { sortAll(); if (!document.querySelector('#modal-root .overlay') && !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))) render(); }
+  } catch (e) {}
+}
+setInterval(syncLite, 20000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(syncLite, 400); });
 function put(key, row) { const run = () => putNow(key, row); const r = PUTQ.then(run, run); PUTQ = r.catch(() => {}); return r; }
 async function putNow(key, row) {
   const { id, ...rest } = row;
