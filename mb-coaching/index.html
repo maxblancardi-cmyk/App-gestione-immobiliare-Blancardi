@@ -518,6 +518,13 @@ button, [data-act], .hcard, .nav, .pinpad * { -webkit-user-select: none; user-se
 .evbox input[type=date]{-webkit-appearance:none;appearance:none;text-align:left;display:block}
 .evbox input[type=date]{min-height:46px;line-height:1.2;padding-right:8px}
 .evbox input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) 96px 34px 40px 44px;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.qrow>*{min-width:0}
+.qrow .qlab{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qrow input[data-qamt]{width:100%;height:40px;padding:0 8px;box-sizing:border-box;text-align:right}
+.qrow .qcur{text-align:center;font-size:12px}
+.qrow .qcam{padding:0;text-align:center;font-size:20px}
+.qrow .qplus{width:44px;height:40px;padding:0;display:grid;place-items:center;font-size:20px}
 </style>
 </head>
 <body>
@@ -1214,7 +1221,7 @@ function evMoneyCard(e, ttl) {
     <label class="chk" style="margin-top:8px"><input type="checkbox" data-ev="${e.id}" data-fld="paid" ${e.paid ? 'checked' : ''}> Compenso incassato</label>
     <div class="lbl" style="margin:6px 0 4px">Spese ${sumTxt(tot) ? '· ' + sumTxt(tot) : ''}</div>
     ${exps.map((x) => `<div class="irow" style="align-items:center"><span>${CATS[x.category]} <span class="subtle">· ${PAYERS[x.paid_by]}${x.paid_by_note ? ': ' + esc(x.paid_by_note) : ''}</span></span><span class="row" style="gap:6px"><b>${money(x.amount, x.currency)}</b>${x.receipt_data ? `<button class="iconbtn" data-act="exp-receipt" data-id="${x.id}" title="Scontrino">🧾</button>` : ''}<label class="iconbtn" title="${x.receipt_data ? 'Cambia scontrino' : 'Carica scontrino'}" style="cursor:pointer">📷<input type="file" accept="image/*,application/pdf,.pdf" hidden data-rcpt="${x.id}"></label><button class="iconbtn" data-act="expdel2" data-id="${x.id}" title="Elimina">✕</button></span></div>`).join('') || '<p class="subtle" style="margin:0 0 6px">Nessuna spesa.</p>'}
-    ${(() => { const have = new Set(exps.map((x) => x.category)); const miss = ['aereo','taxi','benzina','uber','ristorante','lavanderia','bar'].filter((k) => !have.has(k)); return miss.length ? `<div class="lbl" style="margin:10px 0 4px">Da inserire (${miss.length})</div>` + miss.map((k) => `<div class="irow qrow" style="align-items:center;gap:6px"><span class="subtle" style="flex:1">⚠ ${CATS[k]} · manca</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00" style="width:90px;height:38px" data-qamt><span class="subtle">${cur}</span><label class="iconbtn" title="Scontrino" style="cursor:pointer">📷<input type="file" accept="image/*,application/pdf,.pdf" hidden data-rcptq></label><button class="btn small primary" type="button" data-act="expquick" data-id="${e.id}" data-cat="${k}" data-cur="${cur}" title="Aggiungi">＋</button></div>`).join('') : '<p class="subtle" style="margin:8px 0 0">✓ Tutte le voci inserite</p>'; })()}
+    ${(() => { const have = new Set(exps.map((x) => x.category)); const miss = ['aereo','taxi','benzina','uber','ristorante','lavanderia','bar'].filter((k) => !have.has(k)); return miss.length ? `<div class="lbl" style="margin:10px 0 4px">⚠ Da inserire (${miss.length})</div>` + miss.map((k) => `<div class="qrow"><span class="qlab">${CATS[k]}</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00" data-qamt><span class="subtle qcur">${cur}</span><label class="iconbtn qcam" title="Scontrino" style="cursor:pointer">📷<input type="file" accept="image/*,application/pdf,.pdf" hidden data-rcptq></label><button class="btn small primary qplus" type="button" data-act="expquick" data-id="${e.id}" data-cat="${k}" data-cur="${cur}" title="Aggiungi">＋</button></div>`).join('') : '<p class="subtle" style="margin:8px 0 0">✓ Tutte le voci inserite</p>'; })()}
     <div class="lbl" style="margin:10px 0 0">＋ Altra spesa (anche ripetuta o personalizzata)</div>
     <form data-form="expinline" data-event="${e.id}" class="expin">
       ${catSelect()}
