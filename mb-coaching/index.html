@@ -1416,7 +1416,7 @@ function eventForm(id, defaults = {}) {
     <div class="lbl" style="margin:4px 0 6px">Prezzo</div>
     <div class="grid2"><label class="f"><span>Compenso / giorno</span><input type="number" min="0" step="any" inputmode="decimal" name="daily_rate" value="${v.daily_rate || ''}" placeholder="0"></label><label class="f"><span>Valuta</span><select name="currency">${CURS.map((c) => `<option ${c === (v.currency || 'EUR') ? 'selected' : ''}>${c}</option>`).join('')}</select></label></div>
     <div class="f" style="margin-bottom:10px"><span>Totale compenso</span><div class="stat" id="tot" style="font-size:20px;padding-top:6px"></div></div>
-    <div class="lbl" style="margin-bottom:6px">Programma</div>${progButtons(v.program || (e ? progOf(e) : ''))}
+    <input type="hidden" name="program" value="${esc(v.program || (e ? progOf(e) : ''))}">
     <label class="chk"><input type="checkbox" name="paid" ${v.paid ? 'checked' : ''}> Compenso incassato</label>
     <details style="margin-bottom:10px"><summary class="subtle" style="cursor:pointer;margin-bottom:8px">Contatti dell'evento (compilati in automatico dal pilota e dal campionato)</summary>
     <div class="grid2">
@@ -2126,7 +2126,7 @@ function countdownCardOld() {
 function agendaForm(id, defaults = {}) {
   const a = id ? S.agenda.find((x) => x.id === id) : { title: '', date: S.day || iso(new Date()), start: '09:00', end: '10:00', driver_id: '', place: '', tz: '', alarm: 30, notes: '', ...defaults };
   openModal(id ? 'Attività' : 'Nuova attività', `<form data-form="agenda" data-id="${id || ''}">
-    <div class="lbl" style="margin-bottom:6px">Programma</div>${progButtons(a.program)}
+    <input type="hidden" name="program" value="${esc(a.program || '')}">
     <label class="f"><span>Cosa</span><input name="title" list="agsugg" value="${esc(a.title)}" required placeholder="es. Briefing pilota"></label>
     <datalist id="agsugg">${AGSUGG.map((n) => `<option value="${n}">`).join('')}</datalist>
     <label class="f"><span>Giorno</span><input type="date" name="date" value="${esc(a.date)}" required></label>
