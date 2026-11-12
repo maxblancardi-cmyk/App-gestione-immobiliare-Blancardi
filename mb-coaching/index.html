@@ -512,6 +512,12 @@ button, [data-act], .hcard, .nav, .pinpad * { -webkit-user-select: none; user-se
 .evv{font-size:17px;font-weight:700;line-height:1.25}
 @media (min-width:700px){.evgrid{grid-template-columns:1fr 1fr;column-gap:20px}.evi:nth-child(2){border-top:0}}
 .evbox{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:12px 12px 4px;margin-bottom:12px}
+.evbox .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.evbox .grid2>*{min-width:0}
+.evbox input[type=date],.evbox select,.evbox input[type=number],.evbox input:not([type]){width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.evbox input[type=date]{-webkit-appearance:none;appearance:none;text-align:left;display:block}
+.evbox input[type=date]{min-height:46px;line-height:1.2;padding-right:8px}
+.evbox input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
 </style>
 </head>
 <body>
@@ -1163,7 +1169,7 @@ function eventView() {
   <div class="bigcard evcard" style="border-left-color:${evColor(e0)}">
     ${(() => {
       const dv = evDove(e0), nd = diffDays(e0.start_date, e0.end_date);
-      const pl = g.map((x) => { const d = driver(x.driver_id), tm = S.teams.find((z) => z.id === d?.team_id), ph = d && !d.virtual ? pphoto(d) : ''; return `<div class="evpl" data-act="event" data-id="${x.id}">${ph ? `<img class="avatar" src="${ph}" alt="">` : `<div class="avatar">${esc(initials(d) || '?')}</div>`}<div class="grow" style="min-width:0"><div class="evpn">${esc(dname(d))}</div><div class="subtle">${esc([tm?.name, d?.car_model].filter(Boolean).join(' · ') || (d?.virtual ? 'Cliente / team' : ''))}</div></div><span class="subtle">›</span></div>`; }).join('');
+      const pl = g.map((x) => { const d = driver(x.driver_id), tm = S.teams.find((z) => z.id === (x.team_id || d?.team_id)), ph = d && !d.virtual ? pphoto(d) : '', undef = d && d.virtual && /^da definire$/i.test(d.first_name || ''); const nm = undef ? (tm ? tm.name : 'Pilota da definire') : dname(d); const subl = [undef ? '' : tm?.name, d?.car_model].filter(Boolean).join(' · ') || (undef ? (tm ? 'Pilota da definire' : 'Tocca per scegliere pilota o team') : (d?.virtual ? 'Cliente / team' : '')); return `<div class="evpl" data-act="event" data-id="${x.id}">${ph ? `<img class="avatar" src="${ph}" alt="">` : `<div class="avatar">${esc(undef ? '?' : initials(d) || '?')}</div>`}<div class="grow" style="min-width:0"><div class="evpn">${esc(nm)}</div><div class="subtle">${esc(subl)}</div></div><span class="subtle">›</span></div>`; }).join('');
       const row = (ic, lb, v, sub) => `<div class="evi"><div class="evic">${ic}</div><div class="grow" style="min-width:0"><div class="lbl" style="margin:0">${lb}</div><div class="evv">${v}</div>${sub ? `<div class="subtle">${sub}</div>` : ''}</div></div>`;
       return `<div class="evpls">${pl}</div><div class="evgrid">`
         + row('📍', 'Dove', esc(dv.name), esc(dv.rest))
@@ -1325,7 +1331,7 @@ function eventForm(id, defaults = {}) {
   const exps = e ? S.expenses.filter((x) => x.event_id === e.id) : [];
   openModal(e ? 'Modifica evento' : 'Nuovo evento', `
   <form data-form="event" data-id="${e?.id || ''}">
-    ${(() => { const lab = String(v.driver_id || '').startsWith('x:') ? v.driver_id.slice(2) : ''; const tmId = v.team_id || (S.teams.find((t) => t.name === lab) || {}).id || ''; const other = lab && !S.teams.some((t) => t.name === lab) ? lab : ''; return `<div class="grid2">
+    ${(() => { const lab = String(v.driver_id || '').startsWith('x:') ? v.driver_id.slice(2) : ''; const tmId = v.team_id || (S.teams.find((t) => t.name === lab) || {}).id || ''; const other = lab && lab !== 'Da definire' && !S.teams.some((t) => t.name === lab) ? lab : ''; return `<div class="grid2">
       ${evTypeFields(v.activity_type_id)}
     </div>
     <label class="f ${needsChamp ? '' : 'hidden'}" id="f-champ"><span>Campionato</span><select name="championship_id">${opts(S.champs, v.championship_id, (c) => c.name, '—')}</select></label>
