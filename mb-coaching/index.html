@@ -511,6 +511,7 @@ button, [data-act], .hcard, .nav, .pinpad * { -webkit-user-select: none; user-se
 .evic{width:36px;height:36px;border-radius:12px;background:var(--neon-dim,#0002);display:grid;place-items:center;font-size:18px;flex:none}
 .evv{font-size:17px;font-weight:700;line-height:1.25}
 @media (min-width:700px){.evgrid{grid-template-columns:1fr 1fr;column-gap:20px}.evi:nth-child(2){border-top:0}}
+.evbox{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:12px 12px 4px;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -1135,16 +1136,17 @@ function evDove(e) {
   return { name: name || champ(e.championship_id)?.name || 'Evento', rest: [m ? m[2] : '', e.nation].filter(Boolean).join(' · ') };
 }
 function evChi(g) {
-  const out = [];
+  const out = [], seen = new Set();
+  const add = (n) => { const k = String(n || '').trim().toLowerCase(); if (!k || k === 'da definire' || seen.has(k)) return; seen.add(k); out.push(String(n).trim()); };
   g.forEach((x) => {
     const d = driver(x.driver_id);
-    if (d && d.virtual) out.push(d.first_name);
-    else { const tm = d && S.teams.find((t) => t.id === d.team_id); if (tm) out.push(tm.name); }
-    if (x.team_id) { const t2 = S.teams.find((t) => t.id === x.team_id); if (t2) out.push(t2.name); }
-    const p = progOf(x); if (p) out.push(progName(p));
+    if (d && d.virtual) add(d.first_name);
+    else { const tm = d && S.teams.find((t) => t.id === d.team_id); if (tm) add(tm.name); }
+    if (x.team_id) { const t2 = S.teams.find((t) => t.id === x.team_id); if (t2) add(t2.name); }
+    const p = progOf(x); if (p) add(progName(p));
   });
-  if (!out.length) { const c = champ(g[0].championship_id); if (c) out.push(c.name); }
-  return [...new Set(out)].join(' · ');
+  if (!out.length) { const c = champ(g[0].championship_id); if (c) add(c.name); }
+  return out.join(' · ');
 }
 function evCosa(e) { return (atype(e.activity_type_id)?.name || '').replace(/^De Adamich\s*·\s*/i, ''); }
 function eventView() {
@@ -1299,6 +1301,23 @@ function opts(list, sel, label, empty) {
     list.map((x) => `<option value="${x.id}" ${x.id === sel ? 'selected' : ''}>${esc(label(x))}</option>`).join('');
 }
 
+
+function evNationOpts(cur) {
+  const set = new Set(NATIONS); (S.circuits || []).forEach((c) => c.nation && set.add(c.nation)); if (cur) set.add(cur);
+  const list = [...set].sort((x, y) => x.localeCompare(y));
+  return '<option value="">— scegli il paese —</option>' + list.map((n) => `<option ${n === cur ? 'selected' : ''}>${esc(n)}</option>`).join('');
+}
+function evCircOpts(nation, cur) {
+  const cs = (S.circuits || []).filter((c) => !nation || c.nation === nation).sort((a, b) => a.name.localeCompare(b.name));
+  const known = cs.some((c) => c.name === cur);
+  return '<option value="">— scegli il circuito —</option>' + cs.map((c) => `<option ${c.name === cur ? 'selected' : ''}>${esc(c.name)}</option>`).join('') + `<option value="__other" ${cur && !known ? 'selected' : ''}>Altro (scrivo io)…</option>`;
+}
+function evNationChange(f) {
+  f.circuit.innerHTML = evCircOpts(f.nation.value, ''); evCircChange(f);
+}
+function evCircChange(f) {
+  const o = document.getElementById('f-circ-other'); if (o) o.classList.toggle('hidden', f.circuit.value !== '__other');
+}
 function eventForm(id, defaults = {}) {
   const e = id ? S.events.find((x) => x.id === id) : null;
   const v = e || { driver_id: '', activity_type_id: S.types[0]?.id, championship_id: '', nation: '', circuit: '', start_date: iso(new Date()), end_date: iso(new Date()), days: 1, daily_rate: 0, currency: 'EUR', paid: false, notes: '', ...defaults };
@@ -1315,18 +1334,20 @@ function eventForm(id, defaults = {}) {
       <label class="f"><span>Team</span><select name="team_id">${opts(S.teams, tmId, (t) => t.name, '— nessuno —')}</select></label>
     </div>
     <label class="f"><span>Nome libero (se non è un pilota né un team)</span><input name="who_other" value="${esc(other)}" placeholder="es. cliente, gruppo, ospite"></label>`; })()}
-    <div class="lbl" style="margin:4px 0 6px">Quando</div>
-    <div class="grid3">
-      <label class="f"><span>Dal</span><input type="date" name="start_date" value="${v.start_date}"></label>
-      <label class="f"><span>Al</span><input type="date" name="end_date" value="${v.end_date}"></label>
-      <label class="f"><span>Giorni</span><input type="number" min="1" name="days" value="${v.days}"></label>
+    <div class="lbl" style="margin:4px 0 6px">📅 Quando</div>
+    <div class="evbox">
+      <div class="grid2">
+        <label class="f"><span>Dal</span><input type="date" name="start_date" value="${v.start_date}"></label>
+        <label class="f"><span>Al</span><input type="date" name="end_date" value="${v.end_date}"></label>
+      </div>
+      <label class="f" style="margin-bottom:0"><span>Giorni di evento</span><input type="number" min="1" name="days" value="${v.days}"></label>
     </div>
-    <div class="lbl" style="margin:4px 0 6px">Dove</div>
-    <div class="grid2">
-      <label class="f"><span>Nazione</span><input name="nation" list="nations" value="${esc(v.nation)}" placeholder="es. Italia"></label>
-      <label class="f"><span>Circuito</span><input name="circuit" list="circlist" value="${esc(v.circuit)}" onchange="var t=this;var c=(S.circuits||[]).find(function(x){return x.name===t.value});if(c&&t.form.nation&&!t.form.nation.value)t.form.nation.value=c.nation"><datalist id="circlist">${(S.circuits || []).slice().sort((a, b) => (a.nation + a.name).localeCompare(b.nation + b.name)).map((c) => `<option value="${esc(c.name)}" label="${esc(c.nation)}">`).join('')}</datalist></label>
+    <div class="lbl" style="margin:4px 0 6px">📍 Dove</div>
+    <div class="evbox">
+      <label class="f"><span>Paese</span><select name="nation">${evNationOpts(v.nation)}</select></label>
+      <label class="f"><span>Circuito</span><select name="circuit">${evCircOpts(v.nation, v.circuit)}</select></label>
+      <label class="f ${v.circuit && !(S.circuits || []).some((c) => c.name === v.circuit && (!v.nation || c.nation === v.nation)) ? '' : 'hidden'}" id="f-circ-other"><span>Nome del circuito / luogo</span><input name="circuit_txt" value="${esc(v.circuit && !(S.circuits || []).some((c) => c.name === v.circuit && (!v.nation || c.nation === v.nation)) ? v.circuit : '')}" placeholder="es. Circuit de Barcelona-Catalunya"></label>
     </div>
-    <datalist id="nations">${NATIONS.map((n) => `<option value="${n}">`).join('')}</datalist>
     <div class="lbl" style="margin:4px 0 6px">Prezzo</div>
     <div class="grid2"><label class="f"><span>Compenso giornaliero</span><input type="number" min="0" step="any" inputmode="decimal" name="daily_rate" value="${v.daily_rate || ''}" placeholder="0"></label><label class="f"><span>Valuta</span><select name="currency">${CURS.map((c) => `<option ${c === (v.currency || 'EUR') ? 'selected' : ''}>${c}</option>`).join('')}</select></label></div>
     <div class="f" style="margin-bottom:10px"><span>Totale compenso</span><div class="stat" id="tot" style="font-size:20px;padding-top:6px"></div></div>
@@ -1420,7 +1441,7 @@ async function saveEvent(f) {
   const p = {
     driver_id: whoId(fd), team_id: val('team_id'), activity_type_id: fd.get('activity_type_id'),
     championship_id: t?.needs_championship === false ? null : val('championship_id'),
-    nation: val('nation'), circuit: val('circuit'),
+    nation: val('nation'), circuit: fd.get('circuit') === '__other' ? val('circuit_txt') : val('circuit'),
     start_date: fd.get('start_date'), end_date: fd.get('end_date'),
     days: Math.max(1, parseInt(fd.get('days') || '1', 10)),
     daily_rate: Number(fd.get('daily_rate') || 0), currency: fd.get('currency'),
@@ -3504,6 +3525,7 @@ async function removeEventLocalOnly(id) {
 }
 
 document.addEventListener('change', (ev) => { const t = ev.target; if (t && t.matches && t.matches('[data-catsel]')) { const n = t.parentNode.querySelector('[data-catnew]'); if (n) { n.style.display = t.value === '__new' ? '' : 'none'; if (t.value === '__new') n.focus(); } } });
+document.addEventListener('change', (ev) => { const t = ev.target; if (!t || !t.form || !t.form.matches || !t.form.matches('form[data-form=event]')) return; if (t.name === 'nation') evNationChange(t.form); else if (t.name === 'circuit') evCircChange(t.form); });
 document.addEventListener('change', async (ev) => {
   const t0 = ev.target;
   if (t0 && t0.classList && t0.classList.contains('nrf')) { const f0 = t0.files && t0.files[0]; if (f0) { try { const r = t0.closest('.nline'); r.querySelector('.nr').value = await receiptDataUrl(f0); t0.parentNode.firstChild.textContent = '✅ Allegato aggiunto (tocca per cambiare)'; toast('Allegato aggiunto: salva la nota'); } catch (err) { toast('Errore: ' + (err.message || err), true); } } return; }
