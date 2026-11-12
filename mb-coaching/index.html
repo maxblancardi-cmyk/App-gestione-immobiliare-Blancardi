@@ -528,6 +528,13 @@ button, [data-act], .hcard, .nav, .pinpad * { -webkit-user-select: none; user-se
 .qrow .qcur{text-align:center;font-size:12px}
 .qrow .qcam{padding:0;text-align:center;font-size:20px}
 .qrow .qplus{width:44px;height:40px;padding:0;display:grid;place-items:center;font-size:20px}
+input[type=date]{min-width:0;max-width:100%;box-sizing:border-box}
+.grid2>*,.grid3>*{min-width:0}
+.seg{grid-template-columns:1fr 1fr 1fr!important}
+.segb{display:flex;align-items:center;justify-content:center;gap:6px;min-height:52px;line-height:1.15;font-size:13px!important;padding:8px 6px!important;text-align:center}
+.segb img{flex:none}
+.expf .f{margin-bottom:10px}
+.expf [data-catnew]{margin-top:6px}
 </style>
 </head>
 <body>
@@ -1317,13 +1324,56 @@ function opts(list, sel, label, empty) {
 }
 
 
+const BUILTIN_CIRCUITS = [
+  ['Spagna', ['Circuit de Barcelona-Catalunya', 'Circuit Ricardo Tormo (Valencia)', 'Circuito de Jerez - Ángel Nieto', 'MotorLand Aragón (Alcañiz)', 'Circuito de Navarra', 'Circuito del Jarama (Madrid)', 'Circuito de Albacete', 'Ascari Race Resort (Ronda)', 'Circuit de Calafat', 'Circuito de Almería', 'Circuito de Cartagena', 'Circuit Parcmotor Castellolí']],
+  ['Italia', ['Autodromo Nazionale Monza', 'Autodromo Enzo e Dino Ferrari (Imola)', 'Mugello Circuit', 'Autodromo di Misano "Marco Simoncelli"', 'Autodromo di Vallelunga "Piero Taruffi"', 'Autodromo di Pergusa', 'Autodromo del Levante (Binetto)', 'Autodromo di Franciacorta', 'Autodromo di Modena', 'Autodromo di Adria', 'Autodromo di Varano "Riccardo Paletti"', 'Autodromo di Magione', 'Autodromo di Cremona (Tazio Nuvolari)', 'Autodromo di Pomposa', 'Fiorano (Pista di Maranello)']],
+  ['Francia', ['Circuit Paul Ricard (Le Castellet)', 'Circuit de Nevers Magny-Cours', 'Circuit de la Sarthe (Le Mans)', 'Circuit de Dijon-Prenois', 'Circuit de Lédenon', "Circuit d'Albi", 'Circuit du Val de Vienne', 'Circuit de Nogaro', 'Circuit de Charade', 'Circuit de Pau-Arnos', 'Circuit de Montlhéry', 'Circuit de Carole', 'Circuit de Mireval']],
+  ['Monaco', ['Circuit de Monaco', 'Monaco - Grand Prix Historique']],
+  ['Germania', ['Nürburgring Nordschleife', 'Nürburgring GP-Strecke', 'Hockenheimring', 'Sachsenring', 'Lausitzring', 'Motorsport Arena Oschersleben']],
+  ['Regno Unito', ['Silverstone Circuit', 'Brands Hatch', 'Donington Park', 'Snetterton', 'Oulton Park', 'Thruxton', 'Goodwood Motor Circuit', 'Croft Circuit', 'Knockhill', 'Castle Combe', 'Cadwell Park', 'Anglesey Circuit']],
+  ['USA', ['Circuit of the Americas (Austin)', 'Daytona International Speedway', 'Sebring International Raceway', 'Road America (Elkhart Lake)', 'Watkins Glen International', 'Laguna Seca (WeatherTech Raceway)', 'Virginia International Raceway (VIR)', 'Road Atlanta (Braselton)', 'Sonoma Raceway', 'Mid-Ohio Sports Car Course', 'Lime Rock Park', 'Barber Motorsports Park', 'Indianapolis Motor Speedway', 'Homestead-Miami Speedway', 'Palm Beach International Raceway', 'Utah Motorsports Campus', 'Pocono Raceway', 'New Jersey Motorsports Park', 'Thunderhill Raceway', 'Willow Springs', 'Las Vegas Motor Speedway', 'Vegas Strip Circuit', 'Long Beach Street Circuit', 'Miami International Autodrome', 'Detroit Street Circuit', 'NOLA Motorsports Park', 'Autobahn Country Club']],
+  ['Belgio', ['Circuit de Spa-Francorchamps', 'Circuit Zolder', 'Circuit de Mettet']],
+  ['Olanda', ['Circuit Zandvoort', 'TT Circuit Assen']],
+  ['Portogallo', ['Autódromo Internacional do Algarve (Portimão)', 'Autódromo do Estoril', 'Circuito de Vila Real']],
+  ['Svizzera', ['Circuito di Lignières', 'Circuit des Remparts (Bulle)']],
+  ['Austria', ['Red Bull Ring (Spielberg)', 'Salzburgring', 'Wachauring']],
+  ['Emirati Arabi', ['Yas Marina Circuit (Abu Dhabi)', 'Dubai Autodrome', 'Fujairah International Raceway']],
+  ['Giappone', ['Suzuka Circuit', 'Fuji Speedway', 'Twin Ring Motegi', 'Okayama International Circuit', 'Autopolis', 'Sugo Sportsland']],
+  ['Australia', ['Albert Park (Melbourne)', 'Mount Panorama (Bathurst)', 'Phillip Island', 'Sydney Motorsport Park', 'The Bend Motorsport Park', 'Hidden Valley Raceway', 'Queensland Raceway', 'Winton Motor Raceway', 'Wakefield Park']],
+  ['Canada', ['Circuit Gilles-Villeneuve (Montréal)', 'Canadian Tire Motorsport Park (Mosport)', 'Circuit Mont-Tremblant', 'Circuit ICAR', 'Toronto Exhibition Place']],
+  ['Messico', ['Autódromo Hermanos Rodríguez', 'Autódromo Miguel E. Abed', 'Autódromo de Monterrey']],
+  ['Brasile', ['Autódromo José Carlos Pace (Interlagos)', 'Autódromo Internacional de Curitiba', 'Velocitta', 'Autódromo de Goiânia']],
+  ['Argentina', ['Autódromo Oscar y Juan Gálvez (Buenos Aires)', 'Autódromo de Termas de Río Hondo', 'Autódromo de Rosario', 'Autódromo de San Juan']],
+  ['Bahrein', ['Bahrain International Circuit (Sakhir)']],
+  ['Qatar', ['Losail International Circuit']],
+  ['Arabia Saudita', ['Jeddah Corniche Circuit', 'Reem International Circuit']],
+  ['Singapore', ['Marina Bay Street Circuit']],
+  ['Cina', ['Shanghai International Circuit', 'Zhuhai International Circuit', 'Ningbo International Circuit']],
+  ['Ungheria', ['Hungaroring']],
+  ['Repubblica Ceca', ['Autodrom Brno (Masaryk)', 'Autodrom Most']],
+  ['Polonia', ['Tor Poznań']],
+  ['Svezia', ['Anderstorp Raceway', 'Mantorp Park', 'Ring Knutstorp']],
+  ['Turchia', ['Intercity Istanbul Park']],
+  ['Malesia', ['Sepang International Circuit']],
+  ['Sudafrica', ['Kyalami Grand Prix Circuit']],
+  ['Azerbaigian', ['Baku City Circuit']],
+  ['Danimarca', ['Jyllandsringen', 'Padborg Park']],
+  ['Finlandia', ['Ahvenisto Race Circuit', 'Kymiring']],
+  ['Irlanda', ['Mondello Park']],
+  ['Marocco', ['Circuit International Automobile Moulay El Hassan (Marrakech)']]
+];
+function allCircuits() {
+  const out = (S.circuits || []).slice(), seen = new Set(out.map((c) => String(c.name).toLowerCase()));
+  BUILTIN_CIRCUITS.forEach(([nation, list]) => list.forEach((name) => { if (!seen.has(name.toLowerCase())) { seen.add(name.toLowerCase()); out.push({ id: 'b:' + name, name, nation }); } }));
+  return out;
+}
 function evNationOpts(cur) {
-  const set = new Set(NATIONS); (S.circuits || []).forEach((c) => c.nation && set.add(c.nation)); if (cur) set.add(cur);
+  const set = new Set(NATIONS); allCircuits().forEach((c) => c.nation && set.add(c.nation)); if (cur) set.add(cur);
   const list = [...set].sort((x, y) => x.localeCompare(y));
   return '<option value="">— scegli il paese —</option>' + list.map((n) => `<option ${n === cur ? 'selected' : ''}>${esc(n)}</option>`).join('');
 }
 function evCircOpts(nation, cur) {
-  const cs = (S.circuits || []).filter((c) => !nation || c.nation === nation).sort((a, b) => a.name.localeCompare(b.name));
+  const cs = allCircuits().filter((c) => !nation || c.nation === nation).sort((a, b) => a.name.localeCompare(b.name));
   const known = cs.some((c) => c.name === cur);
   return '<option value="">— scegli il circuito —</option>' + cs.map((c) => `<option ${c.name === cur ? 'selected' : ''}>${esc(c.name)}</option>`).join('') + `<option value="__other" ${cur && !known ? 'selected' : ''}>Altro (scrivo io)…</option>`;
 }
@@ -1361,10 +1411,10 @@ function eventForm(id, defaults = {}) {
     <div class="evbox">
       <label class="f"><span>Paese</span><select name="nation">${evNationOpts(v.nation)}</select></label>
       <label class="f"><span>Circuito</span><select name="circuit">${evCircOpts(v.nation, v.circuit)}</select></label>
-      <label class="f ${v.circuit && !(S.circuits || []).some((c) => c.name === v.circuit && (!v.nation || c.nation === v.nation)) ? '' : 'hidden'}" id="f-circ-other"><span>Nome del circuito / luogo</span><input name="circuit_txt" value="${esc(v.circuit && !(S.circuits || []).some((c) => c.name === v.circuit && (!v.nation || c.nation === v.nation)) ? v.circuit : '')}" placeholder="es. Circuit de Barcelona-Catalunya"></label>
+      <label class="f ${v.circuit && !allCircuits().some((c) => c.name === v.circuit && (!v.nation || c.nation === v.nation)) ? '' : 'hidden'}" id="f-circ-other"><span>Nome del circuito / luogo</span><input name="circuit_txt" value="${esc(v.circuit && !allCircuits().some((c) => c.name === v.circuit && (!v.nation || c.nation === v.nation)) ? v.circuit : '')}" placeholder="es. Circuit de Barcelona-Catalunya"></label>
     </div>
     <div class="lbl" style="margin:4px 0 6px">Prezzo</div>
-    <div class="grid2"><label class="f"><span>Compenso giornaliero</span><input type="number" min="0" step="any" inputmode="decimal" name="daily_rate" value="${v.daily_rate || ''}" placeholder="0"></label><label class="f"><span>Valuta</span><select name="currency">${CURS.map((c) => `<option ${c === (v.currency || 'EUR') ? 'selected' : ''}>${c}</option>`).join('')}</select></label></div>
+    <div class="grid2"><label class="f"><span>Compenso / giorno</span><input type="number" min="0" step="any" inputmode="decimal" name="daily_rate" value="${v.daily_rate || ''}" placeholder="0"></label><label class="f"><span>Valuta</span><select name="currency">${CURS.map((c) => `<option ${c === (v.currency || 'EUR') ? 'selected' : ''}>${c}</option>`).join('')}</select></label></div>
     <div class="f" style="margin-bottom:10px"><span>Totale compenso</span><div class="stat" id="tot" style="font-size:20px;padding-top:6px"></div></div>
     <div class="lbl" style="margin-bottom:6px">Programma</div>${progButtons(v.program || (e ? progOf(e) : ''))}
     <label class="chk"><input type="checkbox" name="paid" ${v.paid ? 'checked' : ''}> Compenso incassato</label>
@@ -1495,19 +1545,21 @@ function expensesBlock(e, exps) {
         <button class="iconbtn" data-act="exp-del" data-id="${x.id}">🗑</button>
       </div>`).join('') : '<p class="muted" style="margin:0">Nessuna spesa registrata.</p>'}
   </div>
-  <form data-form="expense" data-event="${e.id}" class="card" style="margin-top:10px">
-    <h3 style="margin-bottom:10px">Aggiungi spesa</h3>
+  <form data-form="expense" data-event="${e.id}" class="card expf" style="margin-top:10px">
+    <h3 style="margin-bottom:10px">＋ Aggiungi spesa</h3>
+    <label class="f"><span>Voce</span>${catSelect()}</label>
     <div class="grid2">
-      <label class="f"><span>Categoria</span>${catSelect()}</label>
-      <label class="f"><span>Data</span><input type="date" name="expense_date" value="${iso(new Date())}"></label>
-      <label class="f"><span>Importo</span><input type="number" step="0.01" name="amount" required></label>
+      <label class="f"><span>Importo</span><input type="number" inputmode="decimal" step="0.01" name="amount" required placeholder="0,00"></label>
       <label class="f"><span>Valuta</span><select name="currency">${CURS.map((c) => `<option ${c === e.currency ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
       <label class="f"><span>A carico di</span><select name="paid_by">${Object.entries(PAYERS).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label>
-      <label class="f"><span>Se "Altro", chi</span><input name="paid_by_note"></label>
+      <label class="f"><span>Data</span><input type="date" name="expense_date" value="${iso(new Date())}"></label>
     </div>
-    <label class="f"><span>Note</span><input name="notes"></label>
-    <label class="f"><span>Foto scontrino</span><input type="file" name="receipt" accept="image/*,application/pdf,.pdf"></label>
-    <button class="btn primary" type="submit">Aggiungi spesa</button>
+    <label class="f hidden" id="f-payer-note"><span>Chi paga</span><input name="paid_by_note" placeholder="nome"></label>
+    <label class="f"><span>Note (facoltativo)</span><input name="notes"></label>
+    <div class="grid2" style="align-items:stretch">
+      <label class="btn ghost" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;height:46px" data-rcptlbl>📷 Scontrino<input type="file" name="receipt" accept="image/*,application/pdf,.pdf" hidden></label>
+      <button class="btn primary" type="submit" style="height:46px">＋ Aggiungi</button>
+    </div>
   </form>`;
 }
 
@@ -3542,6 +3594,7 @@ async function removeEventLocalOnly(id) {
 }
 
 document.addEventListener('change', (ev) => { const t = ev.target; if (t && t.matches && t.matches('[data-catsel]')) { const n = t.parentNode.querySelector('[data-catnew]'); if (n) { n.style.display = t.value === '__new' ? '' : 'none'; if (t.value === '__new') n.focus(); } } });
+document.addEventListener('change', (ev) => { const t = ev.target; if (t && t.name === 'paid_by' && t.form && t.form.matches && t.form.matches('form[data-form=expense]')) { const n = t.form.querySelector('#f-payer-note'); if (n) n.classList.toggle('hidden', t.value !== 'altro'); } });
 document.addEventListener('change', (ev) => { const t = ev.target; if (!t || !t.form || !t.form.matches || !t.form.matches('form[data-form=event]')) return; if (t.name === 'nation') evNationChange(t.form); else if (t.name === 'circuit') evCircChange(t.form); });
 document.addEventListener('change', async (ev) => {
   const t0 = ev.target;
