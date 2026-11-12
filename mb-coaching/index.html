@@ -1093,7 +1093,7 @@ function contactsView() {
     add(5, d.engineer_name, 'Ingegnere di ' + dname(d), d.engineer_phone, null);
     add(6, d.mechanic_name, 'Meccanico di ' + dname(d), d.mechanic_phone, null);
   });
-  (S.xcontacts || []).forEach((x) => rows.push({ grp: 7, name: x.name || '(senza nome)', role: x.label || 'Contatto', phone: x.phone, email: x.email, xid: x.id }));
+  (S.xcontacts || []).forEach((x) => rows.push({ grp: 7, name: x.name || '(senza nome)', role: (x.label || 'Contatto') + (x.org ? ' · ' + x.org : ''), phone: x.phone, email: x.email, xid: x.id }));
   (S.teams || []).forEach((tm) => (tm.custom || []).forEach((c) => { if (c.name || c.phone || c.email) rows.push({ grp: 8, name: c.name || '(senza nome)', role: (c.label || 'Contatto') + ' · ' + tm.name, phone: c.phone, email: c.email }); }));
   const mode = S.contactSort || 'last';
   const lastOf = (n) => n.trim().split(/\s+/).slice(-1)[0] || '';
@@ -2706,7 +2706,8 @@ function fccForm(id, area, role) {
     <datalist id="fccroles">${FCC_ROLES.map((r) => `<option value="${r}">`).join('')}</datalist>
     <div class="row" style="margin-bottom:12px">${x.photo ? `<img class="avatar big" src="${x.photo}" alt="">` : `<div class="avatar big">${esc((x.name || '?')[0])}</div>`}<label class="f grow" style="margin:0"><span>Foto</span><input type="file" name="photo" accept="image/*"></label></div>
     <label class="f"><span>Nome</span><input name="name" value="${esc(x.name)}" required></label>
-    <div class="grid2"><label class="f"><span>Telefono</span><input type="tel" name="phone" value="${esc(x.phone)}"></label><label class="f"><span>Mail</span><input type="email" name="email" value="${esc(x.email)}"></label></div>
+    <label class="f"><span>Team o concessionario</span><input name="org" value="${esc(x.org || '')}" placeholder="es. AF Corse, Ferrari Lake Forest"></label>
+        <div class="grid2"><label class="f"><span>Telefono</span><input type="tel" name="phone" value="${esc(x.phone)}"></label><label class="f"><span>Mail</span><input type="email" name="email" value="${esc(x.email)}"></label></div>
     <label class="f"><span>Note</span><input name="notes" value="${esc(x.notes)}"></label>
     <div class="row between"><div>${id ? '<button type="button" class="btn danger" data-act="fccdel">Elimina</button>' : ''}</div><button class="btn primary" type="submit">Salva</button></div></form>`);
 }
@@ -2730,7 +2731,7 @@ function areaBox(a, title) {
   const ph = (role) => `<div class="prow" data-act="fccnew" data-id="${a.k}" data-role="${role}" style="cursor:pointer;opacity:.55"><div class="grow"><div class="lbl" style="margin:0">${role}</div><strong>da inserire</strong><div class="subtle">Tocca per aggiungere telefono e mail</div></div><span class="chev">＋</span></div>`;
   return `<div class="fccbox" style="--cc:${a.color}"><div class="row between" style="gap:8px;margin-bottom:6px"><h2 style="font-size:17px">${title || (a.flag + ' ' + esc(a.name))}</h2><button class="btn small" data-act="fccnew" data-id="${a.k}">+ Scheda</button></div>
     ${list.some((x) => x.role === 'Responsabile') ? '' : ph('Responsabile')}
-    ${list.map((x) => personRow(x.role || 'Contatto', x.name, x.phone, x.email, `data-act="fccedit" data-id="${x.id}" style="cursor:pointer"`, x.photo)).join('')}
+    ${list.map((x) => personRow((x.role || 'Contatto') + (x.org ? ' · ' + x.org : ''), x.name, x.phone, x.email, `data-act="fccedit" data-id="${x.id}" style="cursor:pointer"`, x.photo)).join('')}
     ${rdChamp ? personRow('Direttore gara (dal campionato)', c.race_director_name, c.race_director_phone, null) : list.some((x) => x.role === 'Direttore gara') ? '' : ph('Direttore gara')}</div>`;
 }
 function dirView() {
@@ -2981,7 +2982,8 @@ function xContactForm(id) {
   openModal(id ? 'Modifica contatto' : 'Nuovo contatto', `<form data-form="xcontact" data-id="${id || ''}">
     <label class="f"><span>Etichetta</span><input name="label" list="xlab" value="${esc(c.label)}" required placeholder="scrivi o scegli"><datalist id="xlab">${labels.map((x) => `<option value="${esc(x)}">`).join('')}</datalist></label>
     <label class="f"><span>Nome</span><input name="name" value="${esc(c.name)}" required></label>
-    <div class="grid2"><label class="f"><span>Telefono</span><input type="tel" name="phone" value="${esc(c.phone)}"></label><label class="f"><span>Email</span><input type="email" name="email" value="${esc(c.email)}"></label></div>
+    <label class="f"><span>Team o concessionario</span><input name="org" value="${esc(c.org || '')}" placeholder="es. AF Corse, Ferrari Lake Forest"></label>
+        <div class="grid2"><label class="f"><span>Telefono</span><input type="tel" name="phone" value="${esc(c.phone)}"></label><label class="f"><span>Email</span><input type="email" name="email" value="${esc(c.email)}"></label></div>
     <div class="row between"><div>${id ? `<button type="button" class="btn danger" data-act="xcdel" data-id="${id}">Elimina</button>` : ''}</div><button class="btn primary" type="submit">Salva</button></div></form>`);
 }
 
@@ -3040,7 +3042,7 @@ async function saveXContact(f) {
   const fd = new FormData(f), v = (n) => (fd.get(n) || '').toString().trim();
   const id = f.dataset.id || uuid();
   if (!v('label') || !v('name')) return;
-  await put('xcontacts', { id, label: v('label'), name: v('name'), phone: v('phone'), email: v('email') });
+  await put('xcontacts', { id, label: v('label'), name: v('name'), org: v('org'), phone: v('phone'), email: v('email') });
   closeModal(); render(); toast('Contatto salvato');
 }
 function appLockView() {
@@ -3688,7 +3690,7 @@ document.addEventListener('submit', async (ev) => {
       case 'lockopen': case 'lockset': case 'lockchange': await lockSubmit(f.dataset.form, f); break;
       case 'expinline': await saveExpInline(f); break;
       case 'dir': await saveDir(f); break;
-      case 'fcc': { const fd = new FormData(f), v = (n) => (fd.get(n) || '').toString().trim() || null; const id = f.dataset.id || uuid(); const old = (S.fcc || []).find((z) => z.id === id); const pf = fd.get('photo'); let photo = old?.photo || null; if (pf && pf.size) photo = await blobToDataURL(await resizeImage(pf, 240, 0.85)); await put('fcc', { ...(old || {}), id, area: v('area'), role: v('role'), name: v('name'), phone: v('phone'), email: v('email'), notes: v('notes'), photo, also: fd.getAll('also').filter((k) => k !== v('area')) }); closeModal(); render(); toast('Contatto salvato'); break; }
+      case 'fcc': { const fd = new FormData(f), v = (n) => (fd.get(n) || '').toString().trim() || null; const id = f.dataset.id || uuid(); const old = (S.fcc || []).find((z) => z.id === id); const pf = fd.get('photo'); let photo = old?.photo || null; if (pf && pf.size) photo = await blobToDataURL(await resizeImage(pf, 240, 0.85)); await put('fcc', { ...(old || {}), id, area: v('area'), role: v('role'), name: v('name'), org: v('org'), phone: v('phone'), email: v('email'), notes: v('notes'), photo, also: fd.getAll('also').filter((k) => k !== v('area')) }); closeModal(); render(); toast('Contatto salvato'); break; }
       case 'note': await saveNote(f, f.dataset.how || 'save'); break;
       case 'notepaid': await notePaid(f); break;
       case 'mail': await sendMail(f, f.dataset.how || 'draft'); break;
