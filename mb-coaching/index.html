@@ -1167,15 +1167,15 @@ function evMoneyCard(e, ttl) {
     <div class="row" style="gap:12px;margin-top:10px;align-items:flex-end"><label class="f" style="flex:none;width:120px;margin:0"><span>Giorni di lavoro</span><input type="number" inputmode="numeric" min="0" step="1" data-ev="${e.id}" data-fld="days" value="${e.days}"></label><div class="subtle" style="padding-bottom:12px">${rate ? `× ${money(rate, cur)} al giorno` : '<span style="color:var(--warn)">Imposta il compenso giornaliero del pilota</span>'}</div></div>
     <label class="chk" style="margin-top:8px"><input type="checkbox" data-ev="${e.id}" data-fld="paid" ${e.paid ? 'checked' : ''}> Compenso incassato</label>
     <div class="lbl" style="margin:6px 0 4px">Spese ${sumTxt(tot) ? '· ' + sumTxt(tot) : ''}</div>
-    ${exps.map((x) => `<div class="irow" style="align-items:center"><span>${CATS[x.category]} <span class="subtle">· ${PAYERS[x.paid_by]}${x.paid_by_note ? ': ' + esc(x.paid_by_note) : ''}</span></span><span class="row" style="gap:6px"><b>${money(x.amount, x.currency)}</b>${x.receipt_data ? `<button class="iconbtn" data-act="exp-receipt" data-id="${x.id}" title="Scontrino">🧾</button>` : ''}<label class="iconbtn" title="${x.receipt_data ? 'Cambia scontrino' : 'Carica scontrino'}" style="cursor:pointer">📷<input type="file" accept="image/*" hidden data-rcpt="${x.id}"></label><button class="iconbtn" data-act="expdel2" data-id="${x.id}" title="Elimina">✕</button></span></div>`).join('') || '<p class="subtle" style="margin:0 0 6px">Nessuna spesa.</p>'}
-    ${(() => { const have = new Set(exps.map((x) => x.category)); const miss = ['aereo','taxi','benzina','uber','ristorante','lavanderia','bar'].filter((k) => !have.has(k)); return miss.length ? `<div class="lbl" style="margin:10px 0 4px">Da inserire (${miss.length})</div>` + miss.map((k) => `<div class="irow qrow" style="align-items:center;gap:6px"><span class="subtle" style="flex:1">⚠ ${CATS[k]} · manca</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00" style="width:90px;height:38px" data-qamt><span class="subtle">${cur}</span><label class="iconbtn" title="Scontrino" style="cursor:pointer">📷<input type="file" accept="image/*" hidden data-rcptq></label><button class="btn small primary" type="button" data-act="expquick" data-id="${e.id}" data-cat="${k}" data-cur="${cur}" title="Aggiungi">＋</button></div>`).join('') : '<p class="subtle" style="margin:8px 0 0">✓ Tutte le voci inserite</p>'; })()}
+    ${exps.map((x) => `<div class="irow" style="align-items:center"><span>${CATS[x.category]} <span class="subtle">· ${PAYERS[x.paid_by]}${x.paid_by_note ? ': ' + esc(x.paid_by_note) : ''}</span></span><span class="row" style="gap:6px"><b>${money(x.amount, x.currency)}</b>${x.receipt_data ? `<button class="iconbtn" data-act="exp-receipt" data-id="${x.id}" title="Scontrino">🧾</button>` : ''}<label class="iconbtn" title="${x.receipt_data ? 'Cambia scontrino' : 'Carica scontrino'}" style="cursor:pointer">📷<input type="file" accept="image/*,application/pdf,.pdf" hidden data-rcpt="${x.id}"></label><button class="iconbtn" data-act="expdel2" data-id="${x.id}" title="Elimina">✕</button></span></div>`).join('') || '<p class="subtle" style="margin:0 0 6px">Nessuna spesa.</p>'}
+    ${(() => { const have = new Set(exps.map((x) => x.category)); const miss = ['aereo','taxi','benzina','uber','ristorante','lavanderia','bar'].filter((k) => !have.has(k)); return miss.length ? `<div class="lbl" style="margin:10px 0 4px">Da inserire (${miss.length})</div>` + miss.map((k) => `<div class="irow qrow" style="align-items:center;gap:6px"><span class="subtle" style="flex:1">⚠ ${CATS[k]} · manca</span><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="0,00" style="width:90px;height:38px" data-qamt><span class="subtle">${cur}</span><label class="iconbtn" title="Scontrino" style="cursor:pointer">📷<input type="file" accept="image/*,application/pdf,.pdf" hidden data-rcptq></label><button class="btn small primary" type="button" data-act="expquick" data-id="${e.id}" data-cat="${k}" data-cur="${cur}" title="Aggiungi">＋</button></div>`).join('') : '<p class="subtle" style="margin:8px 0 0">✓ Tutte le voci inserite</p>'; })()}
     <div class="lbl" style="margin:10px 0 0">＋ Altra spesa (anche ripetuta o personalizzata)</div>
     <form data-form="expinline" data-event="${e.id}" class="expin">
       ${catSelect()}
       <input type="number" inputmode="decimal" step="0.01" min="0" name="amount" placeholder="Importo" required>
       <select name="currency">${CURS.map((c) => `<option ${c === cur ? 'selected' : ''}>${c}</option>`).join('')}</select>
       <select name="paid_by">${Object.entries(PAYERS).map(([k, l]) => `<option value="${k}">A carico ${l.toLowerCase()}</option>`).join('')}</select>
-      <label class="btn small ghost" style="cursor:pointer" data-rcptlbl>📷 Scontrino<input type="file" name="receipt" accept="image/*" hidden></label>
+      <label class="btn small ghost" style="cursor:pointer" data-rcptlbl>📷 Scontrino<input type="file" name="receipt" accept="image/*,application/pdf,.pdf" hidden></label>
       <button class="btn primary" type="submit">＋ Aggiungi</button>
     </form>
     <div class="row wrap" style="gap:6px;margin-top:10px">${noteChip(e)}</div></div>`;
@@ -1184,7 +1184,7 @@ async function saveExpInline(f) {
   const fd = new FormData(f), amount = Number(String(fd.get('amount') || '').replace(',', '.'));
   if (!amount) return toast("Inserisci l'importo", true);
   await put('expenses', { id: uuid(), event_id: f.dataset.event, category: catValue(fd), expense_date: iso(new Date()), amount, currency: fd.get('currency'), paid_by: fd.get('paid_by'), paid_by_note: null, notes: null, reimbursed: false, receipt_data: (() => null)() });
-  { const file = fd.get('receipt'); if (file && file.size) { const rows = S.expenses.filter((x) => x.event_id === f.dataset.event); const last = rows[rows.length - 1]; if (last) await put('expenses', { ...last, receipt_data: await blobToDataURL(await resizeImage(file, 1000, 0.65)) }); } }
+  { const file = fd.get('receipt'); if (file && file.size) { const rows = S.expenses.filter((x) => x.event_id === f.dataset.event); const last = rows[rows.length - 1]; if (last) await put('expenses', { ...last, receipt_data: await receiptDataUrl(file) }); } }
   render(); toast('Spesa aggiunta');
 }
 
@@ -1430,7 +1430,7 @@ function expensesBlock(e, exps) {
       <label class="f"><span>Se "Altro", chi</span><input name="paid_by_note"></label>
     </div>
     <label class="f"><span>Note</span><input name="notes"></label>
-    <label class="f"><span>Foto scontrino</span><input type="file" name="receipt" accept="image/*"></label>
+    <label class="f"><span>Foto scontrino</span><input type="file" name="receipt" accept="image/*,application/pdf,.pdf"></label>
     <button class="btn primary" type="submit">Aggiungi spesa</button>
   </form>`;
 }
@@ -1447,7 +1447,7 @@ async function saveExpense(f) {
   };
   if (!row.amount) return toast('Inserisci l\'importo', true);
   const file = fd.get('receipt');
-  if (file && file.size) row.receipt_data = await blobToDataURL(await resizeImage(file, 1000, 0.65));
+  if (file && file.size) row.receipt_data = await receiptDataUrl(file);
   try { await put('expenses', row); } catch (err) { return toast('Errore: ' + (err.message || err.code), true); }
   toast('Spesa aggiunta');
   eventForm(eventId);
@@ -2608,6 +2608,20 @@ async function saveDir(f) {
 const SESS_TYPES = ['Prove libere', 'Test', 'Qualifica', 'Gara 1', 'Gara 2', 'Gara 3', 'Griglia di partenza'];
 const LAP_RE = /\b\d{1,2}:\d{2}\.\d{3}\b/g;
 function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Non riesco a caricare il lettore PDF')); document.head.appendChild(s); }); }
+async function receiptDataUrl(file) {
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+  if (!isPdf) return blobToDataURL(await resizeImage(file, 1000, 0.65));
+  if (!window.pdfjsLib) {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js');
+  }
+  const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const pg = await pdf.getPage(1), v0 = pg.getViewport({ scale: 1 }), v = pg.getViewport({ scale: 1100 / Math.max(v0.width, v0.height) });
+  const c = document.createElement('canvas'); c.width = Math.round(v.width); c.height = Math.round(v.height);
+  const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+  await pg.render({ canvasContext: cx, viewport: v }).promise;
+  return c.toDataURL('image/jpeg', 0.7);
+}
 async function pdfLines(file) {
   if (!window.pdfjsLib) {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js');
@@ -3161,7 +3175,7 @@ document.addEventListener('click', async (ev) => {
       case 'progpick': { const f = el.closest('form'); f.elements.program.value = id; f.querySelectorAll('[data-act=progpick]').forEach((b) => b.classList.toggle('on', b.dataset.id === id)); break; }
       case 'prognewev': { const t = S.types.find((y) => typeGroup(y) === 'altri' && PROGS.find((p) => p.k === id).re.test(y.name)) || S.types.find((y) => typeGroup(y) === 'altri') || S.types[0]; eventForm(null, { program: id, activity_type_id: t?.id, championship_id: '' }); break; }
       case 'prognewag': agendaForm(null, { program: id }); break;
-      case 'expquick': { const inp = el.closest('.qrow').querySelector('[data-qamt]'); const rf = el.closest('.qrow').querySelector('[data-rcptq]')?.files?.[0]; const amount = Number(String(inp.value || '').replace(',', '.')); if (!amount) { toast("Inserisci l'importo", true); break; } await put('expenses', { id: uuid(), event_id: id, category: el.dataset.cat, expense_date: iso(new Date()), amount, currency: el.dataset.cur, paid_by: 'pilota', paid_by_note: null, notes: null, reimbursed: false, receipt_data: rf && rf.size ? await blobToDataURL(await resizeImage(rf, 1000, 0.65)) : null }); render(); toast('Spesa aggiunta'); break; }
+      case 'expquick': { const inp = el.closest('.qrow').querySelector('[data-qamt]'); const rf = el.closest('.qrow').querySelector('[data-rcptq]')?.files?.[0]; const amount = Number(String(inp.value || '').replace(',', '.')); if (!amount) { toast("Inserisci l'importo", true); break; } await put('expenses', { id: uuid(), event_id: id, category: el.dataset.cat, expense_date: iso(new Date()), amount, currency: el.dataset.cur, paid_by: 'pilota', paid_by_note: null, notes: null, reimbursed: false, receipt_data: rf && rf.size ? await receiptDataUrl(rf) : null }); render(); toast('Spesa aggiunta'); break; }
       case 'expdel2': await del('expenses', id); render(); toast('Spesa eliminata'); break;
       case 'notegen': { if (isLocked()) { openUnlock(() => { const ex = noteOfEvent(id); noteForm(ex || newNote(id)); }); break; } const ex = noteOfEvent(id); noteForm(ex || newNote(id)); break; }
       case 'unlockev': openUnlock(() => eventForm(id)); break;
@@ -3444,7 +3458,7 @@ async function removeEventLocalOnly(id) {
 document.addEventListener('change', (ev) => { const t = ev.target; if (t && t.matches && t.matches('[data-catsel]')) { const n = t.parentNode.querySelector('[data-catnew]'); if (n) { n.style.display = t.value === '__new' ? '' : 'none'; if (t.value === '__new') n.focus(); } } });
 document.addEventListener('change', async (ev) => {
   const t0 = ev.target;
-  if (t0 && t0.dataset && t0.dataset.rcpt !== undefined && t0.files && t0.files[0]) { const x = S.expenses.find((z) => z.id === t0.dataset.rcpt); if (x) { try { await put('expenses', { ...x, receipt_data: await blobToDataURL(await resizeImage(t0.files[0], 1000, 0.65)) }); render(); toast('Scontrino caricato'); } catch (err) { toast('Errore: ' + (err.message || err.code || err), true); } } return; }
+  if (t0 && t0.dataset && t0.dataset.rcpt !== undefined && t0.files && t0.files[0]) { const x = S.expenses.find((z) => z.id === t0.dataset.rcpt); if (x) { try { await put('expenses', { ...x, receipt_data: await receiptDataUrl(t0.files[0]) }); render(); toast('Scontrino caricato'); } catch (err) { toast('Errore: ' + (err.message || err.code || err), true); } } return; }
   if (t0 && t0.type === 'file' && (t0.dataset.rcptq !== undefined || t0.name === 'receipt') && t0.parentNode && t0.parentNode.matches('label')) { t0.parentNode.firstChild.textContent = t0.files && t0.files[0] ? '✓ ' : '📷'; if (t0.name === 'receipt' && t0.files && t0.files[0]) t0.parentNode.firstChild.textContent = '✓ Scontrino'; return; }
   if (ev.target.dataset && (ev.target.dataset.drate || ev.target.dataset.dcur)) { const did = ev.target.dataset.drate || ev.target.dataset.dcur, d0 = driver(did); if (d0) { const row = { ...d0 }; if (ev.target.dataset.drate) row.daily_rate = Number(String(ev.target.value).replace(',', '.')) || null; else row.daily_cur = ev.target.value; put('drivers', row).then(() => { render(); toast('Compenso giornaliero salvato'); }).catch((err) => toast('Errore: ' + (err.message || err), true)); } return; }
   if (ev.target.dataset && ev.target.dataset.fld) { drvEdit(ev.target).catch((err) => toast('Errore: ' + (err.message || err.code || err), true)); return; }
