@@ -2329,8 +2329,8 @@ function nextNoteNum(date) {
 }
 function noteTotals(lines) { const o = {}; (lines || []).forEach((l) => addTo(o, l.cur || 'EUR', Number(l.amount) || 0)); return o; }
 function agendaFor(did, e) { return (S.agenda || []).filter((a) => a.driver_id === did && a.date >= e.start_date && a.date <= e.end_date).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)); }
-function newNote(eid) {
-  const e = S.events.find((x) => x.id === eid), d = driver(e.driver_id), en = english(d);
+function newNote(eid, lang) {
+  const e = S.events.find((x) => x.id === eid), d = driver(e.driver_id), en = lang ? lang === 'en' : english(d);
   const t = atype(e.activity_type_id), c = champ(e.championship_id), { rate, cur, comp } = evComp(e);
   const where = e.circuit || c?.name || t?.name || 'Evento';
   const loc = en ? 'en-US' : LOC(), fd = (x, o) => parse(x).toLocaleDateString(loc, o);
@@ -2341,15 +2341,17 @@ function newNote(eid) {
   const date = iso(new Date()), num = nextNoteNum(date), m = billMail(d);
   const per = e.start_date === e.end_date ? fd(e.start_date, { day: 'numeric', month: 'short' }) : `${fd(e.start_date, { day: 'numeric', month: 'short' })} – ${fd(e.end_date, { day: 'numeric', month: 'short' })}`;
   return {
-    id: uuid(), num, date, driver_id: d.id, event_id: e.id, status: 'bozza', to: m.to, cc: m.cc,
+    id: uuid(), num, date, driver_id: d.id, event_id: e.id, status: 'bozza', to: m.to, cc: m.cc, lang: en ? 'en' : 'it',
     subject: en ? `Expense note ${num} – ${where}` : `Nota spese ${num} – ${where}`,
-    intro: en ? `Hi ${d.first_name},\n\nplease find below the expense note no. ${num} for ${where} (${per} ${e.start_date.slice(0, 4)}).` : `Ciao ${d.first_name},\n\nti invio la nota spese n. ${num} per ${where} (${per} ${e.start_date.slice(0, 4)}).`,
-    outro: en ? 'Thank you.\n\nBest regards,\nMax Blancardi' : 'Grazie.\n\nA presto,\nMax Blancardi',
+    intro: en
+      ? `Dear ${d.first_name},\n\nPlease find below expense note no. ${num} for ${where} (${per} ${e.start_date.slice(0, 4)}).\n\nShould you require any clarification, please do not hesitate to contact me. If everything is in order, I will proceed with issuing the invoice.`
+      : `Gentile ${d.first_name},\n\nLe trasmetto di seguito la nota spese n. ${num} relativa a ${where} (${per} ${e.start_date.slice(0, 4)}).\n\nRimango a Sua disposizione per qualsiasi chiarimento. Se quanto indicato Le risulta corretto, procederò con l'emissione della fattura.`,
+    outro: en ? 'Kind regards,\nMax Blancardi' : 'Cordiali saluti,\nMax Blancardi',
     lines, _new: true
   };
 }
 function noteBody(n) {
-  const d = driver(n.driver_id), en = english(d);
+  const d = driver(n.driver_id), en = n.lang ? n.lang === 'en' : english(d);
   const L = (n.lines || []).map((l) => `- ${l.desc}: ${money(l.amount, l.cur)}`);
   return `${n.intro || ''}\n\n${L.join('\n')}\n\n${en ? 'Total' : 'Totale'}: ${sumTxt(noteTotals(n.lines)) || '0'}\n\n${n.outro || ''}`.trim();
 }
@@ -2362,6 +2364,7 @@ function noteForm(n) {
   const paid = n.status === 'pagata';
   openModal(`Nota spese ${esc(n.num)}`, `<form data-form="note">
     <div class="subtle" style="margin-bottom:12px">${esc(dname(d))}${e ? ' · ' + esc(e.circuit || '') + ' · ' + fmtRange(e.start_date, e.end_date) : ''} · <span class="badge ${NSTATE[n.status]?.[1] || ''}">${NSTATE[n.status]?.[0] || n.status}</span>${paid ? ` il ${parse(n.paid_at).toLocaleDateString(LOC())}` : ''}</div>
+    <div class="row" style="gap:8px;margin-bottom:12px"><button type="button" class="btn small ${(n.lang || (english(d) ? 'en' : 'it')) === 'it' ? 'primary' : ''}" data-act="notelang" data-l="it">🇮🇹 Italiano</button><button type="button" class="btn small ${(n.lang || (english(d) ? 'en' : 'it')) === 'en' ? 'primary' : ''}" data-act="notelang" data-l="en">🇬🇧 English</button></div>
     <div class="grid2"><label class="f"><span>Numero</span><input name="num" value="${esc(n.num)}"></label><label class="f"><span>Data</span><input type="date" name="date" value="${esc(n.date)}"></label></div>
     <label class="f"><span>A (mail del cliente)</span><input name="to" value="${esc(n.to)}" placeholder="mail per le fatture"></label>
     <label class="f"><span>Cc</span><input name="cc" value="${esc(n.cc || '')}"></label>
@@ -2383,7 +2386,7 @@ function noteForm(n) {
 }
 
 function notePreviewHtml(n) {
-  const d = driver(n.driver_id), en = english(d);
+  const d = driver(n.driver_id), en = n.lang ? n.lang === 'en' : english(d);
   const rows = (n.lines || []).map((l) => `<tr><td>${esc(l.desc)}</td><td style="text-align:right;white-space:nowrap">${money(l.amount, l.cur)}</td></tr>`).join('');
   const rc = (n.lines || []).map((l) => { const x = l.exp_id && S.expenses.find((z) => z.id === l.exp_id); return x && x.receipt_data ? `<figure style="margin:0 0 14px;break-inside:avoid"><img src="${x.receipt_data}" style="max-width:100%;max-height:420px;border:1px solid #ddd;border-radius:6px"><figcaption style="font-size:12px;color:#555">${esc(l.desc)} · ${money(l.amount, l.cur)}</figcaption></figure>` : ''; }).join('');
   return `<div class="notedoc" style="background:#fff;color:#111;padding:18px;border-radius:10px;font-family:system-ui,sans-serif;font-size:14px;line-height:1.45">
@@ -3188,6 +3191,7 @@ document.addEventListener('click', async (ev) => {
         await del('notes', S.noteEdit.id); closeModal(); render(); toast('Nota eliminata'); break;
       }
       case 'notepreview': { const fm = el.closest('form'); if (fm) notePreview(readNote(fm)); break; }
+      case 'notelang': { const fm = el.closest('form'); if (!fm) break; const cur = readNote(fm), fr = newNote(cur.event_id, el.dataset.l); const fix = (t) => String(t).split(fr.num).join(cur.num); noteForm({ ...cur, lang: fr.lang, subject: fix(fr.subject), intro: fix(fr.intro), outro: fr.outro, lines: [...fr.lines, ...(cur.lines || []).filter((l) => l.kind === 'free')] }); break; }
       case 'noteback': { noteForm(S.noteEdit); break; }
       case 'noteprint': notePrint(S.noteEdit); break;
       case 'noteshare': await noteShare(S.noteEdit); break;
