@@ -1374,6 +1374,15 @@ function allCircuits() {
   BUILTIN_CIRCUITS.forEach(([nation, list]) => list.forEach((name) => { if (!seen.has(name.toLowerCase())) { seen.add(name.toLowerCase()); out.push({ id: 'b:' + name, name, nation }); } }));
   return out;
 }
+
+const CITIES = { 'Italia': ['Modena', 'Maranello', 'Milano', 'Roma', 'Torino', 'Bologna', 'Imola', 'Monza', 'Bordighera', 'Sanremo', 'Genova', 'Firenze', 'Verona', 'Padova', 'Brescia', 'Bergamo'], 'Francia': ['Parigi', 'Nizza', 'Lione', 'Marsiglia', 'Le Mans', 'Cannes', 'Tolosa'], 'Monaco': ['Monaco', 'Monte-Carlo'], 'Germania': ['Monaco di Baviera', 'Stoccarda', 'Berlino', 'Colonia', 'Francoforte', 'Düsseldorf'], 'Spagna': ['Barcellona', 'Madrid', 'Valencia', 'Siviglia', 'Marbella'], 'Regno Unito': ['Londra', 'Silverstone', 'Manchester', 'Birmingham'], 'USA': ['Atlanta', 'Austin', 'Boston', 'Chicago', 'Dallas', 'Denver', 'Houston', 'Indianapolis', 'Lake Forest', 'Las Vegas', 'Los Angeles', 'Miami', 'Montgomery', 'New York', 'Newport Beach', 'Orlando', 'Phoenix', 'San Francisco', 'Scottsdale', 'Seattle', 'Tampa'], 'Canada': ['Toronto', 'Montréal', 'Vancouver', 'Calgary', 'Mont-Tremblant'], 'Belgio': ['Bruxelles', 'Spa', 'Anversa'], 'Olanda': ['Amsterdam', 'Zandvoort', 'Rotterdam'], 'Portogallo': ['Lisbona', 'Porto', 'Portimão'], 'Svizzera': ['Zurigo', 'Ginevra', 'Lugano', 'Basilea'], 'Austria': ['Vienna', 'Spielberg', 'Salisburgo'], 'Emirati Arabi': ['Dubai', 'Abu Dhabi'], 'Giappone': ['Tokyo', 'Suzuka', 'Fuji'], 'Australia': ['Sydney', 'Melbourne'] };
+const NATION_REGION = { 'USA': 'US', 'Canada': 'CA', 'Italia': 'EU', 'Francia': 'EU', 'Monaco': 'EU', 'Germania': 'EU', 'Spagna': 'EU', 'Regno Unito': 'EU', 'Belgio': 'EU', 'Olanda': 'EU', 'Portogallo': 'EU', 'Svizzera': 'EU', 'Austria': 'EU' };
+function cityOpts(nation, cur) {
+  const set = new Set([...(CITIES[nation] || []), ...(S.teams || []).filter((t) => (t.country || '') === nation).map((t) => t.city)].filter(Boolean));
+  const known = cur && set.has(cur);
+  const list = [...set].sort((a, b) => a.localeCompare(b));
+  return '<option value="">— scegli la città —</option>' + list.map((c) => `<option ${c === cur ? 'selected' : ''}>${esc(c)}</option>`).join('') + `<option value="__other" ${cur && !known ? 'selected' : ''}>Altra città…</option>`;
+}
 function evNationOpts(cur) {
   const set = new Set(NATIONS); allCircuits().forEach((c) => c.nation && set.add(c.nation)); if (cur) set.add(cur);
   const list = [...set].sort((x, y) => x.localeCompare(y));
@@ -1384,6 +1393,11 @@ function evCircOpts(nation, cur) {
   const known = cs.some((c) => c.name === cur);
   return '<option value="">— scegli il circuito —</option>' + cs.map((c) => `<option ${c.name === cur ? 'selected' : ''}>${esc(c.name)}</option>`).join('') + `<option value="__other" ${cur && !known ? 'selected' : ''}>Altro (scrivo io)…</option>`;
 }
+document.addEventListener('change', (ev) => {
+  const el = ev.target;
+  if (el.id === 't-country') { const c = document.getElementById('t-city'); if (c) { c.innerHTML = cityOpts(el.value, ''); } const o = document.getElementById('t-city-o'); if (o) o.style.display = 'none'; }
+  if (el.id === 't-city') { const o = document.getElementById('t-city-o'); if (o) o.style.display = el.value === '__other' ? 'block' : 'none'; }
+});
 function evNationChange(f) {
   f.circuit.innerHTML = evCircOpts(f.nation.value, ''); evCircChange(f);
 }
@@ -2912,7 +2926,7 @@ function teamCard(t) {
   const ini = (t.name || '?').replace(/[^A-Za-z0-9 ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   const ph = t.manager_phone || t.owner_phone, em = t.manager_email || t.owner_email;
   return `<div class="tcard" data-act="team" data-id="${t.id}"><div class="tlogo" style="${lg ? `background-image:url('${lg}')` : `--pc:${col}`}">${lg ? '' : `<span>${esc(ini)}</span>`}</div>
-    <div class="tbody"><div class="row between" style="gap:8px;align-items:flex-start"><div style="min-width:0"><strong class="tname">${esc(t.name)}</strong><div class="subtle">${esc(REGIONS[t.region] || 'Altro')}${t.city ? ' · ' + esc(t.city) : ''} · ${ds.length} ${ds.length === 1 ? 'pilota' : 'piloti'}</div></div><span class="dbtns trow"><button type="button" class="cbtn sm ${ph ? '' : 'off'}" ${ph ? `data-act="contact" data-k="tel" data-v="${esc(ph)}"` : `data-act="team" data-id="${t.id}"`} aria-label="Chiama">☎</button><button type="button" class="cbtn sm mail ${em ? '' : 'off'}" ${em ? `data-act="contact" data-k="mail" data-v="${esc(em)}"` : `data-act="team" data-id="${t.id}"`} aria-label="Scrivi">✉</button></span></div></div></div>`;
+    <div class="tbody"><div class="row between" style="gap:8px;align-items:flex-start"><div style="min-width:0"><strong class="tname">${esc(t.name)}</strong><div class="subtle">${esc((t.kind === 'conc' ? 'Concessionario · ' : '') + (t.country || REGIONS[t.region] || 'Altro'))}${t.city ? ' · ' + esc(t.city) : ''} · ${ds.length} ${ds.length === 1 ? 'pilota' : 'piloti'}</div></div><span class="dbtns trow"><button type="button" class="cbtn sm ${ph ? '' : 'off'}" ${ph ? `data-act="contact" data-k="tel" data-v="${esc(ph)}"` : `data-act="team" data-id="${t.id}"`} aria-label="Chiama">☎</button><button type="button" class="cbtn sm mail ${em ? '' : 'off'}" ${em ? `data-act="contact" data-k="mail" data-v="${esc(em)}"` : `data-act="team" data-id="${t.id}"`} aria-label="Scrivi">✉</button></span></div></div></div>`;
 }
 function teamsView() {
   const all = [...(S.teams || [])].sort((a, b) => teamDrivers(b).length - teamDrivers(a).length || a.name.localeCompare(b.name));
@@ -2931,7 +2945,7 @@ function teamPage() {
   return `<div class="row between" style="margin-bottom:14px"><button class="tbn" data-act="go" data-v="teams">← Team</button><button class="btn small" data-act="teamedit" data-id="${t.id}">✎ Modifica team</button></div>
   <div class="two"><div class="colA sticky">
     <div class="pcard" style="cursor:default;margin-bottom:14px"><div class="pphwrap" style="--pc:${col}">${teamLogo(t) ? `<div class="tlogo big" style="background-image:url('${teamLogo(t)}')"></div>` : `<div class="pph" style="height:170px"><span>${esc(ini)}</span></div>`}</div>
-      <div class="pbody"><div class="pname" style="font-size:24px"><b>${esc(t.name)}</b></div><div class="pclass">${esc(REGIONS[t.region] || 'Altro')}${t.city ? ' · ' + esc(t.city) : ''}</div>
+      <div class="pbody"><div class="pname" style="font-size:24px"><b>${esc(t.name)}</b></div><div class="pclass">${esc((t.kind === 'conc' ? 'Concessionario · ' : '') + (t.country || REGIONS[t.region] || 'Altro'))}${t.city ? ' · ' + esc(t.city) : ''}</div>
       ${t.address ? `<div class="subtle">📍 ${esc(t.address)}</div>` : ''}${t.website ? `<div class="subtle"><a href="${esc(/^https?:/.test(t.website) ? t.website : 'https://' + t.website)}" target="_blank" rel="noopener">${esc(t.website)}</a></div>` : ''}${t.notes ? `<div class="subtle" style="margin-top:6px;white-space:pre-wrap">${esc(t.notes)}</div>` : ''}</div></div>
     ${ds.length ? `<div class="lbl">Piloti del team</div><div class="row wrap" style="gap:6px;margin-bottom:12px">${ds.map((d) => `<button class="btn small" data-act="driver" data-id="${d.id}">${esc(dname(d))}</button>`).join('')}</div>` : ''}
   </div><div class="colB">
@@ -2941,11 +2955,13 @@ function teamPage() {
   </div></div>`;
 }
 function teamForm(id) {
-  const t = id ? S.teams.find((x) => x.id === id) : { name: '', region: 'EU' };
+  const t = id ? S.teams.find((x) => x.id === id) : { name: '', region: '' };
   openModal(id ? esc(t.name) : 'Nuovo team', `<form data-form="team" data-id="${id || ''}">
     <div class="row" style="margin-bottom:12px">${teamLogo(t) ? `<img class="avatar big" src="${teamLogo(t)}" alt="" style="background:#fff;object-fit:contain">` : `<div class="avatar big">${esc((t.name || '?')[0])}</div>`}<label class="f grow" style="margin:0"><span>Logo o foto</span><input type="file" name="logo" accept="image/*"></label></div>
-    <label class="f"><span>Nome del team</span><input name="name" value="${esc(t.name)}" required></label>
-    <div class="grid2"><label class="f"><span>Zona</span><select name="region"><option value="EU" ${t.region === 'EU' ? 'selected' : ''}>Europa</option><option value="US" ${t.region === 'US' ? 'selected' : ''}>USA</option><option value="CA" ${t.region === 'CA' ? 'selected' : ''}>Canada</option><option value="" ${!t.region ? 'selected' : ''}>Altro</option></select></label><label class="f"><span>Città</span><input name="city" value="${esc(t.city)}"></label></div>
+    <div class="grid2"><label class="f"><span>Tipo</span><select name="kind"><option value="team" ${t.kind !== 'conc' ? 'selected' : ''}>Team</option><option value="conc" ${t.kind === 'conc' ? 'selected' : ''}>Concessionario</option></select></label><label class="f"><span>Nome</span><input name="name" value="${esc(t.name)}" required></label></div>
+    <label class="f"><span>Nazione</span><select name="country" id="t-country">${evNationOpts(t.country || (t.region === 'US' ? 'USA' : t.region === 'CA' ? 'Canada' : ''))}</select></label>
+    <label class="f"><span>Città</span><select name="city_sel" id="t-city">${cityOpts(t.country || (t.region === 'US' ? 'USA' : t.region === 'CA' ? 'Canada' : ''), t.city)}</select></label>
+    <label class="f" id="t-city-o" style="display:${t.city && !(CITIES[t.country] || []).includes(t.city) && !(S.teams || []).some((x) => x.id !== t.id && x.country === t.country && x.city === t.city) ? 'block' : 'none'}"><span>Altra città</span><input name="city_txt" value="${esc(t.city || '')}"></label>
     <label class="f"><span>Indirizzo</span><input name="address" value="${esc(t.address)}"></label>
     <label class="f"><span>Sito</span><input name="website" value="${esc(t.website)}"></label>
     ${TROLES.map(([k, l]) => `<label class="f" style="margin:14px 0 8px"><span>Etichetta del ruolo</span><input name="${k}_label" value="${esc(roleLabel(t, k, l))}" style="font-weight:700"></label><div class="row" style="margin-bottom:8px">${t[k + '_photo'] ? `<img class="avatar" src="${t[k + '_photo']}" alt="">` : `<div class="avatar">${esc(((t[k + '_name'] || l)[0] || '?').toUpperCase())}</div>`}<label class="f grow" style="margin:0"><span>Foto</span><input type="file" name="${k}_photo" accept="image/*"></label></div><div class="grid2 drvg"><label class="f"><span>Nome</span><input name="${k}_name" value="${esc(t[k + '_name'])}"></label><label class="f"><span>Telefono</span><input type="tel" name="${k}_phone" value="${esc(t[k + '_phone'])}"></label><label class="f"><span>Mail</span><input type="email" name="${k}_email" value="${esc(t[k + '_email'])}"></label></div>`).join('')}
@@ -3089,7 +3105,7 @@ async function changePw(f) {
 async function saveTeam(f) {
   const fd = new FormData(f), v = (n) => (fd.get(n) || '').toString().trim() || null;
   const id = f.dataset.id || uuid(), old = S.teams.find((x) => x.id === id);
-  const row = { ...(old || {}), id, name: v('name'), region: v('region'), city: v('city'), address: v('address'), website: v('website'), notes: v('notes') };
+  const row = { ...(old || {}), id, name: v('name'), kind: v('kind'), country: v('country'), region: NATION_REGION[v('country')] || (v('country') ? '' : (old?.region || '')), city: v('city_sel') === '__other' ? v('city_txt') : (v('city_sel') || v('city_txt')), address: v('address'), website: v('website'), notes: v('notes') };
   row.role_labels = {}; TROLES.forEach(([k, l]) => { const x = v(k + '_label'); if (x && x !== l) row.role_labels[k] = x; });
   TROLES.forEach(([k]) => ['name', 'phone', 'email'].forEach((p) => { row[`${k}_${p}`] = v(`${k}_${p}`); }));
   for (const [k] of TROLES) { const pf = fd.get(k + '_photo'); if (pf && pf.size) row[k + '_photo'] = await blobToDataURL(await resizeImage(pf, 240, 0.85)); }
