@@ -1912,10 +1912,14 @@ function todayView() {
   const wk = iso(addDays(parse(todayS), -10));
   const toNote = S.events.filter((e) => e.end_date <= todayS && e.end_date >= wk && !noteOfEvent(e.id) && (evComp(e).comp > 0 || S.expenses.some((x) => x.event_id === e.id)));
   const noteRows = toNote.map((e) => `<div class="sumrow"><span>🧾 Evento finito</span><button class="btn small primary" data-act="notegen" data-id="${e.id}">Nota spese ${esc(driver(e.driver_id)?.last_name || '')} · ${esc(e.circuit || '')}</button></div>`).join('');
+  const lim = iso(addDays(parse(todayS), 30));
+  const upc = groupEvents(S.events.filter((e) => e.end_date >= todayS && e.start_date <= lim)).map((g) => g[0]);
+  const nxtEv = S.events.filter((e) => e.end_date >= todayS).sort((a, b) => a.start_date.localeCompare(b.start_date))[0];
+  const nxtEvTxt = nxtEv ? `<div class="sumrow" data-act="evview" data-id="${nxtEv.id}" style="cursor:pointer"><span>🏁 Prossimo evento</span><strong>${esc(nxtEv.circuit || (champ(nxtEv.championship_id) || {}).name || 'Evento')} · ${nxtEv.start_date <= todayS ? 'in corso' : 'tra ' + (diffDays(todayS, nxtEv.start_date) - 1) + ' g (' + fmtShort(nxtEv.start_date) + ')'} ›</strong></div>` : '<div class="subtle" style="margin-top:10px">Nessun evento in programma: tocca + per aggiungerne uno.</div>';
   const sum = `<div class="section-title"><h2>Riepilogo</h2>${MCP ? '<button class="btn small" data-act="gdayreload">⟳ Aggiorna</button>' : ''}</div>
     <div class="bigcard" style="padding:16px">
-      <div class="sgrid"><div><b>${races.length}</b><small>eventi</small></div><div><b>${timed.length + allDay.length}</b><small>attività</small></div><div><b>${withAl.length}</b><small>allarmi</small></div></div>
-      ${nextTxt}${alRows || (timed.length ? '' : '<div class="subtle" style="margin-top:10px">Nessuna attività a orario in questo giorno.</div>')}
+      <div class="sgrid"><div data-act="go" data-v="events" style="cursor:pointer"><b>${upc.length}</b><small>eventi 30 gg</small></div><div><b>${timed.length + allDay.length}</b><small>attività</small></div><div><b>${withAl.length}</b><small>allarmi</small></div></div>
+      ${nxtEvTxt}${nextTxt}${alRows || (timed.length ? '' : '<div class="subtle" style="margin-top:10px">Nessuna attività a orario in questo giorno.</div>')}
       ${noAl.length ? `<div class="sumrow warnrow"><span>🔕 ${noAl.length} senza allarme</span><button class="btn small primary" data-act="alarmall">Metti allarme 30 min a tutte</button></div>` : ''}
       ${noteRows}
       ${dls.length ? `<div class="sumrow" data-act="go" data-v="deadlines" style="cursor:pointer"><span>⚠ Scadenze</span><strong>${dls.length} ${dls.length === 1 ? 'documento' : 'documenti'} entro 30 giorni ›</strong></div>` : ''}
