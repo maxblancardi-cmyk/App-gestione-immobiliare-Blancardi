@@ -1197,7 +1197,7 @@ function eventView() {
       const row = (ic, lb, v, sub) => `<div class="evi"><div class="evic">${ic}</div><div class="grow" style="min-width:0"><div class="lbl" style="margin:0">${lb}</div><div class="evv">${v}</div>${sub ? `<div class="subtle">${sub}</div>` : ''}</div></div>`;
       return `<div class="evpls">${pl}</div><div class="evgrid">`
         + row('📍', 'Dove', esc(dv.name), esc(dv.rest))
-        + row('📅', 'Quando', e0.start_date === e0.end_date ? esc(full(e0.start_date)) : `${esc(full(e0.start_date))}<br>→ ${esc(full(e0.end_date))}`, nd + (nd === 1 ? ' giorno' : ' giorni'))
+        + row('📅', 'Quando', e0.start_date === e0.end_date ? esc(full(e0.start_date)) : (() => { const a = parse(e0.start_date), b = parse(e0.end_date), L = LOC(); const sm = a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear(); return sm ? `${a.getDate()} → ${esc(b.toLocaleDateString(L, { day: 'numeric', month: 'long', year: 'numeric' }))}` : `${esc(a.toLocaleDateString(L, { day: 'numeric', month: 'short' }))} → ${esc(b.toLocaleDateString(L, { day: 'numeric', month: 'short', year: 'numeric' }))}`; })(), nd + (nd === 1 ? ' giorno' : ' giorni'))
         + row('🏁', 'Per cosa', esc(evCosa(e0) || '—'), c ? esc(c.name) : '')
         + (evChi(g) ? row(progLogo(progOf(e0)) ? `<img src="${progLogo(progOf(e0))}" alt="" style="width:30px;height:30px;object-fit:contain;border-radius:6px;background:#fff">` : '👥', 'Per chi', esc(evChi(g)), '') : '')
         + `</div>`;
