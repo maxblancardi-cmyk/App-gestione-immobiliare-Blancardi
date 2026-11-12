@@ -606,9 +606,14 @@ input[type=date]{min-width:0;max-width:100%;box-sizing:border-box}
       else { if (h === first) { try { localStorage.setItem('mbc_pin', h); } catch (e) {} start(); } else { val = ''; step = 1; first = ''; msg('I due PIN non coincidono, riprova'); draw(); } }
     }; });
   }
-  function afterAuth() { var has = ''; try { has = localStorage.getItem('mbc_pin') || ''; } catch (e) {} pinView(has ? 'unlock' : 'create'); }
-  var hiddenAt = 0;
-  document.addEventListener('visibilitychange', function () { if (document.hidden) hiddenAt = Date.now(); else if (hiddenAt && Date.now() - hiddenAt > 60000 && window.__started) location.reload(); });
+  var GRACE = 5 * 60 * 1000;
+  function stamp() { try { localStorage.setItem('mbc_last', String(Date.now())); } catch (e) {} }
+  function recent() { try { var t = Number(localStorage.getItem('mbc_last') || 0); return t && Date.now() - t < GRACE; } catch (e) { return false; } }
+  function afterAuth() { var has = ''; try { has = localStorage.getItem('mbc_pin') || ''; } catch (e) {} if (has && recent()) { start(); return; } pinView(has ? 'unlock' : 'create'); }
+  var hiddenAt = 0, lastTap = 0;
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { hiddenAt = Date.now(); stamp(); } else { if (hiddenAt && Date.now() - hiddenAt > GRACE && window.__started) location.reload(); else stamp(); } });
+  document.addEventListener('pointerdown', function () { if (window.__started && Date.now() - lastTap > 10000) { lastTap = Date.now(); stamp(); } }, true);
+  setInterval(function () { if (window.__started && !document.hidden) stamp(); }, 15000);
   sb.auth.getSession().then(function (r) { if (r.data && r.data.session) afterAuth(); else { try { localStorage.removeItem('mbc_pin'); } catch (e) {} loginView(); } });
 })();
 </script>
@@ -662,8 +667,10 @@ function setLang(l) {
 /* ---------- PASSWORD COMPENSI ---------- */
 const LOCK_MIN = 10;
 const lockRec = () => (S.prefs || []).find((x) => x.id === 'lock');
+try { const u = Number(localStorage.getItem('mbc_unl') || 0); if (u > Date.now()) S.unlockUntil = u; } catch (e) {}
+const saveUnl = () => { try { localStorage.setItem('mbc_unl', String(S.unlockUntil || 0)); } catch (e) {} };
 const isLocked = () => !(S.unlockUntil && Date.now() < S.unlockUntil);
-const touchLock = () => { if (!isLocked()) S.unlockUntil = Date.now() + LOCK_MIN * 60000; };
+const touchLock = () => { if (!isLocked()) { S.unlockUntil = Date.now() + LOCK_MIN * 60000; saveUnl(); } };
 async function hashPw(pw, salt) {
   const t = salt + ':' + pw;
   try { const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(h)].map((x) => x.toString(16).padStart(2, '0')).join(''); }
@@ -697,7 +704,7 @@ async function lockSubmit(kind, f) {
     if (pw !== (fd.get('pw2') || '').toString()) return toast('Le due password non coincidono', true);
     const salt = uuid(); await put('prefs', { id: 'lock', salt, hash: await hashPw(pw, salt) });
   }
-  S.unlockUntil = Date.now() + LOCK_MIN * 60000;
+  S.unlockUntil = Date.now() + LOCK_MIN * 60000; saveUnl();
   const cb = S.afterUnlock; S.afterUnlock = null;
   closeModal(); render(); if (cb) cb();
   toast(kind === 'lockchange' ? 'Password cambiata' : kind === 'lockset' ? 'Password creata' : 'Sbloccato');
@@ -2491,7 +2498,20 @@ function noteBody(n) {
 function nLineRow(l, i) {
   return `<div class="nline" data-kind="${esc(l.kind || 'free')}" data-exp="${esc(l.exp_id || '')}"><input class="nd" value="${esc(l.desc)}" placeholder="Descrizione"><div class="row" style="gap:6px;margin-top:6px"><input class="na" type="number" step="0.01" value="${l.amount ?? ''}" placeholder="Importo"><select class="nc" style="width:90px">${CURS.map((c) => `<option ${c === (l.cur || 'EUR') ? 'selected' : ''}>${c}</option>`).join('')}</select><button type="button" class="iconbtn" data-act="nldel" title="Togli riga">🗑</button></div><label class="nrl" style="display:block;margin-top:8px;padding:14px;border:2px dashed rgba(255,255,255,.55);border-radius:12px;text-align:center;font-weight:700;cursor:pointer">${(l.receipt_data || (l.exp_id && (S.expenses.find((z) => z.id === l.exp_id) || {}).receipt_data)) ? '✅ Allegato presente (tocca per cambiare)' : '＋ Aggiungi foto / allegato / file'}<input type="file" class="nrf" accept="image/*,application/pdf,.pdf" hidden></label><input type="hidden" class="nr" value="${esc(l.receipt_data || '')}"></div>`;
 }
+function syncNoteLines(n) {
+  if (!n || (n.status && n.status !== 'bozza') || !S.events.find((x) => x.id === n.event_id)) return n;
+  const fresh = newNote(n.event_id, n.lang).lines, old = n.lines || [];
+  const out = [];
+  fresh.forEach((f) => {
+    const o = f.kind === 'exp' ? old.find((l) => l.exp_id === f.exp_id) : old.find((l) => l.kind === 'comp');
+    out.push(o ? { ...f, receipt_data: o.receipt_data, receipt_name: o.receipt_name } : f);
+  });
+  old.filter((l) => l.kind !== 'comp' && l.kind !== 'exp').forEach((l) => out.push(l));
+  n.lines = out.map((l) => { if (!l.receipt_data) { delete l.receipt_data; delete l.receipt_name; } return l; });
+  return n;
+}
 function noteForm(n) {
+  syncNoteLines(n);
   S.noteEdit = n;
   const d = driver(n.driver_id), e = S.events.find((x) => x.id === n.event_id);
   const paid = n.status === 'pagata';
@@ -3271,7 +3291,7 @@ document.addEventListener('click', async (ev) => {
   try {
     switch (act) {
       case 'close': closeModal(); break;
-      case 'lockoff': S.unlockUntil = 0; render(); toast('Bloccato'); break;
+      case 'lockoff': S.unlockUntil = 0; saveUnl(); render(); toast('Bloccato'); break;
       case 'lockchg': if (lockRec()) lockChangeForm(); else openUnlock(); break;
       case 'unlockhere': openUnlock(() => render()); break;
       case 'unlockdrv': { const did = id; if (!did) { toast('Salva prima il pilota, poi sblocca i compensi', true); break; } openUnlock(() => { driverForm(did || null); const b = document.querySelector('[data-act=drvtab][data-id=bill]'); if (b) b.click(); }); break; }
