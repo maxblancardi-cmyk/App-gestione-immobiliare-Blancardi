@@ -920,7 +920,7 @@ const S = {
   session: null, loaded: false, view: 'today', day: null, gday: {}, mail: {},
   month: new Date(today.getFullYear(), today.getMonth(), 1),
   year: 0,
-  champs: [], types: [], drivers: [], rates: [], events: [], expenses: [], agenda: [], notes: [], fcc: [], dirs: [], sessions: [], tt: [],
+  champs: [], types: [], drivers: [], rates: [], events: [], expenses: [], agenda: [], notes: [], fcc: [], dirs: [], sessions: [], tt: [], inbox: [],
   urls: {}
 };
 const champ = (id) => S.champs.find((c) => c.id === id);
@@ -933,7 +933,7 @@ const initials = (d) => ((d?.first_name?.[0] || '') + (d?.last_name?.[0] || ''))
 
 /* ---------- archivio dati (db di Claude) ---------- */
 let DB = null, MCP = null;
-const TABLES = { champs: 'championships', types: 'activity_types', drivers: 'drivers', rates: 'driver_rates', events: 'events', expenses: 'expenses', dealers: 'dealers', teams: 'teams', planev: 'plan_events', deadlines: 'deadlines', prefs: 'prefs', agenda: 'agenda', notes: 'expense_notes', fcc: 'fc_contacts', dirs: 'directories', sessions: 'sessions', tt: 'timetables', circuits: 'circuits', xcontacts: 'contacts_custom' };
+const TABLES = { champs: 'championships', types: 'activity_types', drivers: 'drivers', rates: 'driver_rates', events: 'events', expenses: 'expenses', dealers: 'dealers', teams: 'teams', planev: 'plan_events', deadlines: 'deadlines', prefs: 'prefs', agenda: 'agenda', notes: 'expense_notes', fcc: 'fc_contacts', dirs: 'directories', sessions: 'sessions', tt: 'timetables', inbox: 'inbox', circuits: 'circuits', xcontacts: 'contacts_custom' };
 
 function sortAll() {
   S.champs.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -957,7 +957,7 @@ async function syncLite() {
   const a = document.activeElement; if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
   try {
     await PUTQ;
-    const keys = ['events', 'teams', 'champs', 'agenda', 'planev', 'deadlines'];
+    const keys = ['events', 'teams', 'champs', 'agenda', 'planev', 'deadlines', 'inbox'];
     let changed = false;
     for (const k of keys) {
       if (!TABLES[k]) continue;
@@ -966,6 +966,7 @@ async function syncLite() {
       const norm = (arr) => JSON.stringify(arr.slice().sort((x, y) => String(x.id).localeCompare(String(y.id))));
       if (norm(rows) !== norm(S[k] || [])) { S[k] = rows; changed = true; }
     }
+    if (changed) setTimeout(inbCheck, 600);
     if (changed) { sortAll(); if (!document.querySelector('#modal-root .overlay') && !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))) render(); }
   } catch (e) {}
 }
@@ -1007,6 +1008,7 @@ function resizeImage(file, max, quality = 0.82) {
 
 /* ---------- rendering base ---------- */
 const ICONS = {
+  inbox: '<svg viewBox="0 0 24 24"><path d="M21 12l-8.5 8.5a5 5 0 0 1-7-7L14 5a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 8"/></svg>',
   cal: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   drivers: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
   money: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 9a2.5 2.5 0 0 0-2.5-1.5c-1.5 0-2.5.8-2.5 2s1 1.8 2.5 2 2.5.8 2.5 2-1 2-2.5 2A2.7 2.7 0 0 1 9.5 15M12 6v1.5M12 16.5V18"/></svg>',
@@ -1023,7 +1025,7 @@ ICONS.varie = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" r
 ICONS.teams = '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .7 3.5 2.5 3.5 5.5"/></svg>';
 ICONS.today = ICONS.home;
 const NAV = [['today', 'Home'], ['events', 'Eventi'], ['drivers', 'Piloti'], ['teams', 'Team'], ['money', 'Incassi'], ['varie', 'Varie']];
-const NAVOF = { today: 'today', events: 'events', champ: 'events', event: 'events', cal: 'events', fc: 'events', drivers: 'drivers', driver: 'drivers', teams: 'teams', team: 'teams', fcc: 'dir', dir: 'dir', money: 'money', bill: 'money', varie: 'varie', home: 'varie', contacts: 'varie', deadlines: 'varie', convert: 'varie', set: 'varie' };
+const NAVOF = { inbox: 'varie', today: 'today', events: 'events', champ: 'events', event: 'events', cal: 'events', fc: 'events', drivers: 'drivers', driver: 'drivers', teams: 'teams', team: 'teams', fcc: 'dir', dir: 'dir', money: 'money', bill: 'money', varie: 'varie', home: 'varie', contacts: 'varie', deadlines: 'varie', convert: 'varie', set: 'varie' };
 
 
 const THEMES = [['', 'Verde e nero'], ['blue', 'Blu e rosso'], ['light', 'Chiaro e rosso']];
@@ -1034,7 +1036,7 @@ function render() {
   if (!S.loaded) { app.innerHTML = `<div class="login"><div class="box muted">${S.err ? esc(S.err) : 'Caricamento…'}</div></div>`; return; }
   const gated = (S.view === 'money' || S.view === 'bill') && isLocked();
   if (!gated && (S.view === 'money' || S.view === 'bill')) touchLock();
-  const body = gated ? lockView() : { fcc: dirView, dir: dirView, teams: teamsView, team: teamPage, today: todayView, events: eventsView, champ: champView, driver: driverPage, bill: billView, varie: varieView, home: varieView, contacts: contactsView, deadlines: deadlinesView, convert: convertView, event: eventView, cal: calPage, fc: fcView, drivers: driversView, money: moneyView, set: settingsView }[S.view]();
+  const body = gated ? lockView() : { fcc: dirView, dir: dirView, teams: teamsView, team: teamPage, today: todayView, inbox: inboxView, events: eventsView, champ: champView, driver: driverPage, bill: billView, varie: varieView, home: varieView, contacts: contactsView, deadlines: deadlinesView, convert: convertView, event: eventView, cal: calPage, fc: fcView, drivers: driversView, money: moneyView, set: settingsView }[S.view]();
   app.innerHTML = `
   <div class="shell">
     <nav class="nav">
@@ -1205,6 +1207,7 @@ function eventView() {
     })()}
   </div>
   ${ttBlock(g)}
+  ${(() => { const ids = new Set(g.map((x) => x.id)); return inbDocsBlock((x) => ids.has(x.event_id), '📎 Documenti dell\'evento'); })()}
   <div class="section-title"><h2>⏱ Tempi e classifiche</h2><button class="btn small" data-act="sessimpev" data-id="${e0.id}">+ Importa</button></div>
   ${(() => { const ids = new Set(g.map((x) => x.id)); const ss = (S.sessions || []).filter((x) => ids.has(x.event_id)).sort((a, b) => (a.date || '').localeCompare(b.date || '') || SESS_TYPES.indexOf(a.type) - SESS_TYPES.indexOf(b.type)); return ss.length ? ss.map((x) => `<div class="card" style="margin-bottom:8px;cursor:pointer" data-act="sessopen" data-id="${x.id}"><div class="row between"><strong>${esc(x.type)}</strong><span class="subtle">${x.date ? fmtShort(x.date) : ''}</span></div>${g.map((e) => { const d = driver(e.driver_id), r = sessMatch(x, d); return r ? `<div class="irow"><span>${esc(dname(d))}</span><b>${esc(/^\d+$/.test(r.pos) ? 'P' + r.pos : r.pos || '—')}${r.best ? ' · ' + esc(r.best) : ''}</b></div>` : ''; }).join('')}</div>`).join('') : '<p class="muted">Nessun tempo importato per questo evento.</p>'; })()}
   <div class="section-title"><h2>Piloti dell'evento</h2><button class="btn small" data-act="evadd">+ Pilota</button></div>
@@ -2069,7 +2072,7 @@ function todayView() {
   const sum = `<div class="section-title"><h2>Riepilogo</h2>${MCP ? '<button class="btn small" data-act="gdayreload">⟳ Aggiorna</button>' : ''}</div>
     <div class="bigcard" style="padding:16px">
       <div class="sgrid"><div data-act="go" data-v="events" style="cursor:pointer"><b>${upc.length}</b><small>in arrivo</small></div><div><b>${timed.length + allDay.length}</b><small>attività</small></div><div><b>${withAl.length}</b><small>allarmi</small></div></div>
-      ${nxtEvTxt}${nextTxt}${alRows || (timed.length ? '' : '<div class="subtle" style="margin-top:10px">Nessuna attività a orario in questo giorno.</div>')}
+      ${inbNew().length ? `<div class="sumrow" data-act="go" data-v="inbox" style="cursor:pointer"><span>📎 Posta</span><strong>${inbNew().length} ${inbNew().length === 1 ? 'nuovo allegato' : 'nuovi allegati'} ›</strong></div>` : ''}${nxtEvTxt}${nextTxt}${alRows || (timed.length ? '' : '<div class="subtle" style="margin-top:10px">Nessuna attività a orario in questo giorno.</div>')}
       ${noAl.length ? `<div class="sumrow warnrow"><span>🔕 ${noAl.length} senza allarme</span><button class="btn small primary" data-act="alarmall">Metti allarme 30 min a tutte</button></div>` : ''}
       ${noteRows}
       ${dls.length ? `<div class="sumrow" data-act="go" data-v="deadlines" style="cursor:pointer"><span>⚠ Scadenze</span><strong>${dls.length} ${dls.length === 1 ? 'documento' : 'documenti'} entro 30 giorni ›</strong></div>` : ''}
@@ -2330,6 +2333,7 @@ function driverPage() {
   <div class="section-title"><h2>Eventi a cui partecipa</h2><button class="btn small" data-act="drvnewev" data-id="${d.id}">+ Evento</button></div>
   ${up.length ? up.map(evRow).join('') : '<p class="muted">Nessun evento in programma.</p>'}
   ${past.length ? `<details style="margin-top:6px"><summary class="subtle" style="cursor:pointer;margin-bottom:8px">Eventi passati (${past.length})</summary>${past.map(evRow).join('')}</details>` : ''}
+  ${inbDocsBlock((x) => x.driver_id === d.id, '📎 Documenti del pilota')}
   <div class="section-title"><h2>⏱ Tempi e classifiche</h2><button class="btn small" data-act="sessimp" data-id="${d.id}">+ Importa</button></div>
   ${(() => { const ss = sessionsFor(d); return ss.length ? ss.slice(0, S.sessAll ? 999 : 6).map((x) => sessLine(x, d)).join('') + (ss.length > 6 && !S.sessAll ? '<button class="btn small" data-act="sessall">Mostra tutte (' + ss.length + ')</button>' : '') : `<p class="muted">Nessun tempo importato. ${d.race_number ? 'Numero di gara: <b>' + esc(d.race_number) + '</b>.' : '<span style="color:var(--warn)">Inserisci il numero di gara nella scheda per collegare i tempi.</span>'}</p>`; })()}
   <div class="section-title"><h2>Mail (Gmail)</h2>${ems.length && up.length ? `<button class="btn small" data-act="mailnews" data-id="${up[0].id}">Notizie: ${esc(up[0].circuit || 'prossimo evento')}</button>` : ''}</div>
@@ -3045,6 +3049,136 @@ function ttImgView(id) {
   openModal(esc(tt.title || 'Programma'), `<img src="${tt.img}" alt="" style="width:100%;border-radius:10px;background:#fff">`);
 }
 
+/* ---------- ALLEGATI DALLA POSTA (inbox) ---------- */
+const INB_KINDS = [['timetable', '🗓 Time-table'], ['results', '⏱ Classifica / tempi'], ['entrylist', '📋 Iscritti'], ['activity', '🏁 Attività / evento'], ['championship', '🏆 Campionato'], ['other', '📎 Altro']];
+const inbKind = (k) => (INB_KINDS.find((x) => x[0] === k) || INB_KINDS[5])[1];
+const inbNew = () => (S.inbox || []).filter((x) => x.status === 'new').sort((a, b) => (b.date || b.created || '').localeCompare(a.date || a.created || ''));
+async function inbFile(it) {
+  if (!it.file_id) return null;
+  const r = await window.__sb.from('docs').select('data').eq('col', 'files').eq('id', it.file_id).maybeSingle();
+  if (r.error || !r.data) throw new Error('File non trovato');
+  const d = r.data.data, bin = atob(d.b64 || ''), u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return new File([u], d.name || it.filename || 'allegato', { type: d.mime || it.mime || 'application/octet-stream' });
+}
+const inbIsPdf = (f) => f && (f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+function inbSuggestTxt(it) {
+  const s = it.suggest || {}, e = S.events.find((x) => x.id === (it.event_id || s.event_id)), d = driver(it.driver_id || s.driver_id), c = champ(it.championship_id || s.championship_id || e?.championship_id);
+  return [c?.name, e ? `${e.circuit || ''} ${fmtRange(e.start_date, e.end_date)}`.trim() : '', d ? dname(d) : ''].filter(Boolean).join(' · ');
+}
+function inbPopup(it) {
+  if (!it || document.querySelector('#modal-root .overlay')) return;
+  S.inbShown = S.inbShown || new Set(); S.inbShown.add(it.id);
+  const more = inbNew().length - 1;
+  openModal('📎 Nuovo allegato', `<div class="card" style="margin-bottom:12px"><div class="lbl" style="margin:0">${esc(inbKind(it.kind))}</div><div class="evv" style="font-size:18px;word-break:break-word">${esc(it.filename || it.subject || 'Allegato')}</div>
+    <div class="subtle">Da ${esc(it.from || '?')}${it.date ? ' · ' + fmtShort(it.date.slice(0, 10)) : ''}</div>${it.subject ? `<div class="subtle">✉️ ${esc(it.subject)}</div>` : ''}${it.summary ? `<p style="margin:8px 0 0">${esc(it.summary)}</p>` : ''}
+    ${inbSuggestTxt(it) ? `<div style="margin-top:8px"><b>Proposta:</b> ${esc(inbSuggestTxt(it))}</div>` : ''}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><button class="btn" data-act="inbview" data-id="${it.id}">👁 Vedi</button><button class="btn primary" data-act="inbimp" data-id="${it.id}">⬇ Importa</button><button class="btn" data-act="inbsave" data-id="${it.id}">💾 Salva in…</button></div>
+    <div class="row between" style="margin-top:12px"><button class="btn small" data-act="inbdismiss" data-id="${it.id}">Ignora</button>${more > 0 ? `<button class="btn small" data-act="inbgo">Altri ${more} ›</button>` : '<span></span>'}</div>`);
+}
+function inbCheck() { if (!S.loaded) return; S.inbShown = S.inbShown || new Set(); const it = inbNew().find((x) => !S.inbShown.has(x.id)); if (it) setTimeout(() => inbPopup(it), 400); }
+async function inbView(id) {
+  const it = (S.inbox || []).find((x) => x.id === id); if (!it) return;
+  toast('Apro il file…');
+  let f; try { f = await inbFile(it); } catch (e) { return toast(e.message, true); }
+  if (!f) return toast('Nessun file allegato', true);
+  let html = '';
+  if (inbIsPdf(f)) {
+    if (!window.pdfjsLib) { await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js'); await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js'); }
+    const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(await f.arrayBuffer()) }).promise;
+    for (let p = 1; p <= Math.min(pdf.numPages, 12); p++) {
+      const pg = await pdf.getPage(p), v0 = pg.getViewport({ scale: 1 }), v = pg.getViewport({ scale: 1400 / Math.max(v0.width, v0.height) });
+      const c = document.createElement('canvas'); c.width = Math.round(v.width); c.height = Math.round(v.height);
+      const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height);
+      await pg.render({ canvasContext: cx, viewport: v }).promise;
+      html += `<img src="${c.toDataURL('image/jpeg', 0.75)}" alt="" style="width:100%;border-radius:8px;margin-bottom:8px;background:#fff">`;
+    }
+    if (pdf.numPages > 12) html += `<p class="subtle">Mostrate 12 pagine su ${pdf.numPages}.</p>`;
+  } else if (/^image\//.test(f.type)) html = `<img src="${await blobToDataURL(f)}" alt="" style="width:100%;border-radius:8px">`;
+  else { const url = URL.createObjectURL(f); html = `<a class="btn primary" href="${url}" download="${esc(f.name)}">⬇ Scarica ${esc(f.name)}</a>`; }
+  openModal(esc(it.filename || 'Allegato'), html + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="btn primary" data-act="inbimp" data-id="${it.id}">⬇ Importa</button><button class="btn" data-act="inbsave" data-id="${it.id}">💾 Salva in…</button></div>`);
+}
+function inbSaveForm(id, importAfter) {
+  const it = (S.inbox || []).find((x) => x.id === id); if (!it) return;
+  const s = it.suggest || {}, evSel = it.event_id || s.event_id || '', drSel = it.driver_id || s.driver_id || '', chSel = it.championship_id || s.championship_id || S.events.find((e) => e.id === evSel)?.championship_id || '';
+  const evs = [...S.events].sort((a, b) => b.start_date.localeCompare(a.start_date));
+  const seen = new Set(), groups = evs.filter((e) => { const k = e.circuit + e.start_date; if (seen.has(k)) return false; seen.add(k); return true; });
+  const evOk = groups.some((e) => e.id === evSel) ? evSel : (groups.find((e) => sameEv(e, S.events.find((x) => x.id === evSel) || {}))?.id || '');
+  openModal(importAfter ? 'Importa in…' : 'Salva allegato in…', `<form data-form="inbsave" data-id="${it.id}" data-imp="${importAfter ? 1 : ''}">
+    <p class="subtle" style="margin-top:0">${esc(it.filename || it.subject || '')}</p>
+    <label class="f"><span>Tipo</span><select name="kind">${INB_KINDS.map(([k, l]) => `<option value="${k}" ${k === it.kind ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <label class="f"><span>Campionato</span><select name="championship_id"><option value="">—</option>${S.champs.map((c) => `<option value="${c.id}" ${c.id === chSel ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>
+    <label class="f"><span>Evento</span><select name="event_id"><option value="">—</option>${groups.map((e) => `<option value="${e.id}" ${e.id === evOk ? 'selected' : ''}>${fmtRange(e.start_date, e.end_date)} ${e.start_date.slice(0, 4)} · ${esc(e.circuit || champ(e.championship_id)?.name || '')}</option>`).join('')}</select></label>
+    <label class="f"><span>Pilota</span><select name="driver_id"><option value="">— tutti / nessuno —</option>${S.drivers.filter((d) => !d.virtual).map((d) => `<option value="${d.id}" ${d.id === drSel ? 'selected' : ''}>${esc(dname(d))}</option>`).join('')}</select></label>
+    <div class="row between"><span></span><button class="btn primary" type="submit">${importAfter ? 'Importa' : 'Salva'}</button></div></form>`);
+}
+async function inbSaveSubmit(f) {
+  const it = (S.inbox || []).find((x) => x.id === f.dataset.id); if (!it) return;
+  const fd = new FormData(f), v = (n) => (fd.get(n) || '').toString() || null;
+  const upd = { ...it, kind: v('kind') || it.kind, event_id: v('event_id'), driver_id: v('driver_id'), championship_id: v('championship_id') };
+  if (f.dataset.imp) { await put('inbox', upd); closeModal(); return inbImport(upd.id, true); }
+  await put('inbox', { ...upd, status: it.status === 'imported' ? 'imported' : 'saved' });
+  closeModal(); render(); toast('Allegato salvato'); inbCheck();
+}
+function inbSessType(it) {
+  const t = `${it.parsed?.session_type || ''} ${it.filename || ''} ${it.subject || ''}`.toLowerCase();
+  const m = SESS_TYPES.find((x) => t.includes(x.toLowerCase()));
+  if (m) return m;
+  if (/grid|griglia/.test(t)) return 'Griglia di partenza';
+  if (/qual/.test(t)) return 'Qualifica';
+  if (/(race|gara)\s*2/.test(t)) return 'Gara 2';
+  if (/(race|gara)\s*3/.test(t)) return 'Gara 3';
+  if (/race|gara/.test(t)) return 'Gara 1';
+  if (/free|libere|\bfp\d?\b|practice/.test(t)) return 'Prove libere';
+  return 'Test';
+}
+async function inbImport(id, fromForm) {
+  const it = (S.inbox || []).find((x) => x.id === id); if (!it) return;
+  const evId = it.event_id || it.suggest?.event_id || '', e = S.events.find((x) => x.id === evId);
+  const k = it.kind;
+  if ((k === 'timetable' || k === 'results') && !e && !fromForm) { closeModal(); return inbSaveForm(id, true); }
+  try {
+    if (k === 'timetable') {
+      let rows = Array.isArray(it.parsed?.rows) && it.parsed.rows.length ? it.parsed.rows : [];
+      let img = null;
+      const f = await inbFile(it).catch(() => null);
+      if (f) { img = await receiptDataUrl(f).catch(() => null); if (!rows.length && inbIsPdf(f)) rows = ttParse(await pdfLines(f), e); }
+      if (!e) return toast('Scegli un evento', true);
+      const g = S.events.filter((x) => sameEv(x, e)), ids = new Set(g.map((x) => x.id));
+      for (const x of (S.tt || []).filter((z) => ids.has(z.event_id))) await del('tt', x.id);
+      await put('tt', { id: uuid(), event_id: g[0].id, title: it.filename || it.subject || 'Programma', img, rows, created: new Date().toISOString(), source: 'mail' });
+      toast(rows.length + ' sessioni nel programma del weekend');
+    } else if (k === 'results') {
+      if (!e) return toast('Scegli un evento', true);
+      const f = await inbFile(it); let rows = null;
+      if (f) rows = inbIsPdf(f) ? parseTextRows(await pdfLines(f)) : (parseCsvRows(await f.text()) || parseTextRows((await f.text()).split(/\r?\n/)));
+      if (!rows || !rows.length) { toast('Non riesco a leggere la classifica: l\'ho salvata come documento', true); }
+      else { await put('sessions', { id: uuid(), type: inbSessType(it), date: (it.parsed?.date || it.date || iso(new Date())).slice(0, 10), event_id: e.id, title: it.filename || '', rows, created: new Date().toISOString() }); toast(rows.length + ' righe di classifica importate'); }
+    } else if (k === 'activity') {
+      const p = it.parsed || {};
+      await put('inbox', { ...it, status: 'imported' }); closeModal(); render();
+      return eventForm(null, { ...(p.start_date ? { start_date: p.start_date, end_date: p.end_date || p.start_date } : {}), ...(p.circuit ? { circuit: p.circuit } : {}), ...(p.nation ? { nation: p.nation } : {}), ...(it.championship_id ? { championship_id: it.championship_id } : {}), ...(it.driver_id ? { driver_id: it.driver_id } : {}), notes: [it.subject, it.summary].filter(Boolean).join(' — ') });
+    } else { if (!fromForm) { closeModal(); return inbSaveForm(id, false); } }
+  } catch (err) { return toast('Errore: ' + (err.message || err), true); }
+  await put('inbox', { ...(S.inbox.find((x) => x.id === id) || it), status: 'imported' });
+  closeModal(); render(); inbCheck();
+}
+function inbLine(it) {
+  return `<div class="ev-item" data-act="inbopen" data-id="${it.id}"><div class="bar" style="background:${it.status === 'new' ? '#39ff14' : '#9aa7b2'}"></div><div class="grow" style="min-width:0"><div class="row between" style="gap:8px"><strong style="word-break:break-word">${esc(it.filename || it.subject || 'Allegato')}</strong><span class="subtle">${it.date ? fmtShort(it.date.slice(0, 10)) : ''}</span></div><div class="subtle">${esc(inbKind(it.kind))}${inbSuggestTxt(it) ? ' · ' + esc(inbSuggestTxt(it)) : ''}${it.status === 'new' ? ' · <b>nuovo</b>' : ''}</div></div></div>`;
+}
+function inbDocsBlock(filter, title) {
+  const list = (S.inbox || []).filter((x) => x.status !== 'dismissed' && x.status !== 'new' && filter(x)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (!list.length) return '';
+  return `<div class="section-title"><h2>${title}</h2></div>` + list.map(inbLine).join('');
+}
+function inboxView() {
+  const all = (S.inbox || []).filter((x) => x.status !== 'dismissed' || S.inbAll).sort((a, b) => (a.status === 'new' ? 0 : 1) - (b.status === 'new' ? 0 : 1) || (b.date || '').localeCompare(a.date || ''));
+  return `<div class="row" style="gap:8px;margin-bottom:10px"><button class="tbn" data-act="go" data-v="varie">← Indietro</button></div><h1 style="font-size:30px;margin:6px 0 4px">Allegati dalla posta</h1>
+    <p class="subtle" style="margin:0 0 14px">Arrivano in automatico dalle mail Ferrari e Race Planner (controllo alle 7:13 e alle 19:13).</p>
+    ${all.length ? all.map(inbLine).join('') : '<p class="subtle">Nessun allegato per ora.</p>'}
+    <button class="btn small" style="margin-top:10px" data-act="inball">${S.inbAll ? 'Nascondi ignorati' : 'Mostra anche ignorati'}</button>`;
+}
+
 /* ---------- TEAM ---------- */
 const TROLES = [['owner', 'Proprietario'], ['manager', 'Responsabile team'], ['engineer', 'Ingegnere'], ['logistics', 'Logistica'], ['electronics', 'Elettronico']];
 function segPD(on) { return ''; }
@@ -3257,6 +3391,7 @@ function varieView() {
     ['cal', 'cal', 'cal', 'Calendario', 'Vista mese con tutti gli eventi e sincronizzazione Google.', '#ffb300'],
     ['cal', 'fc', 'fc', 'Campionati 2027', 'Scegli più eventi e abbinali ai piloti in un colpo.', '#4da3ff'],
     ['contacts', '', 'contacts', 'Rubrica del team', 'Piloti, assistenti, coach, ingegneri e meccanici.', '#b388ff'],
+    ['inbox', '', 'inbox', 'Allegati dalla posta' + (inbNew().length ? ` (${inbNew().length} nuovi)` : ''), 'Time-table, classifiche, iscritti e documenti arrivati per mail.', '#39ff14'],
     ['deadlines', '', 'deadlines', 'Scadenze', 'Passaporto, ESTA, patente, visita medica.', '#2ee6c5'],
     ['convert', '', 'convert', 'Convertitore', 'bar/psi, °C/°F, km/mi, L/gal e altro.', '#ff8fb1'],
     ['set', '', 'set', 'Impostazioni', 'Campionati, attività, team, colori, Google, dati.', '#9aa7b2']
@@ -3452,6 +3587,13 @@ document.addEventListener('click', async (ev) => {
       case 'sessimpev': importForm({ event_id: id }); break;
       case 'sessopen': sessView(id); break;
       case 'ttimp': ttForm(id); break;
+      case 'inbopen': { const it = (S.inbox || []).find((x) => x.id === id); if (it) inbPopup(it); break; }
+      case 'inbview': await inbView(id); break;
+      case 'inbimp': await inbImport(id); break;
+      case 'inbsave': closeModal(); inbSaveForm(id, false); break;
+      case 'inbgo': closeModal(); S.view = 'inbox'; render(); window.scrollTo(0, 0); break;
+      case 'inball': S.inbAll = !S.inbAll; render(); break;
+      case 'inbdismiss': { const it = (S.inbox || []).find((x) => x.id === id); if (it) await put('inbox', { ...it, status: 'dismissed' }); closeModal(); render(); inbCheck(); break; }
       case 'ttall': S.ttAll = !S.ttAll; render(); break;
       case 'ttedit': ttEditForm(id); break;
       case 'ttimg': ttImgView(id); break;
@@ -3846,6 +3988,7 @@ document.addEventListener('submit', async (ev) => {
       case 'tcontact': await saveTContact(f); break;
       case 'sessimport': await importSession(f); break;
       case 'ttimport': await ttImport(f); break;
+      case 'inbsave': await inbSaveSubmit(f); break;
       case 'ttedit': await ttEditSave(f); break;
       case 'lockopen': case 'lockset': case 'lockchange': await lockSubmit(f.dataset.form, f); break;
       case 'expinline': await saveExpInline(f); break;
@@ -3917,6 +4060,7 @@ async function init() {
   try { const lp = (S.prefs || []).find((x) => x.id === 'lang'); if (lp && lp.v && lp.v !== LANG) { LANG = lp.v === 'en' ? 'en' : 'it'; try { localStorage.setItem('mbc_lang', LANG); } catch (_) { /* ok */ } } } catch (_) { /* ok */ }
   document.documentElement.lang = LANG;
   render();
+  inbCheck();
 }
 window.__mbStart = init;
 })();
