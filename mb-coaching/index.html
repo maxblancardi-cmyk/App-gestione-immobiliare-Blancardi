@@ -2923,11 +2923,11 @@ function sessView(id) {
 const TT_WD = [[/^(sun(day)?|dom(enica)?|dim(anche)?)\b/i, 0], [/^(mon(day)?|lun(ed[iì])?|lundi)\b/i, 1], [/^(tue(s(day)?)?|mar(ted[iì])?|mardi)\b/i, 2], [/^(wed(nesday)?|mer(coled[iì])?|mercredi)\b/i, 3], [/^(thu(r(s(day)?)?)?|gio(ved[iì])?|jeudi)\b/i, 4], [/^(fri(day)?|ven(erd[iì])?|vendredi)\b/i, 5], [/^(sat(urday)?|sab(ato)?|samedi)\b/i, 6]];
 const TT_MON = ['jan|gen', 'feb', 'mar', 'apr', 'may|mag', 'jun|giu', 'jul|lug', 'aug|ago', 'sep|set', 'oct|ott', 'nov', 'dec|dic'];
 const TT_FC = /ferrari|challenge|trofeo pirelli|coppa shell|club|\bfc[a-z]?\b|\bfxx|clienti|corsa clienti|\bxx\b/i;
-const TT_TIME = /(?:^|[^\d:.])([01]?\d|2[0-3])[:.h]([0-5]\d)(?![\d.,:]\d)/g;
+const TT_TIME = /(?:^|[^\d:.])([01]?\d|2[0-3])[:.h] ?([0-5]\d)(?![\d.,:]\d)/g;
 function ttEvDays(e) { const out = []; if (!e) return out; for (let d = parse(e.start_date); iso(d) <= e.end_date; d = addDays(d, 1)) out.push(iso(d)); return out; }
 function ttHeaderDay(line, days) {
   const s = line.replace(/^[^A-Za-zÀ-ÿ0-9]+/, '');
-  for (const [re, wd] of TT_WD) if (re.test(s)) { const d = days.find((x) => parse(x).getDay() === wd); return { day: d || '', rest: s.replace(re, '') }; }
+  for (const [re, wd] of TT_WD) if (re.test(s)) { const c = days.filter((x) => parse(x).getDay() === wd), inr = c.filter((x) => !days.out || (x >= days.out[0] && x <= days.out[1])); const dist = (x) => (days.out ? Math.min(Math.abs(diffDays(x, days.out[0])), Math.abs(diffDays(x, days.out[1]))) : 0); const d = inr[0] || c.sort((a, b) => dist(a) - dist(b))[0]; return { day: d || '', rest: s.replace(re, '') }; }
   let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
   if (m) { const d = days.find((x) => +x.slice(8) === +m[1] && +x.slice(5, 7) === +m[2]); if (d) return { day: d, rest: s.slice(m[0].length) }; }
   m = s.match(/^(\d{1,2})\s+([a-zà-ÿ]{3,})/i);
@@ -2944,7 +2944,8 @@ function ttStripDate(s) {
 }
 function ttAddMin(t, m) { const [h, mm] = t.split(':').map(Number); const x = h * 60 + mm + m; return pad(Math.floor(x / 60) % 24) + ':' + pad(x % 60); }
 function ttParse(lines, ev) {
-  const days = ttEvDays(ev);
+  const days = ev ? ttEvDays({ start_date: iso(addDays(parse(ev.start_date), -3)), end_date: iso(addDays(parse(ev.end_date), 3)) }) : [];
+  if (ev) days.out = [ev.start_date, ev.end_date];
   let day = days.length === 1 ? days[0] : '', pending = null, section = '';
   const SEC_RE = /briefing|photo|foto|autograph|autograf|signing|media|press|parade|ceremony|cerimonia|podium|podio|meeting|riunione|hospitality|dinner|cena|party|show|presentation|presentazione|drivers|piloti|team managers/i;
   const rows = [];
@@ -2952,14 +2953,16 @@ function ttParse(lines, ev) {
     let line = String(raw || '').replace(/\s+/g, ' ').trim();
     if (!line) continue;
     const hd = ttHeaderDay(line, days);
-    if (hd) { if (hd.day) day = hd.day; line = ttStripDate(hd.rest); if (!line) continue; }
+    if (hd) { if (hd.day) day = hd.day; line = ttStripDate(hd.rest); if (!line) { section = ''; continue; } }
     const ts = []; let mt; TT_TIME.lastIndex = 0;
     while ((mt = TT_TIME.exec(line))) ts.push(pad(+mt[1]) + ':' + mt[2]);
-    if (!ts.length) { if (!pending && SEC_RE.test(line) && line.length < 60) { section = line.replace(/[:\-–]+$/, '').trim(); continue; } if (pending && line.length > 1 && !/^(time|orario|start|end|session|sessione|durat)/i.test(line)) { pending.label = line; pending.fc = TT_FC.test(line); pending = null; } continue; }
-    let label = line.replace(/([01]?\d|2[0-3])[:.h][0-5]\d/g, ' ').replace(/\s*[-–—|]\s*(?=[-–—|\s]|$)/g, ' ').replace(/^[\s\-–—|:.,>]+|[\s\-–—|:.,]+$/g, '').replace(/\s+/g, ' ').trim();
+    if (!ts.length) { if (!pending && SEC_RE.test(line) && line.length < 60) { section = line.replace(/[:\-–]+$/, '').trim(); if (section === section.toUpperCase()) section = section.charAt(0) + section.slice(1).toLowerCase(); continue; } if (pending && line.length > 1 && !/^(time|orario|start|end|session|sessione|durat)/i.test(line)) { pending.label = line; pending.fc = TT_FC.test(line); pending = null; } continue; }
+    const multi = ts.length > 1 && /\d\s*(and|e|&|\/)\s*\d/i.test(line);
+    let label = line.replace(/([01]?\d|2[0-3])[:.h] ?[0-5]\d/g, ' ').replace(/^\s*(and|e|&)\s+/i, ' ').replace(/\s*[-–—|]\s*(?=[-–—|\s]|$)/g, ' ').replace(/^[\s\-–—|:.,>]+|[\s\-–—|:.,]+$/g, '').replace(/\s+/g, ' ').trim();
+    if (multi) { label = label.replace(/^\s*(and|e|&|\/)\s+/i, '').trim(); if (section && !TT_SESS_RE.test(label)) label = section + ' – ' + label; ts.forEach((t) => rows.push({ day, start: t, end: '', label, fc: TT_FC.test(label) })); pending = null; continue; }
     const start = ts[0]; let end = '';
     if (ts[1]) { if (ts[1] > start) end = ts[1]; else if (ts[1] < '03:00') { const [h, m] = ts[1].split(':').map(Number); end = ttAddMin(start, h * 60 + m); } }
-    if (section && label && !TT_SESS_RE.test(label) && !SEC_RE.test(label)) label = section + ' – ' + label;
+    if (section && label && !TT_SESS_RE.test(label) && !label.toLowerCase().includes(section.toLowerCase())) label = section + ' – ' + label;
     if (TT_SESS_RE.test(label) && end) section = '';
     const r = { day, start, end, label, fc: TT_FC.test(label) };
     rows.push(r);
@@ -2970,7 +2973,7 @@ function ttParse(lines, ev) {
 function ttOfGroup(g) { const ids = new Set(g.map((x) => x.id)); return (S.tt || []).filter((x) => ids.has(x.event_id)).sort((a, b) => (b.created || '').localeCompare(a.created || ''))[0] || null; }
 function ttDayLabel(d) { return d ? cap(parse(d).toLocaleDateString(LOC(), { weekday: 'long', day: 'numeric', month: 'short' })) : 'Giorno non indicato'; }
 const TT_SERIES = [['Ferrari Challenge NA', /challenge\s+(na|north america)\b/i], ['Ferrari Challenge UK', /challenge\s+uk\b/i], ['Ferrari Challenge Japan', /challenge\s+japan\b/i], ['Trofeo Pirelli', /trofeo pirelli/i], ['Coppa Shell', /coppa shell/i], ['Club Challenge', /club challenge/i], ['Club Competizioni GT', /competizioni gt/i], ['XX Programme', /\bxx\b|fxx/i], ['F1 Clienti & Sport Prototipi', /f1 clienti|sport prototipi/i], ['Corse Clienti', /corse clienti/i]];
-const TT_SESS_RE = /(Free Practice|Qualifying|Qualifica|Race\b|Gara\b|Private Practice|Track Recognition|Shakedown|Finale Mondiale|Sponsor Hot ?Laps|Media Hot ?laps|Customers Activity|Prove libere|Test\b|Briefing|Parade|Photo|Foto|Autograph|Autografi|Signing|Media|Press|Ceremony|Cerimonia|Podium|Podio|Meeting|Show)/i;
+const TT_SESS_RE = /(Free Practice|Qualifying|Qualifica|Race\b|Gara\b|Private Practice|Track Recognition|Shakedown|Finale Mondiale|Sponsor Hot ?Laps|Media Hot ?laps|Customers Activity|Prove libere|Test\b|Briefing|Parade|Photo|Foto|Autograph|Autografi|Signing|Media|Press|Ceremony|Cerimonia|Podium|Podio|Meeting|Show|Picture)/i;
 function ttSeries(r) { const out = TT_SERIES.filter(([, re]) => re.test(r.label)).map(([n]) => n); if (out.length) return out; if (/challenge\s+(eu|europe)\b/i.test(r.label)) return ['Trofeo Pirelli', 'Coppa Shell']; if (/ferrari challenge|all drivers|tutti i piloti/i.test(r.label)) return ['Ferrari Challenge NA', 'Ferrari Challenge UK', 'Ferrari Challenge Japan', 'Trofeo Pirelli', 'Coppa Shell']; return ['Altro']; }
 function ttSplit(r) { const k = r.label.indexOf(' – '); if (k > 0) return { what: r.label.slice(0, k).trim(), who: r.label.slice(k + 3).trim() }; const m = r.label.match(TT_SESS_RE); if (!m || m.index === 0) return { what: r.label, who: '' }; return { what: r.label.slice(m.index).trim(), who: r.label.slice(0, m.index).replace(/[\s,+\-–]+$/, '').trim() }; }
 function ttSel() { try { return JSON.parse(localStorage.getItem('mbc_ttser') || '[]'); } catch (_) { return []; } }
