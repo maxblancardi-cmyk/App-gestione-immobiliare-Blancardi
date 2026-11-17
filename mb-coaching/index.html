@@ -1209,7 +1209,7 @@ function eventView() {
   ${ttBlock(g)}
   ${(() => { const ids = new Set(g.map((x) => x.id)); return inbDocsBlock((x) => ids.has(x.event_id), '📎 Documenti dell\'evento'); })()}
   <div class="section-title"><h2>⏱ Tempi e classifiche</h2><button class="btn small" data-act="sessimpev" data-id="${e0.id}">+ Importa</button></div>
-  ${(() => { const ids = new Set(g.map((x) => x.id)); const ss = (S.sessions || []).filter((x) => ids.has(x.event_id)).sort((a, b) => (a.date || '').localeCompare(b.date || '') || SESS_TYPES.indexOf(a.type) - SESS_TYPES.indexOf(b.type)); return ss.length ? ss.map((x) => `<div class="card" style="margin-bottom:8px;cursor:pointer" data-act="sessopen" data-id="${x.id}"><div class="row between"><strong>${esc(x.type)}</strong><span class="subtle">${x.date ? fmtShort(x.date) : ''}</span></div>${g.map((e) => { const d = driver(e.driver_id), r = sessMatch(x, d); return r ? `<div class="irow"><span>${esc(dname(d))}</span><b>${esc(/^\d+$/.test(r.pos) ? 'P' + r.pos : r.pos || '—')}${r.best ? ' · ' + esc(r.best) : ''}</b></div>` : ''; }).join('')}</div>`).join('') : '<p class="muted">Nessun tempo importato per questo evento.</p>'; })()}
+  ${(() => { const ids = new Set(g.map((x) => x.id)); const ss = (S.sessions || []).filter((x) => ids.has(x.event_id)).sort((a, b) => (a.date || '').localeCompare(b.date || '') || SESS_TYPES.indexOf(a.type) - SESS_TYPES.indexOf(b.type)); return ss.length ? ss.map((x) => `<div class="card" style="margin-bottom:8px;cursor:pointer" data-act="sessopen" data-id="${x.id}"><div class="row between"><strong>${esc(x.type)}${x.cat ? ' · ' + esc(x.cat) : ''}</strong><span class="subtle">${x.date ? fmtShort(x.date) : ''}</span></div>${g.map((e) => { const d = driver(e.driver_id), r = sessMatch(x, d); return r ? `<div class="irow"><span>${esc(dname(d))}</span><b>${esc(/^\d+$/.test(r.pos) ? 'P' + r.pos : r.pos || '—')}${r.best ? ' · ' + esc(r.best) : ''}</b></div>` : ''; }).join('')}</div>`).join('') : '<p class="muted">Nessun tempo importato per questo evento.</p>'; })()}
   <div class="section-title"><h2>Piloti dell'evento</h2><button class="btn small" data-act="evadd">+ Pilota</button></div>
   ${g.map((e) => { const d = driver(e.driver_id), tm = S.teams.find((x) => x.id === d?.team_id); return `<div class="hcard" data-act="event" data-id="${e.id}" style="padding:14px"><div class="ico">${esc(initials(d))}</div><div class="grow" style="min-width:0"><h3 style="font-size:18px">${esc(dname(d))}</h3><p>${esc([tm?.name, d?.car_model].filter(Boolean).join(' · ') || 'Tocca per modificare')}</p><div class="row" style="gap:6px;margin-top:8px">${contactBtns(d?.phone, d?.email)}</div>${hotelBlock(e)}</div></div>`; }).join('')}
   ${evMoneyBlock(g)}`;
@@ -2783,7 +2783,7 @@ async function saveDir(f) {
 }
 
 /* ---------- TEMPI E CLASSIFICHE (file Al Kamel) ---------- */
-const SESS_TYPES = ['Prove libere', 'Test', 'Qualifica', 'Gara 1', 'Gara 2', 'Gara 3', 'Griglia di partenza'];
+const SESS_TYPES = ['Test', 'Prove libere', 'Qualifica', 'Griglia di partenza', 'Gara 1', 'Gara 2', 'Gara 3', 'Classifica campionato'];
 const LAP_RE = /\b\d{1,2}:\d{2}\.\d{3}\b/g;
 function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Non riesco a caricare il lettore PDF')); document.head.appendChild(s); }); }
 async function receiptDataUrl(file) {
@@ -2874,7 +2874,7 @@ function sessLine(s, d) {
   const r = sessMatch(s, d), e = sessEvent(s);
   const grid = /griglia/i.test(s.type);
   const posTxt = r ? (grid ? `Griglia ${r.pos || '?'}` : (r.pos ? (/^\d+$/.test(r.pos) ? 'P' + r.pos : r.pos) : '—')) : 'non trovato';
-  return `<div class="ev-item" data-act="sessopen" data-id="${s.id}"><div class="bar" style="background:${e ? evColor(e) : '#ffb300'}"></div><div class="grow" style="min-width:0"><div class="row between" style="gap:8px"><strong>${esc(s.type)}</strong><span class="ppos">${esc(posTxt)}</span></div><div class="subtle">${esc(e?.circuit || s.title || '')} · ${s.date ? fmtShort(s.date) + ' ' + s.date.slice(0, 4) : ''}</div>${r ? `<div class="subtle mono">${r.best ? '⏱ ' + esc(r.best) : ''}${r.gap ? ' · gap ' + esc(r.gap) : ''}${clsPos(s, r) ? ' · ' + esc(clsPos(s, r)) : ''}</div>` : ''}</div></div>`;
+  return `<div class="ev-item" data-act="sessopen" data-id="${s.id}"><div class="bar" style="background:${e ? evColor(e) : '#ffb300'}"></div><div class="grow" style="min-width:0"><div class="row between" style="gap:8px"><strong>${esc(s.type)}${s.cat ? ' · ' + esc(s.cat) : ''}</strong><span class="ppos">${esc(posTxt)}</span></div><div class="subtle">${esc(e?.circuit || s.title || '')} · ${s.date ? fmtShort(s.date) + ' ' + s.date.slice(0, 4) : ''}</div>${r ? `<div class="subtle mono">${r.best ? '⏱ ' + esc(r.best) : ''}${r.gap ? ' · gap ' + esc(r.gap) : ''}${clsPos(s, r) ? ' · ' + esc(clsPos(s, r)) : ''}</div>` : ''}</div></div>`;
 }
 function sessionsFor(d) { return (S.sessions || []).filter((s) => sessMatch(s, d)).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.created || '').localeCompare(a.created || '')); }
 function importForm(defaults = {}) {
@@ -2973,7 +2973,21 @@ function ttSplit(r) { const m = r.label.match(TT_SESS_RE); if (!m || m.index ===
 function ttSel() { try { return JSON.parse(localStorage.getItem('mbc_ttser') || '[]'); } catch (_) { return []; } }
 function ttSetSel(a) { try { localStorage.setItem('mbc_ttser', JSON.stringify(a)); } catch (_) { /* ok */ } }
 function ttSorted(tt) { return tt.rows.slice().sort((a, b) => (a.day || '9').localeCompare(b.day || '9') || (TT_SESS_RE.test(a.label) || a.end ? 0 : 1) - (TT_SESS_RE.test(b.label) || b.end ? 0 : 1) || a.start.localeCompare(b.start)); }
-function ttFiltered(rows) { const sel = ttSel(); return sel.length ? rows.filter((r) => ttSeries(r).some((x) => sel.includes(x))) : rows; }
+function ttMine(tt) { return tt && Array.isArray(tt.mine) ? tt.mine : ttSel(); }
+function ttFiltered(rows, tt) { const sel = ttMine(tt); return sel.length ? rows.filter((r) => ttSeries(r).some((x) => sel.includes(x))) : rows; }
+function ttKey(r) { return `${r.day}|${r.start}|${r.label}`; }
+function ttCalBox(tt, sel) {
+  if (!sel.length) return '<p class="subtle" style="margin:4px 0 0">Scegli i programmi che fai in questo weekend: li salvo sull\'evento e puoi metterli in Google Calendar con gli allarmi.</p>';
+  const n = ttFiltered(tt.rows.filter((r) => r.day && (TT_SESS_RE.test(r.label) || r.end)), tt).length, c = tt.cal || {};
+  const want = ttFiltered(tt.rows.filter((r) => r.day && (TT_SESS_RE.test(r.label) || r.end)), tt).map(ttKey).sort().join(';');
+  let st = '';
+  if (c.status === 'pending') st = '⏳ In arrivo su Google Calendar (entro un\'ora)';
+  else if (c.status === 'remove') st = '⏳ Rimozione da Google Calendar in corso';
+  else if (c.status === 'done') st = c.keys === want ? `✓ In Google Calendar: ${(c.events || []).length} sessioni, allarmi 30' e 15'` : '⚠ Hai cambiato i programmi: aggiorna il calendario';
+  else if (c.status === 'error') st = '⚠ ' + (c.msg || 'Errore calendario');
+  const done = c.status === 'done' && c.keys === want;
+  return `<div style="background:var(--card2,#0000000a);border-radius:12px;padding:10px;margin-top:6px">${st ? `<div style="margin-bottom:8px;font-weight:700">${esc(st)}</div>` : ''}<div class="row" style="gap:8px;flex-wrap:wrap">${done ? '' : `<button class="btn small primary" data-act="ttcal" data-id="${tt.id}">📅 ${c.status === 'done' ? 'Aggiorna' : 'Metti in'} Google Calendar (${n})</button>`}${c.status === 'done' || c.status === 'pending' ? `<button class="btn small" data-act="ttcaloff" data-id="${tt.id}">Togli dal calendario</button>` : ''}</div></div>`;
+}
 function ttBlock(g) {
   const tt = ttOfGroup(g), e0 = g[0];
   const head = `<div class="section-title"><h2>🗓 Programma del weekend</h2><button class="btn small" data-act="ttimp" data-id="${e0.id}">${tt ? '⟳ Aggiorna' : '+ Importa'}</button></div>`;
@@ -2983,11 +2997,11 @@ function ttBlock(g) {
   let day = S.ttDay && days.includes(S.ttDay) ? S.ttDay : (days.includes(todayS) ? todayS : days[0] || '');
   const sers = TT_SERIES.map(([n]) => n).filter((n) => all.some((r) => ttSeries(r).includes(n)));
   if (all.some((r) => ttSeries(r)[0] === 'Altro')) sers.push('Altro');
-  const sel = ttSel().filter((x) => sers.includes(x));
+  const sel = ttMine(tt).filter((x) => sers.includes(x));
   const chip = (on, act, id, txt) => `<button type="button" class="btn small${on ? ' primary' : ''}" data-act="${act}" data-id="${esc(id)}" style="white-space:nowrap">${esc(txt)}</button>`;
   const dayBar = days.map((d) => chip(d === day, 'ttday', d, cap(parse(d).toLocaleDateString(LOC(), { weekday: 'short', day: 'numeric' })))).join('');
-  const serBar = chip(!sel.length, 'ttser', '*', 'Tutti') + sers.map((n) => chip(sel.includes(n), 'ttser', n, n)).join('');
-  const rows = ttFiltered(all.filter((r) => r.day === day));
+  const serBar = chip(!sel.length, 'ttser', tt.id + '|*', 'Tutti') + sers.map((n) => chip(sel.includes(n), 'ttser', tt.id + '|' + n, n)).join('');
+  const rows = ttFiltered(all.filter((r) => r.day === day), tt);
   const main = rows.filter((r) => TT_SESS_RE.test(r.label) || r.end), extra = rows.filter((r) => !(TT_SESS_RE.test(r.label) || r.end));
   const nxt = day === todayS ? main.find((r) => (r.end || r.start) >= nowHM) : null;
   const line = (r, small) => { const sp = ttSplit(r), past = day < todayS || (day === todayS && (r.end || r.start) < nowHM); return `<div style="display:grid;grid-template-columns:${small ? '58px' : '96px'} 1fr;gap:10px;padding:9px 10px;border-radius:10px;border-bottom:1px solid var(--line,#0001);${r === nxt ? 'background:#39ff14;color:#000;' : ''}${past ? 'opacity:.45;' : ''}"><div class="mono" style="font-weight:700;font-size:${small ? '13px' : '15px'};line-height:1.3">${r.start}${r.end && !small ? `<br><span style="font-weight:400;opacity:.7">${r.end}</span>` : ''}</div><div style="min-width:0"><div style="font-weight:${small ? 400 : 700};font-size:${small ? '14px' : '16px'}">${r === nxt ? '▶ ' : ''}${esc(sp.what)}</div>${sp.who ? `<div class="subtle" style="font-size:13px${r === nxt ? ';color:#000' : ''}">${esc(sp.who)}</div>` : ''}</div></div>`; };
@@ -2996,17 +3010,18 @@ function ttBlock(g) {
     <div class="subtle" style="margin-bottom:8px">${esc(tt.title || '')}${tt.created ? ' · ' + fmtShort(tt.created.slice(0, 10)) : ''}</div>
     <div class="lbl" style="margin:0 0 6px">Giorno</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px">${dayBar}</div>
     <div class="lbl" style="margin:8px 0 6px">Programma</div><div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:6px">${serBar}</div>
+    ${ttCalBox(tt, sel)}
     <div class="lbl" style="margin:12px 0 4px">${esc(day ? ttDayLabel(day) : 'Orari')} · ${main.length} sessioni</div>
     ${main.length ? main.map((r) => line(r)).join('') : '<p class="subtle">Nessuna sessione per questa scelta.</p>'}
     ${extra.length ? `<div class="lbl" style="margin:12px 0 4px">Altri orari (briefing, note)</div>${extra.map((r) => line(r, true)).join('')}` : ''}
-    ${noDay.length && day === days[0] ? `<div class="lbl" style="margin:12px 0 4px">Senza giorno</div>${ttFiltered(noDay).map((r) => line(r, true)).join('')}` : ''}
+    ${noDay.length && day === days[0] ? `<div class="lbl" style="margin:12px 0 4px">Senza giorno</div>${ttFiltered(noDay, tt).map((r) => line(r, true)).join('')}` : ''}
     <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">${tt.img ? `<button class="btn small" data-act="ttimg" data-id="${tt.id}">📄 Originale</button>` : ''}<button class="btn small" data-act="ttedit" data-id="${tt.id}">✏️ Correggi</button><button class="btn small danger" data-act="ttdel" data-id="${tt.id}">Elimina</button></div></div>`;
 }
 function ttTodayHtml(ds) {
   const out = [];
   groupEvents(S.events.filter((e) => e.start_date <= ds && ds <= e.end_date)).forEach((g) => {
     const tt = ttOfGroup(g); if (!tt) return;
-    ttFiltered(ttSorted(tt).filter((r) => r.day === ds && (TT_SESS_RE.test(r.label) || r.end))).forEach((r) => { const sp = ttSplit(r); out.push(`<div class="tl" data-act="evview" data-id="${g[0].id}" style="border-left-color:${evColor(g[0])}"><div class="tlt"><b>${r.start}</b>${r.end ? `<br><span class="subtle">${r.end}</span>` : ''}</div><div class="grow" style="min-width:0"><strong>${esc(sp.what)}</strong><div class="subtle">${esc(sp.who || evDove(g[0]).name)}</div></div></div>`); });
+    ttFiltered(ttSorted(tt).filter((r) => r.day === ds && (TT_SESS_RE.test(r.label) || r.end)), tt).forEach((r) => { const sp = ttSplit(r); out.push(`<div class="tl" data-act="evview" data-id="${g[0].id}" style="border-left-color:${evColor(g[0])}"><div class="tlt"><b>${r.start}</b>${r.end ? `<br><span class="subtle">${r.end}</span>` : ''}</div><div class="grow" style="min-width:0"><strong>${esc(sp.what)}</strong><div class="subtle">${esc(sp.who || evDove(g[0]).name)}</div></div></div>`); });
   });
   return out.join('');
 }
@@ -3144,6 +3159,7 @@ function inbSessType(it) {
   const t = `${it.parsed?.session_type || ''} ${it.filename || ''} ${it.subject || ''}`.toLowerCase();
   const m = SESS_TYPES.find((x) => t.includes(x.toLowerCase()));
   if (m) return m;
+  if (/standing|championship|campionato/.test(t)) return 'Classifica campionato';
   if (/grid|griglia/.test(t)) return 'Griglia di partenza';
   if (/qual/.test(t)) return 'Qualifica';
   if (/(race|gara)\s*2/.test(t)) return 'Gara 2';
@@ -3170,10 +3186,10 @@ async function inbImport(id, fromForm) {
       toast(rows.length + ' sessioni nel programma del weekend');
     } else if (k === 'results') {
       if (!e) return toast('Scegli un evento', true);
-      const f = await inbFile(it); let rows = null;
+      const f = Array.isArray(it.parsed?.rows) && it.parsed.rows.length ? null : await inbFile(it); let rows = f ? null : it.parsed?.rows || null;
       if (f) rows = inbIsPdf(f) ? parseTextRows(await pdfLines(f)) : (parseCsvRows(await f.text()) || parseTextRows((await f.text()).split(/\r?\n/)));
       if (!rows || !rows.length) { toast('Non riesco a leggere la classifica: l\'ho salvata come documento', true); }
-      else { await put('sessions', { id: uuid(), type: inbSessType(it), date: (it.parsed?.date || it.date || iso(new Date())).slice(0, 10), event_id: e.id, title: it.filename || '', rows, created: new Date().toISOString() }); toast(rows.length + ' righe di classifica importate'); }
+      else { await put('sessions', { id: uuid(), type: inbSessType(it), date: (it.parsed?.date || it.date || iso(new Date())).slice(0, 10), event_id: e.id, cat: it.parsed?.category || '', title: it.filename || '', rows, created: new Date().toISOString() }); toast(rows.length + ' righe di classifica importate'); }
     } else if (k === 'activity') {
       const p = it.parsed || {};
       await put('inbox', { ...it, status: 'imported' }); closeModal(); render();
@@ -3616,7 +3632,9 @@ document.addEventListener('click', async (ev) => {
       case 'inbdismiss': { const it = (S.inbox || []).find((x) => x.id === id); if (it) await put('inbox', { ...it, status: 'dismissed' }); closeModal(); render(); inbCheck(); break; }
       case 'ttall': S.ttAll = !S.ttAll; render(); break;
       case 'ttday': S.ttDay = id; render(); break;
-      case 'ttser': { let a = ttSel(); if (id === '*') a = []; else a = a.includes(id) ? a.filter((x) => x !== id) : [...a, id]; ttSetSel(a); render(); break; }
+      case 'ttser': { const [tid, nm] = id.split('|'); const tt = (S.tt || []).find((x) => x.id === tid); if (!tt) break; let a = ttMine(tt).slice(); if (nm === '*') a = []; else a = a.includes(nm) ? a.filter((x) => x !== nm) : [...a, nm]; ttSetSel(a); await put('tt', { ...tt, mine: a }); render(); break; }
+      case 'ttcal': { const tt = (S.tt || []).find((x) => x.id === id); if (!tt) break; await put('tt', { ...tt, cal: { ...(tt.cal || {}), status: 'pending', requested: new Date().toISOString() } }); render(); toast('Richiesta inviata: le sessioni arrivano in Google Calendar entro un\'ora'); break; }
+      case 'ttcaloff': { const tt = (S.tt || []).find((x) => x.id === id); if (!tt) break; await put('tt', { ...tt, cal: { ...(tt.cal || {}), status: 'remove', requested: new Date().toISOString() } }); render(); toast('Le sessioni verranno tolte dal calendario'); break; }
       case 'ttedit': ttEditForm(id); break;
       case 'ttimg': ttImgView(id); break;
       case 'ttdel': {
