@@ -1207,7 +1207,7 @@ function eventView() {
     })()}
   </div>
   ${ttBlock(g)}
-  ${(() => { const ids = new Set(g.map((x) => x.id)); return inbDocsBlock((x) => ids.has(x.event_id), '📎 Documenti dell\'evento'); })()}
+  ${(() => { const ids = new Set(g.map((x) => x.id)); return inbDocsBlock((x) => ids.has(x.event_id || x.suggest?.event_id), '📁 Documenti e risultati dell\'evento'); })()}
   <div class="section-title"><h2>⏱ Tempi e classifiche</h2><button class="btn small" data-act="sessimpev" data-id="${e0.id}">+ Importa</button></div>
   ${(() => { const ids = new Set(g.map((x) => x.id)); const ss = (S.sessions || []).filter((x) => ids.has(x.event_id)).sort((a, b) => (a.date || '').localeCompare(b.date || '') || SESS_TYPES.indexOf(a.type) - SESS_TYPES.indexOf(b.type)); return ss.length ? ss.map((x) => `<div class="card" style="margin-bottom:8px;cursor:pointer" data-act="sessopen" data-id="${x.id}"><div class="row between"><strong>${esc(x.type)}${x.cat ? ' · ' + esc(x.cat) : ''}</strong><span class="subtle">${x.date ? fmtShort(x.date) : ''}</span></div>${g.map((e) => { const d = driver(e.driver_id), r = sessMatch(x, d); return r ? `<div class="irow"><span>${esc(dname(d))}</span><b>${esc(/^\d+$/.test(r.pos) ? 'P' + r.pos : r.pos || '—')}${r.best ? ' · ' + esc(r.best) : ''}</b></div>` : ''; }).join('')}</div>`).join('') : '<p class="muted">Nessun tempo importato per questo evento.</p>'; })()}
   <div class="section-title"><h2>Piloti dell'evento</h2><button class="btn small" data-act="evadd">+ Pilota</button></div>
@@ -2333,7 +2333,7 @@ function driverPage() {
   <div class="section-title"><h2>Eventi a cui partecipa</h2><button class="btn small" data-act="drvnewev" data-id="${d.id}">+ Evento</button></div>
   ${up.length ? up.map(evRow).join('') : '<p class="muted">Nessun evento in programma.</p>'}
   ${past.length ? `<details style="margin-top:6px"><summary class="subtle" style="cursor:pointer;margin-bottom:8px">Eventi passati (${past.length})</summary>${past.map(evRow).join('')}</details>` : ''}
-  ${inbDocsBlock((x) => x.driver_id === d.id, '📎 Documenti del pilota')}
+  ${inbDocsBlock((x) => (x.driver_id || x.suggest?.driver_id) === d.id, '📁 Documenti e risultati del pilota')}
   <div class="section-title"><h2>⏱ Tempi e classifiche</h2><button class="btn small" data-act="sessimp" data-id="${d.id}">+ Importa</button></div>
   ${(() => { const ss = sessionsFor(d); return ss.length ? ss.slice(0, S.sessAll ? 999 : 6).map((x) => sessLine(x, d)).join('') + (ss.length > 6 && !S.sessAll ? '<button class="btn small" data-act="sessall">Mostra tutte (' + ss.length + ')</button>' : '') : `<p class="muted">Nessun tempo importato. ${d.race_number ? 'Numero di gara: <b>' + esc(d.race_number) + '</b>.' : '<span style="color:var(--warn)">Inserisci il numero di gara nella scheda per collegare i tempi.</span>'}</p>`; })()}
   <div class="section-title"><h2>Mail (Gmail)</h2>${ems.length && up.length ? `<button class="btn small" data-act="mailnews" data-id="${up[0].id}">Notizie: ${esc(up[0].circuit || 'prossimo evento')}</button>` : ''}</div>
@@ -3202,16 +3202,27 @@ async function inbImport(id, fromForm) {
 function inbLine(it) {
   return `<div class="ev-item" data-act="inbopen" data-id="${it.id}"><div class="bar" style="background:${it.status === 'new' ? '#39ff14' : '#9aa7b2'}"></div><div class="grow" style="min-width:0"><div class="row between" style="gap:8px"><strong style="word-break:break-word">${esc(it.filename || it.subject || 'Allegato')}</strong><span class="subtle">${it.date ? fmtShort(it.date.slice(0, 10)) : ''}</span></div><div class="subtle">${esc(inbKind(it.kind))}${inbSuggestTxt(it) ? ' · ' + esc(inbSuggestTxt(it)) : ''}${it.status === 'new' ? ' · <b>nuovo</b>' : ''}</div></div></div>`;
 }
+function inbFolderKey(it) { return it.msg_id && !/^https?:/i.test(it.msg_id) ? 'm|' + it.msg_id : 'w|' + (it.from || '') + '|' + (it.date || it.created || '').slice(0, 10); }
+function inbFolders(list) {
+  const map = new Map();
+  list.forEach((it) => { const k = inbFolderKey(it); (map.get(k) || map.set(k, []).get(k)).push(it); });
+  S.inbOpen = S.inbOpen || new Set();
+  return [...map.entries()].map(([k, its]) => ({ k, its, d: its.map((x) => x.date || x.created || '').sort().pop() })).sort((x, y) => (y.d || '').localeCompare(x.d || '')).map(({ k, its, d }) => {
+    const f = its[0], nNew = its.filter((x) => x.status === 'new').length, open = S.inbOpen.has(k);
+    const title = /^w\|/.test(k) ? `${f.from || 'Sito risultati'}` : (f.subject || f.filename || 'Mail');
+    return `<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden"><div data-act="inbfold" data-id="${esc(k)}" style="display:flex;gap:10px;align-items:center;padding:12px;cursor:pointer"><div style="font-size:22px">${open ? '📂' : '📁'}</div><div class="grow" style="min-width:0"><strong style="word-break:break-word">${esc(title)}</strong><div class="subtle">${d ? fmtShort(d.slice(0, 10)) + ' · ' : ''}${its.length} ${its.length === 1 ? 'file' : 'file'}${f.from && !/^w\|/.test(k) ? ' · ' + esc(f.from) : ''}${nNew ? ` · <b style="color:#39ff14">${nNew} nuovi</b>` : ''}</div></div><div class="subtle">${open ? '▾' : '▸'}</div></div>${open ? `<div style="padding:0 8px 8px">${its.map(inbLine).join('')}</div>` : ''}</div>`;
+  }).join('');
+}
 function inbDocsBlock(filter, title) {
-  const list = (S.inbox || []).filter((x) => x.status !== 'dismissed' && x.status !== 'new' && filter(x)).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const list = (S.inbox || []).filter((x) => x.status !== 'dismissed' && filter(x));
   if (!list.length) return '';
-  return `<div class="section-title"><h2>${title}</h2></div>` + list.map(inbLine).join('');
+  return `<div class="section-title"><h2>${title}</h2></div>` + inbFolders(list);
 }
 function inboxView() {
   const all = (S.inbox || []).filter((x) => x.status !== 'dismissed' || S.inbAll).sort((a, b) => (a.status === 'new' ? 0 : 1) - (b.status === 'new' ? 0 : 1) || (b.date || '').localeCompare(a.date || ''));
   return `<div class="row" style="gap:8px;margin-bottom:10px"><button class="tbn" data-act="go" data-v="varie">← Indietro</button></div><h1 style="font-size:30px;margin:6px 0 4px">Allegati dalla posta</h1>
     <p class="subtle" style="margin:0 0 14px">Arrivano in automatico dalle mail Ferrari e Race Planner (controllo alle 7:13 e alle 19:13).</p>
-    ${all.length ? all.map(inbLine).join('') : '<p class="subtle">Nessun allegato per ora.</p>'}
+    ${all.length ? inbFolders(all) : '<p class="subtle">Nessun allegato per ora.</p>'}
     <button class="btn small" style="margin-top:10px" data-act="inball">${S.inbAll ? 'Nascondi ignorati' : 'Mostra anche ignorati'}</button>`;
 }
 
@@ -3628,6 +3639,7 @@ document.addEventListener('click', async (ev) => {
       case 'inbimp': await inbImport(id); break;
       case 'inbsave': closeModal(); inbSaveForm(id, false); break;
       case 'inbgo': closeModal(); S.view = 'inbox'; render(); window.scrollTo(0, 0); break;
+      case 'inbfold': { S.inbOpen = S.inbOpen || new Set(); if (S.inbOpen.has(id)) S.inbOpen.delete(id); else S.inbOpen.add(id); render(); break; }
       case 'inball': S.inbAll = !S.inbAll; render(); break;
       case 'inbdismiss': { const it = (S.inbox || []).find((x) => x.id === id); if (it) await put('inbox', { ...it, status: 'dismissed' }); closeModal(); render(); inbCheck(); break; }
       case 'ttall': S.ttAll = !S.ttAll; render(); break;
