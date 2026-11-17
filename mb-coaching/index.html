@@ -2945,7 +2945,8 @@ function ttStripDate(s) {
 function ttAddMin(t, m) { const [h, mm] = t.split(':').map(Number); const x = h * 60 + mm + m; return pad(Math.floor(x / 60) % 24) + ':' + pad(x % 60); }
 function ttParse(lines, ev) {
   const days = ttEvDays(ev);
-  let day = days.length === 1 ? days[0] : '', pending = null;
+  let day = days.length === 1 ? days[0] : '', pending = null, section = '';
+  const SEC_RE = /briefing|photo|foto|autograph|autograf|signing|media|press|parade|ceremony|cerimonia|podium|podio|meeting|riunione|hospitality|dinner|cena|party|show|presentation|presentazione|drivers|piloti|team managers/i;
   const rows = [];
   for (let raw of lines) {
     let line = String(raw || '').replace(/\s+/g, ' ').trim();
@@ -2954,10 +2955,12 @@ function ttParse(lines, ev) {
     if (hd) { if (hd.day) day = hd.day; line = ttStripDate(hd.rest); if (!line) continue; }
     const ts = []; let mt; TT_TIME.lastIndex = 0;
     while ((mt = TT_TIME.exec(line))) ts.push(pad(+mt[1]) + ':' + mt[2]);
-    if (!ts.length) { if (pending && line.length > 1 && !/^(time|orario|start|end|session|sessione|durat)/i.test(line)) { pending.label = line; pending.fc = TT_FC.test(line); pending = null; } continue; }
+    if (!ts.length) { if (!pending && SEC_RE.test(line) && line.length < 60) { section = line.replace(/[:\-–]+$/, '').trim(); continue; } if (pending && line.length > 1 && !/^(time|orario|start|end|session|sessione|durat)/i.test(line)) { pending.label = line; pending.fc = TT_FC.test(line); pending = null; } continue; }
     let label = line.replace(/([01]?\d|2[0-3])[:.h][0-5]\d/g, ' ').replace(/\s*[-–—|]\s*(?=[-–—|\s]|$)/g, ' ').replace(/^[\s\-–—|:.,>]+|[\s\-–—|:.,]+$/g, '').replace(/\s+/g, ' ').trim();
     const start = ts[0]; let end = '';
     if (ts[1]) { if (ts[1] > start) end = ts[1]; else if (ts[1] < '03:00') { const [h, m] = ts[1].split(':').map(Number); end = ttAddMin(start, h * 60 + m); } }
+    if (section && label && !TT_SESS_RE.test(label) && !SEC_RE.test(label)) label = section + ' – ' + label;
+    if (TT_SESS_RE.test(label) && end) section = '';
     const r = { day, start, end, label, fc: TT_FC.test(label) };
     rows.push(r);
     pending = label.length < 2 ? r : null;
@@ -2967,12 +2970,12 @@ function ttParse(lines, ev) {
 function ttOfGroup(g) { const ids = new Set(g.map((x) => x.id)); return (S.tt || []).filter((x) => ids.has(x.event_id)).sort((a, b) => (b.created || '').localeCompare(a.created || ''))[0] || null; }
 function ttDayLabel(d) { return d ? cap(parse(d).toLocaleDateString(LOC(), { weekday: 'long', day: 'numeric', month: 'short' })) : 'Giorno non indicato'; }
 const TT_SERIES = [['Ferrari Challenge NA', /challenge\s+(na|north america)\b/i], ['Ferrari Challenge UK', /challenge\s+uk\b/i], ['Ferrari Challenge Japan', /challenge\s+japan\b/i], ['Trofeo Pirelli', /trofeo pirelli/i], ['Coppa Shell', /coppa shell/i], ['Club Challenge', /club challenge/i], ['Club Competizioni GT', /competizioni gt/i], ['XX Programme', /\bxx\b|fxx/i], ['F1 Clienti & Sport Prototipi', /f1 clienti|sport prototipi/i], ['Corse Clienti', /corse clienti/i]];
-const TT_SESS_RE = /(Free Practice|Qualifying|Qualifica|Race\b|Gara\b|Private Practice|Track Recognition|Shakedown|Finale Mondiale|Sponsor Hot ?Laps|Media Hot ?laps|Customers Activity|Prove libere|Test\b|Briefing|Parade)/i;
-function ttSeries(r) { const out = TT_SERIES.filter(([, re]) => re.test(r.label)).map(([n]) => n); return out.length ? out : ['Altro']; }
-function ttSplit(r) { const m = r.label.match(TT_SESS_RE); if (!m || m.index === 0) return { what: r.label, who: '' }; return { what: r.label.slice(m.index).trim(), who: r.label.slice(0, m.index).replace(/[\s,+\-–]+$/, '').trim() }; }
+const TT_SESS_RE = /(Free Practice|Qualifying|Qualifica|Race\b|Gara\b|Private Practice|Track Recognition|Shakedown|Finale Mondiale|Sponsor Hot ?Laps|Media Hot ?laps|Customers Activity|Prove libere|Test\b|Briefing|Parade|Photo|Foto|Autograph|Autografi|Signing|Media|Press|Ceremony|Cerimonia|Podium|Podio|Meeting|Show)/i;
+function ttSeries(r) { const out = TT_SERIES.filter(([, re]) => re.test(r.label)).map(([n]) => n); if (out.length) return out; if (/challenge\s+(eu|europe)\b/i.test(r.label)) return ['Trofeo Pirelli', 'Coppa Shell']; if (/ferrari challenge|all drivers|tutti i piloti/i.test(r.label)) return ['Ferrari Challenge NA', 'Ferrari Challenge UK', 'Ferrari Challenge Japan', 'Trofeo Pirelli', 'Coppa Shell']; return ['Altro']; }
+function ttSplit(r) { const k = r.label.indexOf(' – '); if (k > 0) return { what: r.label.slice(0, k).trim(), who: r.label.slice(k + 3).trim() }; const m = r.label.match(TT_SESS_RE); if (!m || m.index === 0) return { what: r.label, who: '' }; return { what: r.label.slice(m.index).trim(), who: r.label.slice(0, m.index).replace(/[\s,+\-–]+$/, '').trim() }; }
 function ttSel() { try { return JSON.parse(localStorage.getItem('mbc_ttser') || '[]'); } catch (_) { return []; } }
 function ttSetSel(a) { try { localStorage.setItem('mbc_ttser', JSON.stringify(a)); } catch (_) { /* ok */ } }
-function ttSorted(tt) { return tt.rows.slice().sort((a, b) => (a.day || '9').localeCompare(b.day || '9') || (TT_SESS_RE.test(a.label) || a.end ? 0 : 1) - (TT_SESS_RE.test(b.label) || b.end ? 0 : 1) || a.start.localeCompare(b.start)); }
+function ttSorted(tt) { return tt.rows.slice().sort((a, b) => (a.day || '9').localeCompare(b.day || '9') || a.start.localeCompare(b.start) || (a.end || '').localeCompare(b.end || '')); }
 function ttMine(tt) { return tt && Array.isArray(tt.mine) ? tt.mine : ttSel(); }
 function ttFiltered(rows, tt) { const sel = ttMine(tt); return sel.length ? rows.filter((r) => ttSeries(r).some((x) => sel.includes(x))) : rows; }
 function ttKey(r) { return `${r.day}|${r.start}|${r.label}`; }
@@ -3002,17 +3005,17 @@ function ttBlock(g) {
   const dayBar = days.map((d) => chip(d === day, 'ttday', d, cap(parse(d).toLocaleDateString(LOC(), { weekday: 'short', day: 'numeric' })))).join('');
   const serBar = chip(!sel.length, 'ttser', tt.id + '|*', 'Tutti') + sers.map((n) => chip(sel.includes(n), 'ttser', tt.id + '|' + n, n)).join('');
   const rows = ttFiltered(all.filter((r) => r.day === day), tt);
-  const main = rows.filter((r) => TT_SESS_RE.test(r.label) || r.end), extra = rows.filter((r) => !(TT_SESS_RE.test(r.label) || r.end));
-  const nxt = day === todayS ? main.find((r) => (r.end || r.start) >= nowHM) : null;
-  const line = (r, small) => { const sp = ttSplit(r), past = day < todayS || (day === todayS && (r.end || r.start) < nowHM); return `<div style="display:grid;grid-template-columns:${small ? '58px' : '96px'} 1fr;gap:10px;padding:9px 10px;border-radius:10px;border-bottom:1px solid var(--line,#0001);${r === nxt ? 'background:#39ff14;color:#000;' : ''}${past ? 'opacity:.45;' : ''}"><div class="mono" style="font-weight:700;font-size:${small ? '13px' : '15px'};line-height:1.3">${r.start}${r.end && !small ? `<br><span style="font-weight:400;opacity:.7">${r.end}</span>` : ''}</div><div style="min-width:0"><div style="font-weight:${small ? 400 : 700};font-size:${small ? '14px' : '16px'}">${r === nxt ? '▶ ' : ''}${esc(sp.what)}</div>${sp.who ? `<div class="subtle" style="font-size:13px${r === nxt ? ';color:#000' : ''}">${esc(sp.who)}</div>` : ''}</div></div>`; };
+  const isMain = (r) => TT_SESS_RE.test(r.label) || r.end, main = rows, extra = [];
+  const nxt = day === todayS ? main.find((r) => isMain(r) && (r.end || r.start) >= nowHM) : null;
+  const line = (r, small) => { const sp = ttSplit(r), past = day < todayS || (day === todayS && (r.end || r.start) < nowHM); return `<div style="display:grid;grid-template-columns:96px 1fr;gap:10px;padding:9px 10px;border-radius:10px;border-bottom:1px solid var(--line,#0001);${r === nxt ? 'background:#39ff14;color:#000;' : ''}${past ? 'opacity:.45;' : ''}"><div class="mono" style="font-weight:700;font-size:${small ? '13px' : '15px'};line-height:1.3">${r.start}${r.end && !small ? `<br><span style="font-weight:400;opacity:.7">${r.end}</span>` : ''}</div><div style="min-width:0"><div style="font-weight:${small ? 400 : 700};font-size:${small ? '14px' : '16px'}">${r === nxt ? '▶ ' : ''}${esc(sp.what)}</div>${sp.who ? `<div class="subtle" style="font-size:13px${r === nxt ? ';color:#000' : ''}">${esc(sp.who)}</div>` : ''}</div></div>`; };
   const noDay = all.filter((r) => !r.day);
   return head + `<div class="card" style="padding:10px 12px">
     <div class="subtle" style="margin-bottom:8px">${esc(tt.title || '')}${tt.created ? ' · ' + fmtShort(tt.created.slice(0, 10)) : ''}</div>
     <div class="lbl" style="margin:0 0 6px">Giorno</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px">${dayBar}</div>
     <div class="lbl" style="margin:8px 0 6px">Programma</div><div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:6px">${serBar}</div>
     ${ttCalBox(tt, sel)}
-    <div class="lbl" style="margin:12px 0 4px">${esc(day ? ttDayLabel(day) : 'Orari')} · ${main.length} sessioni</div>
-    ${main.length ? main.map((r) => line(r)).join('') : '<p class="subtle">Nessuna sessione per questa scelta.</p>'}
+    <div class="lbl" style="margin:12px 0 4px">${esc(day ? ttDayLabel(day) : 'Orari')} · ${main.filter(isMain).length} sessioni</div>
+    ${main.length ? main.map((r) => line(r, !isMain(r))).join('') : '<p class="subtle">Nessuna sessione per questa scelta.</p>'}
     ${extra.length ? `<div class="lbl" style="margin:12px 0 4px">Altri orari (briefing, note)</div>${extra.map((r) => line(r, true)).join('')}` : ''}
     ${noDay.length && day === days[0] ? `<div class="lbl" style="margin:12px 0 4px">Senza giorno</div>${ttFiltered(noDay, tt).map((r) => line(r, true)).join('')}` : ''}
     <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">${tt.img ? `<button class="btn small" data-act="ttimg" data-id="${tt.id}">📄 Originale</button>` : ''}<button class="btn small" data-act="ttedit" data-id="${tt.id}">✏️ Correggi</button><button class="btn small danger" data-act="ttdel" data-id="${tt.id}">Elimina</button></div></div>`;
