@@ -2966,27 +2966,47 @@ function ttParse(lines, ev) {
 }
 function ttOfGroup(g) { const ids = new Set(g.map((x) => x.id)); return (S.tt || []).filter((x) => ids.has(x.event_id)).sort((a, b) => (b.created || '').localeCompare(a.created || ''))[0] || null; }
 function ttDayLabel(d) { return d ? cap(parse(d).toLocaleDateString(LOC(), { weekday: 'long', day: 'numeric', month: 'short' })) : 'Giorno non indicato'; }
+const TT_SERIES = [['Ferrari Challenge NA', /challenge\s+(na|north america)\b/i], ['Ferrari Challenge UK', /challenge\s+uk\b/i], ['Ferrari Challenge Japan', /challenge\s+japan\b/i], ['Trofeo Pirelli', /trofeo pirelli/i], ['Coppa Shell', /coppa shell/i], ['Club Challenge', /club challenge/i], ['Club Competizioni GT', /competizioni gt/i], ['XX Programme', /\bxx\b|fxx/i], ['F1 Clienti & Sport Prototipi', /f1 clienti|sport prototipi/i], ['Corse Clienti', /corse clienti/i]];
+const TT_SESS_RE = /(Free Practice|Qualifying|Qualifica|Race\b|Gara\b|Private Practice|Track Recognition|Shakedown|Finale Mondiale|Sponsor Hot ?Laps|Media Hot ?laps|Customers Activity|Prove libere|Test\b|Briefing|Parade)/i;
+function ttSeries(r) { const out = TT_SERIES.filter(([, re]) => re.test(r.label)).map(([n]) => n); return out.length ? out : ['Altro']; }
+function ttSplit(r) { const m = r.label.match(TT_SESS_RE); if (!m || m.index === 0) return { what: r.label, who: '' }; return { what: r.label.slice(m.index).trim(), who: r.label.slice(0, m.index).replace(/[\s,+\-–]+$/, '').trim() }; }
+function ttSel() { try { return JSON.parse(localStorage.getItem('mbc_ttser') || '[]'); } catch (_) { return []; } }
+function ttSetSel(a) { try { localStorage.setItem('mbc_ttser', JSON.stringify(a)); } catch (_) { /* ok */ } }
+function ttSorted(tt) { return tt.rows.slice().sort((a, b) => (a.day || '9').localeCompare(b.day || '9') || (TT_SESS_RE.test(a.label) || a.end ? 0 : 1) - (TT_SESS_RE.test(b.label) || b.end ? 0 : 1) || a.start.localeCompare(b.start)); }
+function ttFiltered(rows) { const sel = ttSel(); return sel.length ? rows.filter((r) => ttSeries(r).some((x) => sel.includes(x))) : rows; }
 function ttBlock(g) {
   const tt = ttOfGroup(g), e0 = g[0];
   const head = `<div class="section-title"><h2>🗓 Programma del weekend</h2><button class="btn small" data-act="ttimp" data-id="${e0.id}">${tt ? '⟳ Aggiorna' : '+ Importa'}</button></div>`;
   if (!tt) return head + `<p class="subtle">Nessun programma importato. Carica il PDF della time-table (dalla mail o dalla Virtual Board) o incolla il testo.</p>`;
-  const hasFc = tt.rows.some((r) => r.fc), all = S.ttAll || !hasFc;
-  const rows = tt.rows.filter((r) => all || r.fc);
+  const all = ttSorted(tt), days = [...new Set(all.map((r) => r.day).filter(Boolean))];
   const todayS = iso(new Date()), now = new Date(), nowHM = pad(now.getHours()) + ':' + pad(now.getMinutes());
-  const nxt = rows.find((r) => r.day === todayS && (r.end || r.start) >= nowHM);
-  const byDay = new Map(); rows.forEach((r) => (byDay.get(r.day) || byDay.set(r.day, []).get(r.day)).push(r));
-  const body = [...byDay.entries()].sort((a, b) => (a[0] || '9').localeCompare(b[0] || '9')).map(([d, rs]) => `<div class="lbl" style="margin:12px 0 6px">${esc(ttDayLabel(d))}</div>` + rs.map((r) => { const past = d && (d < todayS || (d === todayS && (r.end || r.start) < nowHM)); return `<div class="ttrow${r === nxt ? ' ttnext' : ''}" style="display:flex;gap:12px;padding:8px 10px;border-radius:10px;${r === nxt ? 'background:#39ff14;color:#000;' : ''}${past ? 'opacity:.45;' : ''}"><div class="mono" style="min-width:92px;font-weight:700">${r.start}${r.end ? '–' + r.end : ''}</div><div class="grow" style="${r.fc ? 'font-weight:700' : ''}">${r === nxt ? '▶ ' : ''}${esc(r.label)}</div></div>`; }).join('')).join('');
+  let day = S.ttDay && days.includes(S.ttDay) ? S.ttDay : (days.includes(todayS) ? todayS : days[0] || '');
+  const sers = TT_SERIES.map(([n]) => n).filter((n) => all.some((r) => ttSeries(r).includes(n)));
+  if (all.some((r) => ttSeries(r)[0] === 'Altro')) sers.push('Altro');
+  const sel = ttSel().filter((x) => sers.includes(x));
+  const chip = (on, act, id, txt) => `<button type="button" class="btn small${on ? ' primary' : ''}" data-act="${act}" data-id="${esc(id)}" style="white-space:nowrap">${esc(txt)}</button>`;
+  const dayBar = days.map((d) => chip(d === day, 'ttday', d, cap(parse(d).toLocaleDateString(LOC(), { weekday: 'short', day: 'numeric' })))).join('');
+  const serBar = chip(!sel.length, 'ttser', '*', 'Tutti') + sers.map((n) => chip(sel.includes(n), 'ttser', n, n)).join('');
+  const rows = ttFiltered(all.filter((r) => r.day === day));
+  const main = rows.filter((r) => TT_SESS_RE.test(r.label) || r.end), extra = rows.filter((r) => !(TT_SESS_RE.test(r.label) || r.end));
+  const nxt = day === todayS ? main.find((r) => (r.end || r.start) >= nowHM) : null;
+  const line = (r, small) => { const sp = ttSplit(r), past = day < todayS || (day === todayS && (r.end || r.start) < nowHM); return `<div style="display:grid;grid-template-columns:${small ? '58px' : '96px'} 1fr;gap:10px;padding:9px 10px;border-radius:10px;border-bottom:1px solid var(--line,#0001);${r === nxt ? 'background:#39ff14;color:#000;' : ''}${past ? 'opacity:.45;' : ''}"><div class="mono" style="font-weight:700;font-size:${small ? '13px' : '15px'};line-height:1.3">${r.start}${r.end && !small ? `<br><span style="font-weight:400;opacity:.7">${r.end}</span>` : ''}</div><div style="min-width:0"><div style="font-weight:${small ? 400 : 700};font-size:${small ? '14px' : '16px'}">${r === nxt ? '▶ ' : ''}${esc(sp.what)}</div>${sp.who ? `<div class="subtle" style="font-size:13px${r === nxt ? ';color:#000' : ''}">${esc(sp.who)}</div>` : ''}</div></div>`; };
+  const noDay = all.filter((r) => !r.day);
   return head + `<div class="card" style="padding:10px 12px">
-    <div class="row between" style="gap:8px;flex-wrap:wrap"><span class="subtle">${esc(tt.title || '')}${tt.created ? ' · ' + fmtShort(tt.created.slice(0, 10)) : ''}</span>${hasFc ? `<button class="btn small" data-act="ttall">${all ? 'Solo Ferrari' : 'Mostra tutto'}</button>` : ''}</div>
-    ${rows.length ? body : '<p class="subtle">Nessuna sessione letta dal file: tocca "Correggi" per scriverle, o apri l\'originale.</p>'}
+    <div class="subtle" style="margin-bottom:8px">${esc(tt.title || '')}${tt.created ? ' · ' + fmtShort(tt.created.slice(0, 10)) : ''}</div>
+    <div class="lbl" style="margin:0 0 6px">Giorno</div><div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px">${dayBar}</div>
+    <div class="lbl" style="margin:8px 0 6px">Programma</div><div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:6px">${serBar}</div>
+    <div class="lbl" style="margin:12px 0 4px">${esc(day ? ttDayLabel(day) : 'Orari')} · ${main.length} sessioni</div>
+    ${main.length ? main.map((r) => line(r)).join('') : '<p class="subtle">Nessuna sessione per questa scelta.</p>'}
+    ${extra.length ? `<div class="lbl" style="margin:12px 0 4px">Altri orari (briefing, note)</div>${extra.map((r) => line(r, true)).join('')}` : ''}
+    ${noDay.length && day === days[0] ? `<div class="lbl" style="margin:12px 0 4px">Senza giorno</div>${ttFiltered(noDay).map((r) => line(r, true)).join('')}` : ''}
     <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">${tt.img ? `<button class="btn small" data-act="ttimg" data-id="${tt.id}">📄 Originale</button>` : ''}<button class="btn small" data-act="ttedit" data-id="${tt.id}">✏️ Correggi</button><button class="btn small danger" data-act="ttdel" data-id="${tt.id}">Elimina</button></div></div>`;
 }
 function ttTodayHtml(ds) {
   const out = [];
   groupEvents(S.events.filter((e) => e.start_date <= ds && ds <= e.end_date)).forEach((g) => {
     const tt = ttOfGroup(g); if (!tt) return;
-    const rs = tt.rows.filter((r) => r.day === ds), fc = rs.filter((r) => r.fc);
-    (fc.length ? fc : rs).forEach((r) => out.push(`<div class="tl" data-act="evview" data-id="${g[0].id}" style="border-left-color:${evColor(g[0])}"><div class="tlt"><b>${r.start}</b>${r.end ? `<br><span class="subtle">${r.end}</span>` : ''}</div><div class="grow" style="min-width:0"><strong>${esc(r.label)}</strong><div class="subtle">🗓 ${esc(evDove(g[0]).name)}</div></div></div>`));
+    ttFiltered(ttSorted(tt).filter((r) => r.day === ds && (TT_SESS_RE.test(r.label) || r.end))).forEach((r) => { const sp = ttSplit(r); out.push(`<div class="tl" data-act="evview" data-id="${g[0].id}" style="border-left-color:${evColor(g[0])}"><div class="tlt"><b>${r.start}</b>${r.end ? `<br><span class="subtle">${r.end}</span>` : ''}</div><div class="grow" style="min-width:0"><strong>${esc(sp.what)}</strong><div class="subtle">${esc(sp.who || evDove(g[0]).name)}</div></div></div>`); });
   });
   return out.join('');
 }
@@ -3595,6 +3615,8 @@ document.addEventListener('click', async (ev) => {
       case 'inball': S.inbAll = !S.inbAll; render(); break;
       case 'inbdismiss': { const it = (S.inbox || []).find((x) => x.id === id); if (it) await put('inbox', { ...it, status: 'dismissed' }); closeModal(); render(); inbCheck(); break; }
       case 'ttall': S.ttAll = !S.ttAll; render(); break;
+      case 'ttday': S.ttDay = id; render(); break;
+      case 'ttser': { let a = ttSel(); if (id === '*') a = []; else a = a.includes(id) ? a.filter((x) => x !== id) : [...a, id]; ttSetSel(a); render(); break; }
       case 'ttedit': ttEditForm(id); break;
       case 'ttimg': ttImgView(id); break;
       case 'ttdel': {
