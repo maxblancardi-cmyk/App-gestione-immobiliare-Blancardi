@@ -1657,8 +1657,9 @@ function driverForm(id) {
       <label class="f"><span>Campionato</span><select name="championship_id">${opts(S.champs, d.championship_id, (c) => c.name, '—')}</select></label>
       <label class="f"><span>Macchina (modello)</span><select name="car_model"><option value="">—</option>${[...CARS, ...(d.car_model && !CARS.includes(d.car_model) ? [d.car_model] : [])].map((m) => `<option ${d.car_model === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}<option value="__new">＋ Altra…</option></select><input name="car_model_new" class="hidden" placeholder="Modello della macchina" style="margin-top:6px"></label>
       <div class="lbl" style="margin:14px 0 6px">🎥 Acquisizione video / dati</div>
-      <label class="f"><span>Sistema</span><select name="vid_sys" onchange="document.getElementById('vid-other').style.display=this.value==='__other'?'block':'none'"><option value="">—</option>${['GPX', 'FG91', 'Race.it', ...(d.vid_sys && !['GPX', 'FG91', 'Race.it'].includes(d.vid_sys) ? [d.vid_sys] : [])].map((x) => `<option ${d.vid_sys === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}<option value="__other">Altro…</option></select></label>
+      <label class="f"><span>Sistema</span><select name="vid_sys" onchange="document.getElementById('vid-other').style.display=this.value==='__other'?'block':'none';var u=this.form.querySelector('[name=vid_url]');var m=vidUrls();if(u&&!u.value&&m[this.value])u.value=m[this.value];"><option value="">—</option>${['GPX', 'FG91', 'Race.it', ...(d.vid_sys && !['GPX', 'FG91', 'Race.it'].includes(d.vid_sys) ? [d.vid_sys] : [])].map((x) => `<option ${d.vid_sys === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}<option value="__other">Altro…</option></select></label>
       <label class="f" id="vid-other" style="display:none"><span>Nome del sistema</span><input name="vid_sys_other"></label>
+      <label class="f"><span>Link per aprire il sistema</span><input name="vid_url" type="url" inputmode="url" placeholder="https://…" value="${esc(d.vid_url || vidUrls()[d.vid_sys] || '')}"></label>
       <div class="grid2"><label class="f"><span>Mail / utente</span><input name="vid_user" autocomplete="off" value="${esc(d.vid_user)}"></label><label class="f"><span>Password</span><input name="vid_pass" type="password" autocomplete="new-password" value="${esc(d.vid_pass)}"></label></div>
       <label class="f"><span>Note</span><textarea name="notes">${esc(d.notes)}</textarea></label>
       
@@ -1783,8 +1784,9 @@ async function saveDriver(f) {
     driver_activity: val('driver_activity'),
     race_number: val('race_number'), customer_number: val('customer_number'), race_class: val('race_class'), nation_code: val('nation_code'),
     notes: val('notes'), active: fd.get('active') === 'on',
-    vid_sys: val('vid_sys') === '__other' ? val('vid_sys_other') : val('vid_sys'), vid_user: val('vid_user'), vid_pass: val('vid_pass')
+    vid_sys: val('vid_sys') === '__other' ? val('vid_sys_other') : val('vid_sys'), vid_user: val('vid_user'), vid_pass: val('vid_pass'), vid_url: val('vid_url')
   };
+  if (p.vid_sys && p.vid_url) { const m = vidUrls(); m[p.vid_sys] = p.vid_url; try { localStorage.setItem('mbc_vidurls', JSON.stringify(m)); } catch (_) { /* ok */ } }
   if (fd.has('coach_name')) { p.coach_name = val('coach_name'); p.coach_phone = val('coach_phone'); p.coach_pay = val('coach_pay') === null ? null : Number(val('coach_pay')); p.coach_mode = val('coach_mode') || 'pct'; p.coach_pct = null; }
   if (fd.has('daily_rate')) { const dv = Number(String(fd.get('daily_rate') || '').replace(',', '.')); p.daily_rate = dv || null; p.daily_cur = fd.get('daily_cur') || 'EUR'; }
   const id = f.dataset.id || uuid();
@@ -2334,7 +2336,7 @@ function driverPage() {
   </div>
   ${phn || ems.length ? `<div class="subtle" style="margin:-4px 0 12px;text-align:center;word-break:break-all">${esc(phn)}${phn && ems.length ? ' · ' : ''}${esc(ems[0] || '')}</div>` : '<div class="subtle" style="margin:-4px 0 12px;text-align:center">Nessun telefono o mail: tocca ✎ Modifica scheda per aggiungerli.</div>'}
   ${people ? `<div class="card" style="margin-bottom:6px"><div class="subtle" style="margin-bottom:4px">Contatti del team</div>${people}</div>` : ''}
-  ${d.vid_sys || d.vid_user ? `<div class="card" style="margin-bottom:6px"><div class="subtle" style="margin-bottom:4px">🎥 Acquisizione video / dati</div><div style="font-weight:700;font-size:17px">${esc(d.vid_sys || '—')}</div>${d.vid_user ? `<div class="row between" style="gap:8px;margin-top:6px"><span class="subtle">Utente</span><span style="word-break:break-all">${esc(d.vid_user)}</span><button class="btn small" data-act="copytxt" data-v="${esc(d.vid_user)}">Copia</button></div>` : ''}${d.vid_pass ? `<div class="row between" style="gap:8px;margin-top:6px"><span class="subtle">Password</span><span class="mono" id="vp-${d.id}" data-p="${esc(d.vid_pass)}">••••••••</span><span class="row" style="gap:6px"><button class="btn small" data-act="vidshow" data-id="${d.id}">👁</button><button class="btn small" data-act="copytxt" data-v="${esc(d.vid_pass)}">Copia</button></span></div>` : ''}</div>` : ''}
+  ${d.vid_sys || d.vid_user ? `<div class="card" style="margin-bottom:6px"><div class="subtle" style="margin-bottom:4px">🎥 Acquisizione video / dati</div><div class="row between" style="gap:8px"><div style="font-weight:700;font-size:17px">${esc(d.vid_sys || '—')}</div>${d.vid_url || vidUrls()[d.vid_sys] ? `<button class="btn small primary" data-act="vidopen" data-id="${d.id}">↗ Apri ${esc(d.vid_sys || 'sistema')}</button>` : ''}</div>${d.vid_user ? `<div class="row between" style="gap:8px;margin-top:6px"><span class="subtle">Utente</span><span style="word-break:break-all">${esc(d.vid_user)}</span><button class="btn small" data-act="copytxt" data-v="${esc(d.vid_user)}">Copia</button></div>` : ''}${d.vid_pass ? `<div class="row between" style="gap:8px;margin-top:6px"><span class="subtle">Password</span><span class="mono" id="vp-${d.id}" data-p="${esc(d.vid_pass)}">••••••••</span><span class="row" style="gap:6px"><button class="btn small" data-act="vidshow" data-id="${d.id}">👁</button><button class="btn small" data-act="copytxt" data-v="${esc(d.vid_pass)}">Copia</button></span></div>` : ''}</div>` : ''}
   </div><div class="colB">
   <div class="section-title"><h2>Eventi a cui partecipa</h2><button class="btn small" data-act="drvnewev" data-id="${d.id}">+ Evento</button></div>
   ${up.length ? up.map(evRow).join('') : '<p class="muted">Nessun evento in programma.</p>'}
@@ -3350,6 +3352,7 @@ function parseVcf(txt) {
   });
   return out;
 }
+function vidUrls() { try { return JSON.parse(localStorage.getItem('mbc_vidurls') || '{}'); } catch (_) { return {}; } }
 async function pickOneContact() {
   if (navigator.contacts && navigator.contacts.select) {
     const r = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: false });
@@ -3973,6 +3976,7 @@ document.addEventListener('click', async (ev) => {
       case 'xcimport': xcImportView(); break;
       case 'xcimpgo': await xcImportGo(); break;
       case 'pickc': await pickContactInto(el, id || ''); break;
+      case 'vidopen': { const d = driver(id); if (!d) break; const url = d.vid_url || vidUrls()[d.vid_sys]; if (!url) break; if (d.vid_pass && navigator.clipboard) navigator.clipboard.writeText(d.vid_pass).catch(() => {}); window.open(/^https?:/i.test(url) ? url : 'https://' + url, '_blank', 'noopener'); toast(d.vid_pass ? 'Password copiata: incollala nel campo password' : 'Apro ' + (d.vid_sys || 'il sistema')); break; }
       case 'vidshow': { const sp = document.getElementById('vp-' + id); if (sp) sp.textContent = sp.textContent.startsWith('•') ? sp.dataset.p : '••••••••'; break; }
       case 'copytxt': { try { await navigator.clipboard.writeText(el.dataset.v || ''); toast('Copiato'); } catch (_) { toast('Non riesco a copiare', true); } break; }
       case 'xcedit': xContactForm(id); break;
