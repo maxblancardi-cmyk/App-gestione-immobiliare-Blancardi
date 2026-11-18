@@ -1660,7 +1660,7 @@ function driverForm(id) {
       <label class="f"><span>Sistema</span><select name="vid_sys" onchange="document.getElementById('vid-other').style.display=this.value==='__other'?'block':'none';var u=this.form.querySelector('[name=vid_url]');var m=vidUrls();if(u&&!u.value&&m[this.value])u.value=m[this.value];"><option value="">—</option>${['GPX', 'FG91', 'Race.it', ...(d.vid_sys && !['GPX', 'FG91', 'Race.it'].includes(d.vid_sys) ? [d.vid_sys] : [])].map((x) => `<option ${d.vid_sys === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}<option value="__other">Altro…</option></select></label>
       <label class="f" id="vid-other" style="display:none"><span>Nome del sistema</span><input name="vid_sys_other"></label>
       <label class="f"><span>Link per aprire il sistema</span><input name="vid_url" type="url" inputmode="url" placeholder="https://…" value="${esc(d.vid_url || vidUrls()[d.vid_sys] || '')}"></label>
-      <div class="grid2"><label class="f"><span>Mail / utente</span><input name="vid_user" autocomplete="off" value="${esc(d.vid_user)}"></label><label class="f"><span>Password</span><input name="vid_pass" type="password" autocomplete="new-password" value="${esc(d.vid_pass)}"></label></div>
+      <div class="grid2"><label class="f"><span>Mail / utente</span><input name="vid_user" autocomplete="off" value="${esc(d.vid_user)}"></label><label class="f"><span>Password</span><div style="display:flex;gap:6px;align-items:center"><input name="vid_pass" type="password" autocomplete="new-password" value="${esc(d.vid_pass)}" style="flex:1;min-width:0"><button type="button" class="btn small" aria-label="Mostra password" onclick="var i=this.previousElementSibling;i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">👁</button></div></label></div>
       <label class="f"><span>Note</span><textarea name="notes">${esc(d.notes)}</textarea></label>
       
       <label class="chk"><input type="checkbox" name="active" ${d.active ? 'checked' : ''}> Pilota attivo</label>
@@ -3352,7 +3352,8 @@ function parseVcf(txt) {
   });
   return out;
 }
-function vidUrls() { try { return JSON.parse(localStorage.getItem('mbc_vidurls') || '{}'); } catch (_) { return {}; } }
+const VID_DEFAULTS = { FG91: 'https://fg91motorsport.com/login/' };
+function vidUrls() { let m = {}; try { m = JSON.parse(localStorage.getItem('mbc_vidurls') || '{}'); } catch (_) { /* ok */ } return { ...VID_DEFAULTS, ...m }; }
 window.vidUrls = vidUrls;
 async function pickOneContact() {
   if (navigator.contacts && navigator.contacts.select) {
