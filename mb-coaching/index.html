@@ -3353,6 +3353,7 @@ function parseVcf(txt) {
   return out;
 }
 function vidUrls() { try { return JSON.parse(localStorage.getItem('mbc_vidurls') || '{}'); } catch (_) { return {}; } }
+window.vidUrls = vidUrls;
 async function pickOneContact() {
   if (navigator.contacts && navigator.contacts.select) {
     const r = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: false });
