@@ -3288,7 +3288,7 @@ function teamForm(id) {
     <label class="f" id="t-city-o" style="display:${t.city && !(CITIES[t.country] || []).includes(t.city) && !(S.teams || []).some((x) => x.id !== t.id && x.country === t.country && x.city === t.city) ? 'block' : 'none'}"><span>Altra città</span><input name="city_txt" value="${esc(t.city || '')}"></label>
     <label class="f"><span>Indirizzo</span><input name="address" value="${esc(t.address)}"></label>
     <label class="f"><span>Sito</span><input name="website" value="${esc(t.website)}"></label>
-    ${TROLES.map(([k, l]) => `<label class="f" style="margin:14px 0 8px"><span>Etichetta del ruolo</span><input name="${k}_label" value="${esc(roleLabel(t, k, l))}" style="font-weight:700"></label><div class="row" style="margin-bottom:8px">${t[k + '_photo'] ? `<img class="avatar" src="${t[k + '_photo']}" alt="">` : `<div class="avatar">${esc(((t[k + '_name'] || l)[0] || '?').toUpperCase())}</div>`}<label class="f grow" style="margin:0"><span>Foto</span><input type="file" name="${k}_photo" accept="image/*"></label></div><div class="grid2 drvg"><label class="f"><span>Nome</span><input name="${k}_name" value="${esc(t[k + '_name'])}"></label><label class="f"><span>Telefono</span><input type="tel" name="${k}_phone" value="${esc(t[k + '_phone'])}"></label><label class="f"><span>Mail</span><input type="email" name="${k}_email" value="${esc(t[k + '_email'])}"></label></div>`).join('')}
+    ${TROLES.map(([k, l]) => `<label class="f" style="margin:14px 0 8px"><span>Etichetta del ruolo</span><input name="${k}_label" value="${esc(roleLabel(t, k, l))}" style="font-weight:700"></label><div class="row" style="margin-bottom:8px">${t[k + '_photo'] ? `<img class="avatar" src="${t[k + '_photo']}" alt="">` : `<div class="avatar">${esc(((t[k + '_name'] || l)[0] || '?').toUpperCase())}</div>`}<label class="f grow" style="margin:0"><span>Foto</span><input type="file" name="${k}_photo" accept="image/*"></label></div><button type="button" class="btn small primary" data-act="pickc" data-id="${k}_" style="width:100%;margin:4px 0 8px">📱 Prendi dalla rubrica del telefono</button><div class="grid2 drvg"><label class="f"><span>Nome</span><input name="${k}_name" value="${esc(t[k + '_name'])}"></label><label class="f"><span>Telefono</span><input type="tel" name="${k}_phone" value="${esc(t[k + '_phone'])}"></label><label class="f"><span>Mail</span><input type="email" name="${k}_email" value="${esc(t[k + '_email'])}"></label></div>`).join('')}
     <label class="f"><span>Note</span><textarea name="notes">${esc(t.notes)}</textarea></label>
     <div class="row between"><div>${id ? '<button type="button" class="btn danger" data-act="teamdel">Elimina</button>' : ''}</div><button class="btn primary" type="submit">Salva</button></div></form>`);
 }
@@ -3297,6 +3297,7 @@ function teamContactForm(tid, idx) {
   const c = idx >= 0 ? (t.custom || [])[idx] || {} : {};
   openModal(idx >= 0 ? 'Modifica contatto' : 'Nuovo contatto', `<form data-form="tcontact" data-id="${tid}" data-idx="${idx}">
     <label class="f"><span>Ruolo</span><input name="label" list="trole" value="${esc(c.label)}" required placeholder="es. Direttore sportivo"><datalist id="trole">${['Direttore sportivo', 'Logistica', 'Elettronico', 'Capo meccanico', 'Hospitality', 'Amministrazione', 'Stampa'].map((x) => `<option value="${x}">`).join('')}</datalist></label>
+    <button type="button" class="btn small primary" data-act="pickc" data-id="" style="width:100%;margin:4px 0 8px">📱 Prendi dalla rubrica del telefono</button>
     <label class="f"><span>Nome</span><input name="name" value="${esc(c.name)}"></label>
     <div class="grid2"><label class="f"><span>Telefono</span><input type="tel" name="phone" value="${esc(c.phone)}"></label><label class="f"><span>Email</span><input type="email" name="email" value="${esc(c.email)}"></label></div>
     <div class="row between"><div>${idx >= 0 ? `<button type="button" class="btn danger" data-act="tcdel" data-id="${tid}" data-idx="${idx}">Elimina</button>` : ''}</div><button class="btn primary" type="submit">Salva</button></div></form>`);
@@ -3322,6 +3323,7 @@ function xContactForm(id) {
   const labels = [...new Set(['Direttore sportivo', 'Logistica', 'Hospitality', 'Amministrazione', 'Stampa', 'Hotel', 'Noleggio auto', ...(S.xcontacts || []).map((x) => x.label)].filter(Boolean))];
   openModal(id ? 'Modifica contatto' : 'Nuovo contatto', `<form data-form="xcontact" data-id="${id || ''}">
     <label class="f"><span>Etichetta</span><input name="label" list="xlab" value="${esc(c.label)}" required placeholder="scrivi o scegli"><datalist id="xlab">${labels.map((x) => `<option value="${esc(x)}">`).join('')}</datalist></label>
+    <button type="button" class="btn small primary" data-act="pickc" data-id="" style="width:100%;margin:4px 0 8px">📱 Prendi dalla rubrica del telefono</button>
     <label class="f"><span>Nome</span><input name="name" value="${esc(c.name)}" required></label>
     <div class="grid2"><label class="f"><span>Tipo</span><select name="org_kind"><option value="team" ${c.org_kind !== 'conc' ? 'selected' : ''}>Team</option><option value="conc" ${c.org_kind === 'conc' ? 'selected' : ''}>Concessionario</option></select></label><label class="f"><span>Nome</span><input name="org" list="orglist" value="${esc(c.org || '')}" placeholder="scrivi o scegli"></label></div><datalist id="orglist">${orgOpts()}</datalist>
         <div class="grid2"><label class="f"><span>Telefono</span><input type="tel" name="phone" value="${esc(c.phone)}"></label><label class="f"><span>Email</span><input type="email" name="email" value="${esc(c.email)}"></label></div>
@@ -3341,6 +3343,27 @@ function parseVcf(txt) {
     if (name || phone || email) out.push({ name: name || org || phone, phone, email, org });
   });
   return out;
+}
+async function pickOneContact() {
+  if (navigator.contacts && navigator.contacts.select) {
+    const r = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: false });
+    const c = r && r[0]; if (!c) return null;
+    return { name: (c.name || [])[0] || '', phone: (c.tel || [])[0] || '', email: (c.email || [])[0] || '' };
+  }
+  return new Promise((res) => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.vcf,text/vcard,text/x-vcard';
+    inp.onchange = async () => { const f = inp.files && inp.files[0]; if (!f) return res(null); try { res(parseVcf(await f.text())[0] || null); } catch (_) { res(null); } };
+    toast('Scegli il contatto salvato in File (.vcf)');
+    inp.click();
+  });
+}
+async function pickContactInto(btn, pfx) {
+  let c; try { c = await pickOneContact(); } catch (_) { c = null; }
+  if (!c) return toast('Nessun contatto scelto', true);
+  const f = btn.closest('form'); if (!f) return;
+  const set = (n, v) => { const el = f.querySelector(`[name="${pfx}${n}"]`); if (el && v) el.value = v; };
+  set('name', c.name); set('phone', c.phone); set('email', c.email);
+  toast('Contatto inserito: ' + (c.name || c.phone));
 }
 function xcImportView() {
   S._imp = [];
@@ -3943,6 +3966,7 @@ document.addEventListener('click', async (ev) => {
       case 'xcadd': xContactForm(''); break;
       case 'xcimport': xcImportView(); break;
       case 'xcimpgo': await xcImportGo(); break;
+      case 'pickc': await pickContactInto(el, id || ''); break;
       case 'xcedit': xContactForm(id); break;
       case 'xcdel': await del('xcontacts', id); closeModal(); render(); toast('Contatto eliminato'); break;
       case 'tcadd': teamContactForm(id, -1); break;
