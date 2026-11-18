@@ -1656,6 +1656,10 @@ function driverForm(id) {
       <label class="f"><span>Attività</span><select name="driver_activity"><option value="">—</option><option value="fc" ${d.driver_activity === 'fc' ? 'selected' : ''}>Ferrari Challenge</option><option value="club" ${d.driver_activity === 'club' ? 'selected' : ''}>Club Challenge</option>${d.driver_activity && !['fc', 'club'].includes(d.driver_activity) ? `<option value="${esc(d.driver_activity)}" selected>Altro</option>` : ''}</select></label>
       <label class="f"><span>Campionato</span><select name="championship_id">${opts(S.champs, d.championship_id, (c) => c.name, '—')}</select></label>
       <label class="f"><span>Macchina (modello)</span><select name="car_model"><option value="">—</option>${[...CARS, ...(d.car_model && !CARS.includes(d.car_model) ? [d.car_model] : [])].map((m) => `<option ${d.car_model === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}<option value="__new">＋ Altra…</option></select><input name="car_model_new" class="hidden" placeholder="Modello della macchina" style="margin-top:6px"></label>
+      <div class="lbl" style="margin:14px 0 6px">🎥 Acquisizione video / dati</div>
+      <label class="f"><span>Sistema</span><select name="vid_sys" onchange="document.getElementById('vid-other').style.display=this.value==='__other'?'block':'none'"><option value="">—</option>${['GPX', 'FG91', 'Race.it', ...(d.vid_sys && !['GPX', 'FG91', 'Race.it'].includes(d.vid_sys) ? [d.vid_sys] : [])].map((x) => `<option ${d.vid_sys === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}<option value="__other">Altro…</option></select></label>
+      <label class="f" id="vid-other" style="display:none"><span>Nome del sistema</span><input name="vid_sys_other"></label>
+      <div class="grid2"><label class="f"><span>Mail / utente</span><input name="vid_user" autocomplete="off" value="${esc(d.vid_user)}"></label><label class="f"><span>Password</span><input name="vid_pass" type="password" autocomplete="new-password" value="${esc(d.vid_pass)}"></label></div>
       <label class="f"><span>Note</span><textarea name="notes">${esc(d.notes)}</textarea></label>
       
       <label class="chk"><input type="checkbox" name="active" ${d.active ? 'checked' : ''}> Pilota attivo</label>
@@ -1778,7 +1782,8 @@ async function saveDriver(f) {
     assistant_name: val('assistant_name'), assistant_email: val('assistant_email'), assistant_phone: val('assistant_phone'),
     driver_activity: val('driver_activity'),
     race_number: val('race_number'), customer_number: val('customer_number'), race_class: val('race_class'), nation_code: val('nation_code'),
-    notes: val('notes'), active: fd.get('active') === 'on'
+    notes: val('notes'), active: fd.get('active') === 'on',
+    vid_sys: val('vid_sys') === '__other' ? val('vid_sys_other') : val('vid_sys'), vid_user: val('vid_user'), vid_pass: val('vid_pass')
   };
   if (fd.has('coach_name')) { p.coach_name = val('coach_name'); p.coach_phone = val('coach_phone'); p.coach_pay = val('coach_pay') === null ? null : Number(val('coach_pay')); p.coach_mode = val('coach_mode') || 'pct'; p.coach_pct = null; }
   if (fd.has('daily_rate')) { const dv = Number(String(fd.get('daily_rate') || '').replace(',', '.')); p.daily_rate = dv || null; p.daily_cur = fd.get('daily_cur') || 'EUR'; }
@@ -2329,6 +2334,7 @@ function driverPage() {
   </div>
   ${phn || ems.length ? `<div class="subtle" style="margin:-4px 0 12px;text-align:center;word-break:break-all">${esc(phn)}${phn && ems.length ? ' · ' : ''}${esc(ems[0] || '')}</div>` : '<div class="subtle" style="margin:-4px 0 12px;text-align:center">Nessun telefono o mail: tocca ✎ Modifica scheda per aggiungerli.</div>'}
   ${people ? `<div class="card" style="margin-bottom:6px"><div class="subtle" style="margin-bottom:4px">Contatti del team</div>${people}</div>` : ''}
+  ${d.vid_sys || d.vid_user ? `<div class="card" style="margin-bottom:6px"><div class="subtle" style="margin-bottom:4px">🎥 Acquisizione video / dati</div><div style="font-weight:700;font-size:17px">${esc(d.vid_sys || '—')}</div>${d.vid_user ? `<div class="row between" style="gap:8px;margin-top:6px"><span class="subtle">Utente</span><span style="word-break:break-all">${esc(d.vid_user)}</span><button class="btn small" data-act="copytxt" data-v="${esc(d.vid_user)}">Copia</button></div>` : ''}${d.vid_pass ? `<div class="row between" style="gap:8px;margin-top:6px"><span class="subtle">Password</span><span class="mono" id="vp-${d.id}" data-p="${esc(d.vid_pass)}">••••••••</span><span class="row" style="gap:6px"><button class="btn small" data-act="vidshow" data-id="${d.id}">👁</button><button class="btn small" data-act="copytxt" data-v="${esc(d.vid_pass)}">Copia</button></span></div>` : ''}</div>` : ''}
   </div><div class="colB">
   <div class="section-title"><h2>Eventi a cui partecipa</h2><button class="btn small" data-act="drvnewev" data-id="${d.id}">+ Evento</button></div>
   ${up.length ? up.map(evRow).join('') : '<p class="muted">Nessun evento in programma.</p>'}
@@ -3967,6 +3973,8 @@ document.addEventListener('click', async (ev) => {
       case 'xcimport': xcImportView(); break;
       case 'xcimpgo': await xcImportGo(); break;
       case 'pickc': await pickContactInto(el, id || ''); break;
+      case 'vidshow': { const sp = document.getElementById('vp-' + id); if (sp) sp.textContent = sp.textContent.startsWith('•') ? sp.dataset.p : '••••••••'; break; }
+      case 'copytxt': { try { await navigator.clipboard.writeText(el.dataset.v || ''); toast('Copiato'); } catch (_) { toast('Non riesco a copiare', true); } break; }
       case 'xcedit': xContactForm(id); break;
       case 'xcdel': await del('xcontacts', id); closeModal(); render(); toast('Contatto eliminato'); break;
       case 'tcadd': teamContactForm(id, -1); break;
