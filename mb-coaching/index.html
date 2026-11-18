@@ -405,6 +405,8 @@ table.cls tr.mine td { background: color-mix(in srgb, var(--neon) 22%, transpare
 @media (min-width: 900px) { .tlogo.big { height: 190px; } }
 /* tastini in alto bordati di nero */
 .sq { border: 2.5px solid #000 !important; box-sizing: border-box; }
+.sq.vb { background: #da291c; color: #fff; font-size: 13px; font-weight: 900; text-decoration: none; }
+
 .sq.on { box-shadow: 0 0 0 2px var(--neon), 0 0 10px var(--neon) !important; }
 .sq.plus { border-color: #000 !important; border-style: solid !important; }
 .nav button { font-size: 10.5px; padding-left: 0; padding-right: 0; min-width: 0; }
@@ -2749,7 +2751,7 @@ const BASE_DIRS = [{ id: 'FC', label: 'FC', name: 'Ferrari Challenge', bg: '#da2
 const DIR_COLORS = [['#da291c', '#ffd200'], ['#0b2a5b', '#ffffff'], ['#111111', '#39ff14'], ['#ffd200', '#111111'], ['#2f80ff', '#ffffff'], ['#00a86b', '#ffffff'], ['#7b2cbf', '#ffffff'], ['#ff8c00', '#111111']];
 function allDirs() { return [...BASE_DIRS, ...[...(S.dirs || [])].sort((a, b) => (a.order || 0) - (b.order || 0))]; }
 function sqStyle(d) { return d.img ? `background:${d.imgbg || '#fff'} url('${d.img}') center/contain no-repeat;color:transparent` : `background:${d.bg};color:${d.fg};font-size:${d.label.length > 3 ? 10 : 12}px`; }
-function dirSquares() { return allDirs().map((d) => `<button class="sq ${S.view === 'dir' && S.dirKey === d.id ? 'on' : ''}" data-act="diropen" data-id="${d.id}" title="${esc(d.name)}" style="${sqStyle(d)}">${d.img ? '' : esc(d.label)}</button>`).join('') + '<button class="sq plus" data-act="dirnew" title="Aggiungi un tasto">+</button>'; }
+function dirSquares() { return allDirs().map((d) => `<button class="sq ${S.view === 'dir' && S.dirKey === d.id ? 'on' : ''}" data-act="diropen" data-id="${d.id}" title="${esc(d.name)}" style="${sqStyle(d)}">${d.img ? '' : esc(d.label)}</button>`).join('') + '<button class="sq plus" data-act="dirnew" title="Aggiungi un tasto">+</button>' + '<a class="sq vb" href="https://www.ferrari.com/en-EN/corse-clienti/virtual-board" target="_blank" rel="noopener" title="Virtual Board Ferrari Challenge">VB</a>'; }
 function fccAreas() {
   return [{ k: 'WORLD', name: 'Ferrari Challenge – Mondo', flag: '🌍', color: '#da291c', dir: 'FC' }, ...FC2027.map((f) => ({ k: f.key, name: f.name, flag: f.flag, color: f.color, f, dir: 'FC' })), { k: 'IMSA', name: 'IMSA', flag: '🇺🇸', color: '#0b2a5b', dir: 'IMSA' }, ...(S.dirs || []).map((d) => ({ k: d.id, name: d.name, flag: '', color: d.bg, dir: d.id }))];
 }
