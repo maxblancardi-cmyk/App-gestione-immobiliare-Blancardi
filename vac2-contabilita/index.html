@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Via al Capo 2 – Contabilità</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%23b3261e%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial,sans-serif%22 font-size=%2234%22 font-weight=%22700%22 fill=%22white%22 text-anchor=%22middle%22%3EB%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#b3261e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bg:#f6f5f2;--card:#fff;--ink:#1d1d1b;--mute:#6b6a66;--line:#e4e2dc;--accent:#b3261e;--accent-soft:#fbeceb;--ok:#2e7d4f;--ok-soft:#e6f3ec;--warn:#a86400;--warn-soft:#fdf1df;--blue:#2c5d8a;--blue-soft:#e8eff6}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top{display:flex;align-items:center;gap:12px;padding:12px 20px;max-width:1240px;margin:auto}
+.logo{width:30px;height:30px;border-radius:7px;background:var(--accent);color:#fff;font-weight:700;display:grid;place-items:center;font-size:13px}
+.top h1{font-size:16px;margin:0;font-weight:600}
+.top .sub{color:var(--mute);font-size:12px}
+nav{display:flex;gap:2px;padding:0 20px;max-width:1240px;margin:auto;overflow-x:auto}
+nav a{padding:10px 14px;color:var(--mute);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500}
+nav a.on{color:var(--ink);border-color:var(--accent)}
+nav a .n{background:var(--accent-soft);color:var(--accent);border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
+main{max-width:1240px;margin:auto;padding:20px}
+.banner{background:var(--warn-soft);color:#6b4100;border:1px solid #f1d9ad;border-radius:8px;padding:9px 12px;margin-bottom:16px;font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi .l{color:var(--mute);font-size:12px}.kpi .v{font-size:20px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 12px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+input,select,textarea{font:inherit;padding:9px 10px;font-size:14px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);min-width:0}
+input:focus,select:focus,textarea:focus{outline:2px solid #e9b7b3;border-color:var(--accent)}
+button{font:inherit;font-weight:500;padding:8px 14px;border-radius:7px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+select option,select optgroup{color:var(--ink);background:#fff}
+.reset{background:var(--accent-soft);border-color:#efc4c1;color:var(--accent);font-weight:600}
+.reset:hover{background:#f6d9d7}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.small{padding:4px 9px;font-size:12px}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);text-align:left;font-weight:600;padding:8px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff}
+td{padding:8px;border-bottom:1px solid #f0eee9;vertical-align:top}
+tr:hover td{background:#fbfaf8}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tblwrap{max-height:62vh;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.chip{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11px;font-weight:600;white-space:nowrap}
+.c-ok{background:var(--ok-soft);color:var(--ok)}.c-warn{background:var(--warn-soft);color:var(--warn)}.c-red{background:var(--accent-soft);color:var(--accent)}.c-blue{background:var(--blue-soft);color:var(--blue)}.c-grey{background:#efede8;color:var(--mute)}
+.mute{color:var(--mute)}.small{font-size:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 16px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute);font-weight:500}
+label.full{grid-column:1/-1}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:8px 16px}
+.seg button.on{background:var(--ink);color:#fff}
+.tot{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.err{color:var(--accent);font-size:12px;min-height:16px}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+dialog{border:0;border-radius:12px;padding:0;background:#fff;color:var(--ink);color-scheme:light;max-width:520px;width:94vw;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(20,20,20,.35)}
+.dlg{padding:18px}
+.dlg h3{margin:0 0 4px;font-size:16px}
+.bar{height:8px;border-radius:4px;background:#efede8;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:.25s;pointer-events:none}
+.toast.on{opacity:1}
+.sugg{border:1px solid var(--line);border-radius:7px;margin-top:2px;max-height:180px;overflow:auto;background:#fff;display:none;position:absolute;z-index:3;width:100%}
+.sugg div{padding:6px 10px;cursor:pointer}.sugg div:hover{background:var(--bg)}
+.rel{position:relative}
+@media (max-width:640px){main{padding:12px}.hide-s{display:none}td,th{padding:6px}}
+
+select option:checked{background:var(--accent) linear-gradient(0deg,var(--accent),var(--accent));color:#fff}
+.dd{position:relative;min-width:170px}
+.dd>button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;padding:9px 10px;font-weight:400}
+.dd>button::after{content:'';border:5px solid transparent;border-top-color:var(--mute);margin-top:5px}
+.dd.on>button{border-color:var(--accent);outline:2px solid #e9b7b3}
+.dd .menu{display:none;position:absolute;z-index:20;top:calc(100% + 4px);left:0;min-width:100%;max-height:320px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.14);padding:4px}
+.dd.on .menu{display:block}
+.dd .menu input{width:100%;margin-bottom:4px;position:sticky;top:0;z-index:1}
+.dd .opt{padding:8px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;color:var(--ink)}
+.dd .opt:hover,.dd .opt.hl{background:#f1efea}
+.dd .opt.sel{background:var(--accent);color:#fff;font-weight:600}
+.dd .opt.sel:hover{background:#9a1f18}
+.dd.full{width:100%}
+.mc{border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+.mc summary{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;background:#faf9f6;border-radius:8px;cursor:pointer;flex-wrap:wrap;list-style:none}
+.mc summary::-webkit-details-marker{display:none}
+.mc[open] summary{border-bottom:1px solid var(--line);border-radius:8px 8px 0 0}
+.catchip{display:inline-block;background:var(--blue-soft);color:var(--blue);border:1px solid #c9d9ea;border-radius:12px;padding:2px 9px;font-size:12px;font-weight:500}
+.catchip b{margin-left:3px}
+#login{position:fixed;inset:0;background:var(--bg);z-index:50;display:grid;place-items:center}
+#login .box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;width:min(380px,92vw)}
+#login .box h2{margin:0 0 4px;font-size:18px}
+.who{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mute)}
+#loading{position:fixed;inset:0;background:rgba(246,245,242,.8);z-index:40;display:none;place-items:center;font-weight:600}
+.help h3{font-size:14px;margin:14px 0 4px}.help ol,.help ul{margin:4px 0 8px;padding-left:20px}.help li{margin:2px 0}.help details{border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fff}.help summary{padding:10px 12px;font-weight:600;cursor:pointer}.help details>div{padding:0 14px 10px}.help kbd{background:#efede8;border-radius:4px;padding:0 5px;font:inherit;font-weight:600}
+.pres{display:none;font-size:12px;font-weight:600;color:var(--ok);background:var(--ok-soft);border-radius:9px;padding:2px 9px;margin-left:8px;vertical-align:middle}
+#roBanner{display:none;background:var(--blue-soft);color:var(--blue);border:1px solid #c9d9ea;border-radius:8px;padding:9px 12px;margin-bottom:16px;font-size:13px}
+.riga{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:6px;align-items:center}
+@media print{header,.banner,#roBanner,#login,#loading,.toast,#v-controlli>.card:first-child{display:none!important}body{background:#fff}.card{border:0}details.mc{break-inside:avoid}details.mc>div{display:block}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top"><div class="logo">B</div><div><h1>Via al Capo 2 – Gestione<span id="presenza" class="pres"></span></h1><div class="sub" id="subTop">Contabilità – controllata ogni mese con l'estratto conto Caraglio</div></div><div class="who"><span id="whoName"></span><button class="small" onclick="carica(true)" title="Ricarica i dati dal database">↻ Aggiorna</button><button class="small" onclick="cambiaPw()">Password</button><button class="small" onclick="esci()">Esci</button></div></div>
+  <nav id="nav">
+    <a href="#movimenti" data-v="movimenti">Movimenti</a>
+    <a href="#nuovo" data-v="nuovo">+ Nuovo documento</a>
+    <a href="#scadenzario" data-v="scadenzario">Da pagare / incassare</a>
+    <a href="#riepilogo" data-v="riepilogo">Riepilogo</a>
+    <a href="#anomalie" data-v="anomalie">Da verificare <span class="n" id="nAnom"></span></a>
+    <a href="#controlli" data-v="controlli">Controlli</a>
+    <a href="#aiuto" data-v="aiuto">? Aiuto</a>
+  </nav>
+</header>
+<main>
+  <div class="banner"><b>Da oggi si registra solo qui.</b> Il foglio Excel del bilancio è archiviato al 16/11/2026 e non va più aggiornato. Ogni mese questa app viene controllata con l'estratto conto Caraglio: saldo di riferimento 502.219,18 € al 16/11/2026.</div>
+  <div id="roBanner"></div>
+  <section id="v-movimenti"></section>
+  <section id="v-nuovo"></section>
+  <section id="v-scadenzario"></section>
+  <section id="v-riepilogo"></section>
+  <section id="v-anomalie"></section>
+  <section id="v-controlli"></section>
+  <section id="v-aiuto"></section>
+</main>
+
+<dialog id="dlgPag"><form class="dlg" id="fPag">
+  <h3 id="pTitle">Registra pagamento</h3>
+  <div class="mute small" id="pSub"></div>
+  <div class="grid2" style="margin-top:14px">
+    <label>Data<input type="date" id="pData" required></label>
+    <label>Importo €<input type="number" step="0.01" id="pImp" required></label>
+    <label>Tipo<select id="pTipo"><option value="saldo">Saldo</option><option value="acconto">Acconto</option><option value="caparra">Caparra</option><option value="rata">Rata</option></select></label>
+    <label>Come<select id="pConto"></select></label>
+    <label id="pMutL" style="display:none">Mutuo ridotto<select id="pMut"><option value="2923">Mutuo n. 2923</option><option value="7240">Mutuo n. 7240</option></select></label>
+    <div id="pAiuto" class="full small mute" style="grid-column:1/-1"></div>
+    <label class="full">Note<input id="pNote" placeholder="facoltativo"></label>
+  </div>
+  <div class="err" id="pErr"></div>
+  <div id="pStorico" class="small"></div>
+  <div class="actions"><button type="button" onclick="dlgPag.close()">Annulla</button><button class="primary">Registra</button></div>
+</form></dialog>
+
+<dialog id="dlgChiudi"><form class="dlg" id="fChiudi">
+  <h3>Chiudi con differenza</h3>
+  <div class="mute small" id="cSub"></div>
+  <div style="background:var(--warn-soft);color:#6b4100;border:1px solid #f1d9ad;border-radius:8px;padding:10px 12px;margin:12px 0;font-size:13px">
+    <b>Attenzione: operazione che chiude il documento senza un pagamento.</b><br>
+    Il residuo di <b id="cRes"></b> non verrà più mostrato come <span id="cDaPag"></span>. Non viene registrato nessun movimento di denaro: si annota solo il motivo per cui la differenza non sarà <span id="cPagata"></span>.<br>
+    Usala solo se sei sicuro. Se scegli "Trattenuta a garanzia", l'importo resta visibile in "Da pagare / incassare" finché non viene svincolato.
+  </div>
+  <div class="grid2">
+    <label>Motivo<select id="cMot" required><option value="">Scegli…</option><option value="trattenuta">Trattenuta a garanzia (da pagare più avanti)</option><option value="abbuono">Abbuono / arrotondamento</option><option value="sconto">Sconto concordato</option><option value="non_dovuto">Importo non dovuto / errore</option><option value="nota_credito">Nota di credito attesa</option></select></label>
+    <label>Data<input type="date" id="cData" required></label>
+    <label class="full">Spiegazione<input id="cNote" placeholder="es. 5% trattenuto fino al collaudo, accordo del…"></label>
+    <label class="full" style="flex-direction:row;align-items:center;gap:8px;color:var(--ink)"><input type="checkbox" id="cOk"> Confermo di voler chiudere il documento con questa differenza</label>
+  </div>
+  <div class="err" id="cErr"></div>
+  <div class="actions"><button type="button" onclick="dlgChiudi.close()">Annulla</button><button class="primary" id="cBtn" disabled>Conferma chiusura</button></div>
+</form></dialog>
+<dialog id="dlgCat"><form class="dlg" id="fCat">
+  <h3>Nuova categoria</h3>
+  <div class="mute small">La categoria sarà subito utilizzabile e comparirà in "Da verificare" per il controllo.</div>
+  <div class="grid2" style="margin-top:14px">
+    <label class="full">Nome<input id="ncNome" required placeholder="es. Allacci utenze"></label>
+    <label class="full">Tipo<select id="ncTipo"></select></label>
+  </div>
+  <div id="ncSimili"></div>
+  <div class="err" id="ncErr"></div>
+  <div class="actions"><button type="button" onclick="dlgCat.close();catAnnulla()">Annulla</button><button class="primary">Crea categoria</button></div>
+</form></dialog>
+<div id="login"><form class="box" id="fLogin" onsubmit="return false">
+  <div class="logo" style="margin-bottom:10px">B</div><h2>Via al Capo 2 – Contabilità</h2>
+  <div class="mute small" style="margin-bottom:14px">Accedi con la stessa email e password dell'app Gestione Blancardi.</div>
+  <div class="grid2"><label class="full">Email<input type="email" id="lEmail" autocomplete="username" required></label>
+  <label class="full">Password<input type="password" id="lPw" autocomplete="current-password" required></label></div>
+  <div class="err" id="lErr"></div>
+  <div class="actions"><button class="primary" id="lBtn">Entra</button></div>
+</form></div>
+<div id="loading">Caricamento dati…</div>
+<dialog id="dlgDoc"><div class="dlg" id="docDett"></div></dialog>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const sb = supabase.createClient('https://rrpvpvgdawfsstfcqyji.supabase.co','sb_publishable_Wk10Y3EASGqvH5g2ZQ_pOw_MAlzD7pf');
+let DATA = {soggetti:[],categorie:[],documenti:[],pagamenti:[],anomalie:[]};
+let S = {}, C = {}, ME = {email:'',ruolo:'',nome:''};
+const isAdmin = () => ME.ruolo==='admin';
+function reindex(){S=Object.fromEntries(DATA.soggetti.map(s=>[s.id,s]));C=Object.fromEntries(DATA.categorie.map(c=>[c.id,c]))}
+const NUM=['imponibile','iva','importo','totale','ritenuta','ritenuta_base','ritenuta_perc'];
+function norm(r){for(const k of NUM)if(r[k]!=null)r[k]=+r[k];return r}
+async function tutto(tab,ord){let out=[],da=0;for(;;){const {data,error}=await sb.from(tab).select('*').order(ord||'id').range(da,da+999);if(error)throw error;out=out.concat(data.map(norm));if(data.length<1000)break;da+=1000}return out}
+async function carica(msg){
+  document.getElementById('loading').style.display='grid';
+  try{
+    const [so,ca,doc,pag,an]=await Promise.all([tutto('vac2_soggetti'),tutto('vac2_categorie'),tutto('vac2_documenti'),tutto('vac2_pagamenti'),tutto('vac2_anomalie')]);
+    DATA={soggetti:so,categorie:ca,documenti:doc,pagamenti:pag,anomalie:an.filter(a=>!a.risolta)};reindex();
+    render();if(msg)toast('Dati aggiornati');
+  }catch(e){alert('Errore nel caricamento dei dati: '+(e.message||e))}
+  finally{document.getElementById('loading').style.display='none'}
+}
+async function db(q,okMsg){if(!EDIT){alert(`Sola lettura: in questo momento sta modificando ${EDITOR?.nome||EDITOR?.email||'un altro utente'}. Potrai salvare quando avrà chiuso l'app.`);throw new Error('sola lettura')}const {data,error}=await q;if(error){alert('Non salvato: '+error.message);throw error}if(okMsg)toast(okMsg);return data}
+async function avvio(session){
+  if(!session){document.getElementById('login').style.display='grid';return}
+  ME.email=session.user.email;
+  const {data:m}=await sb.from('members').select('role,nome').eq('email',ME.email).maybeSingle();
+  if(!m||!['admin','contabile'].includes(m.role)){document.getElementById('login').style.display='grid';lErr.textContent='Questo account non è abilitato alla contabilità di Via al Capo 2.';await sb.auth.signOut();return}
+  ME.ruolo=m.role;ME.nome=m.nome||ME.email;
+  document.getElementById('whoName').textContent=ME.nome+(isAdmin()?' · amministratore':' · contabilità');
+  document.getElementById('login').style.display='none';
+  avviaPresenza();
+  await carica();
+}
+async function cambiaPw(){const a=prompt('Nuova password (almeno 8 caratteri):');if(!a)return;if(a.length<8){alert('Troppo corta: almeno 8 caratteri.');return}if(prompt('Ripeti la nuova password:')!==a){alert('Le due password non coincidono.');return}const {error}=await sb.auth.updateUser({password:a});alert(error?'Password non cambiata: '+error.message:'Password cambiata. Vale anche per Gestione Blancardi.')}
+async function esci(){fermaPresenza();try{await sb.auth.signOut({scope:'local'})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k))}catch(e){}DATA={soggetti:[],categorie:[],documenti:[],pagamenti:[],anomalie:[]};ME={email:'',ruolo:'',nome:''};document.getElementById('whoName').textContent='';lPw.value='';lErr.textContent='';document.getElementById('login').style.display='grid';try{history.replaceState(null,'',location.pathname)}catch(e){}}
+document.getElementById('fLogin').onsubmit=async e=>{e.preventDefault();lErr.textContent='';lBtn.disabled=true;
+  const {data,error}=await sb.auth.signInWithPassword({email:lEmail.value.trim(),password:lPw.value});lBtn.disabled=false;
+  if(error){lErr.textContent='Email o password non corretti.';return}avvio(data.session)};
+const GRUPPI = {costo_operazione:'Costo operazione',onere_finanziario:'Onere finanziario',rimborso_capitale:'Rimborso capitale',rata_mutuo_da_ripartire:'Rata mutuo (capitale + interessi)',finanziamento:'Finanziamento',ricavo_vendita:'Vendita unità',altro_ricavo:'Altro ricavo'};
+const TIPI = {fattura:'Fattura',fattura_estera:'Fattura estera',nota_credito:'Nota di credito',rata_mutuo:'Rata mutuo',imposta:'Imposta',versamento:'Versamento',erogazione_mutuo:'Erogazione mutuo',vendita:'Vendita',commissioni:'Commissioni',assicurazione:'Assicurazione',altro:'Altro'};
+let nextDoc = Math.max(...DATA.documenti.map(d=>d.id))+1, nextPag = Math.max(...DATA.pagamenti.map(p=>p.id))+1;
+const catSorted = () => [...DATA.categorie].sort((a,b)=>a.nome.localeCompare(b.nome,'it'));
+const eur = v => (v<0?'−':'')+'€ '+Math.abs(v).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+const eur0 = v => (v<0?'−':'')+'€ '+Math.abs(Math.round(v)).toLocaleString('it-IT');
+const dit = s => s ? s.split('-').reverse().join('/') : '—';
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function pagati(id){return DATA.pagamenti.filter(p=>p.documento_id===id)}
+function calc(d){const tot=+(d.imponibile+d.iva).toFixed(2);const pag=+pagati(d.id).reduce((a,p)=>a+p.importo,0).toFixed(2);return {tot,pag,rit:+(d.ritenuta||0),res:+(tot-(d.ritenuta||0)-pag).toFixed(2)}}
+const isNC=d=>d.verso==='uscita'&&(d.imponibile+d.iva)<0;
+const azione=d=>isNC(d)?'Rimborso':(d.verso==='uscita'?'Paga':'Incassa');
+function stato(d){const {tot,res}=calc(d);const df=pagati(d.id).find(p=>p.tipo==='differenza');if(df&&Math.abs(res)<0.5)return df.motivo==='trattenuta'?['Trattenuta garanzia','c-warn']:['Chiuso con differenza','c-grey'];if(Math.abs(res)<0.5)return isNC(d)?['Rimborsata','c-ok']:(d.verso==='uscita'?['Pagato','c-ok']:['Incassato','c-ok']);if(Math.abs(res)<Math.abs(tot)-0.5)return ['Parziale','c-warn'];return isNC(d)?['Rimborso da ricevere','c-blue']:(d.verso==='uscita'?['Da pagare','c-red']:['Da incassare','c-blue'])}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2200)}
+
+
+/* ---------- MENU A TENDINA PERSONALIZZATO (testo sempre leggibile) ---------- */
+function dropdown(host,{options,value,onChange,search=false,placeholder='Scegli…'}){
+  const lab=v=>(options.find(o=>o.v===v)||{l:placeholder}).l;
+  host.classList.add('dd');
+  host.innerHTML=`<button type="button">${esc(lab(value))}</button><div class="menu">${search?'<input placeholder="Scrivi per filtrare…">':''}<div class="list"></div></div>`;
+  const btn=host.querySelector('button'),list=host.querySelector('.list'),inp=host.querySelector('input');
+  host.value=value;
+  let hl=-1,vis=[];
+  const draw=()=>{const q=(inp?.value||'').toLowerCase();vis=options.filter(o=>!q||o.l.toLowerCase().includes(q));
+    list.innerHTML=vis.map((o,i)=>`<div class="opt${o.v===host.value?' sel':''}${i===hl?' hl':''}" data-i="${i}">${esc(o.l)}</div>`).join('')||'<div class="opt mute">Nessuna voce</div>';
+    list.querySelectorAll('.opt[data-i]').forEach(el=>el.onmousedown=e=>{e.preventDefault();pick(vis[+el.dataset.i])})};
+  const pick=o=>{host.value=o.v;btn.textContent=o.l;close();onChange&&onChange(o.v)};
+  const open=()=>{document.querySelectorAll('.dd.on').forEach(d=>d!==host&&d.classList.remove('on'));host.classList.add('on');hl=-1;if(inp){inp.value='';inp.focus()}draw();list.querySelector('.sel')?.scrollIntoView({block:'nearest'})};
+  const close=()=>host.classList.remove('on');
+  btn.onclick=()=>host.classList.contains('on')?close():open();
+  host.onkeydown=e=>{if(!host.classList.contains('on'))return;
+    if(e.key==='Escape'){close();btn.focus()}
+    if(e.key==='ArrowDown'){hl=Math.min(hl+1,vis.length-1);draw();e.preventDefault()}
+    if(e.key==='ArrowUp'){hl=Math.max(hl-1,0);draw();e.preventDefault()}
+    if(e.key==='Enter'&&vis[hl>=0?hl:0]){pick(vis[hl>=0?hl:0]);e.preventDefault()}};
+  inp&&(inp.oninput=()=>{hl=0;draw()});
+  host.setValue=v=>{host.value=v;btn.textContent=lab(v)};
+  return host;
+}
+document.addEventListener('mousedown',e=>{if(!e.target.closest('.dd'))document.querySelectorAll('.dd.on').forEach(d=>d.classList.remove('on'))});
+
+
+/* ---------- NUOVA CATEGORIA con controllo doppioni ---------- */
+const GRUPPI_USCITA=['costo_operazione','onere_finanziario','rimborso_capitale','rata_mutuo_da_ripartire'];
+const GRUPPI_ENTRATA=['finanziamento','ricavo_vendita','altro_ricavo'];
+const normCat=x=>x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
+function simili(nome){
+  const a=normCat(nome);if(!a)return[];const aw=a.split(' ').filter(w=>w.length>=4);
+  return DATA.categorie.filter(c=>{const b=normCat(c.nome);if(a===b||a.replace(/ /g,'')===b.replace(/ /g,''))return true;
+    if(a.length>=4&&(b.includes(a)||a.includes(b)))return true;if(lev(a,b)<=Math.max(2,Math.floor(Math.min(a.length,b.length)/5)))return true;
+    const bw=b.split(' ').filter(w=>w.length>=4);return aw.some(x=>bw.some(y=>x.slice(0,5)===y.slice(0,5)))});
+}
+let catCb=null,catPrev='';
+function apriNuovaCat(verso,cb,prev){
+  catCb=cb;catPrev=prev||'';
+  ncTipo.innerHTML=(verso==='uscita'?GRUPPI_USCITA:GRUPPI_ENTRATA).map(g=>`<option value="${g}">${GRUPPI[g]}</option>`).join('');
+  ncNome.value='';ncErr.textContent='';ncSimili.innerHTML='';fCat.dataset.ok='';dlgCat.showModal();ncNome.focus();
+}
+function catAnnulla(){catCb&&catCb(catPrev)}
+ncNome.oninput=()=>{fCat.dataset.ok='';const L=simili(ncNome.value);
+  ncSimili.innerHTML=L.length?`<div style="background:var(--warn-soft);border:1px solid #f1d9ad;border-radius:8px;padding:8px 10px;margin-top:10px;font-size:13px;color:#6b4100"><b>Esistono già categorie simili:</b> ${L.map(c=>`<a href="#" onclick="usaCat(${c.id});return false" style="margin-left:6px">${esc(c.nome)}</a>`).join(' ·')}<br>Clicca su una per usarla invece di crearne una nuova.</div>`:''};
+function usaCat(id){dlgCat.close();catCb&&catCb(String(id))}
+fCat.onsubmit=e=>{e.preventDefault();if(fCat.dataset.busy)return;
+  const nome=ncNome.value.trim().replace(/\s+/g,' ');
+  if(nome.length<3){ncErr.textContent='Scrivi un nome di almeno 3 lettere.';return}
+  const uguale=DATA.categorie.find(c=>normCat(c.nome).replace(/ /g,'')===normCat(nome).replace(/ /g,''));
+  if(uguale){ncErr.textContent=`La categoria "${uguale.nome}" esiste già: usala.`;return}
+  if(simili(nome).length&&!fCat.dataset.ok){ncErr.textContent='Ci sono categorie simili (sopra). Se sei sicura che serva una categoria nuova, premi di nuovo "Crea categoria".';fCat.dataset.ok=1;return}
+  db(sb.from('vac2_categorie').insert({nome:nome.charAt(0).toUpperCase()+nome.slice(1),gruppo:ncTipo.value,nuova:true,verificata:false}).select().single(),'Categoria creata')
+   .then(c=>{DATA.categorie.push(c);C[c.id]=c;dlgCat.close();catCb&&catCb(String(c.id))}).catch(()=>{});
+};
+
+/* ---------- CONTROLLO DI COERENZA AL SALVATAGGIO ---------- */
+function controlliCoerenza(d){
+  const avvisi=[];const g=C[d.categoria_id].gruppo;
+  if(d.tipo_doc==='rata_mutuo'&&!['rata_mutuo_da_ripartire','onere_finanziario','rimborso_capitale'].includes(g))avvisi.push(`il tipo "Rata mutuo" di solito va nella categoria "Rata mutuo", non in "${C[d.categoria_id].nome}"`);
+  if(g==='rata_mutuo_da_ripartire'&&d.tipo_doc!=='rata_mutuo')avvisi.push('la categoria "Rata mutuo" si usa solo con il tipo documento "Rata mutuo"');
+  if(d.tipo_doc==='erogazione_mutuo'&&C[d.categoria_id].nome!=='Erogazione mutuo')avvisi.push('per un\'erogazione del mutuo la categoria attesa è "Erogazione mutuo"');
+  if(d.tipo_doc==='vendita'&&g!=='ricavo_vendita')avvisi.push('per una vendita la categoria attesa è "Vendita unità"');
+  return avvisi;
+}
+
+/* ---------- MOVIMENTI ---------- */
+const F={q:'',verso:'',cat:'',stato:'',anno:''};
+function vMovimenti(){
+  const anni=[...new Set(DATA.documenti.map(d=>d.data_doc?.slice(0,4)))].sort();
+  const el=document.getElementById('v-movimenti');
+  el.innerHTML=`<div class="card"><div class="filters">
+    <div class="rel" style="flex:1;min-width:200px;display:flex"><input id="fq" placeholder="Cerca: più parole insieme, es. maig se" style="flex:1;padding-right:34px" value="${esc(F.q)}"><button type="button" id="fqx" title="Cancella ricerca" aria-label="Cancella ricerca" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:18px;line-height:1;padding:4px 8px;color:var(--mute);display:${F.q?'block':'none'}">×</button></div>
+    <div class="seg" id="fvseg"><button type="button" data-v="">Tutti</button><button type="button" data-v="uscita">Uscite</button><button type="button" data-v="entrata">Entrate</button></div>
+    <div id="fc"></div>
+    <div id="fs"></div>
+    <div id="fa"></div>
+    <button type="button" id="freset" class="reset" title="Cancella ricerca e tutti i filtri">× Azzera Filtri</button>
+  </div><div id="mvSum" class="small mute" style="margin-bottom:8px"></div><div class="tblwrap"><table><thead><tr>
+    <th>Data</th><th>Soggetto</th><th class="hide-s">Categoria</th><th class="hide-s">Tipo</th><th class="num">Totale</th><th class="num hide-s">Pagato</th><th class="num">Residuo</th><th>Stato</th><th></th></tr></thead><tbody id="mvBody"></tbody></table></div></div>`;
+  document.querySelectorAll('#fvseg button').forEach(b=>{b.classList.toggle('on',b.dataset.v===F.verso);b.onclick=()=>{F.verso=b.dataset.v;document.querySelectorAll('#fvseg button').forEach(x=>x.classList.toggle('on',x===b));rows()}});
+  dropdown(document.getElementById('fc'),{options:[{v:'',l:'Tutte le categorie'},...catSorted().map(c=>({v:String(c.id),l:c.nome}))],value:F.cat,search:true,onChange:v=>{F.cat=v;rows()}});
+  dropdown(document.getElementById('fs'),{options:[{v:'',l:'Tutti gli stati'},...['Da pagare','Da incassare','Parziale','Pagato','Incassato','Chiuso con differenza','Trattenuta garanzia'].map(x=>({v:x,l:x}))],value:F.stato,onChange:v=>{F.stato=v;rows()}});
+  dropdown(document.getElementById('fa'),{options:[{v:'',l:'Tutti gli anni'},...anni.map(x=>({v:x,l:x}))],value:F.anno,onChange:v=>{F.anno=v;rows()}});
+  const fq=document.getElementById('fq'),fqx=document.getElementById('fqx');
+  fq.oninput=e=>{F.q=e.target.value;fqx.style.display=F.q?'block':'none';rows()};
+  fq.onkeydown=e=>{if(e.key==='Escape'){F.q='';fq.value='';fqx.style.display='none';rows()}};
+  fqx.onclick=()=>{F.q='';fq.value='';fqx.style.display='none';fq.focus();rows()};
+  document.getElementById('freset').onclick=()=>{Object.keys(F).forEach(k=>F[k]='');vMovimenti()};
+  rows();
+}
+function filtra(){
+  const parole=F.q.toLowerCase().split(/\s+/).filter(Boolean);
+  return DATA.documenti.filter(d=>{
+    if(F.verso&&d.verso!==F.verso)return false;
+    if(F.cat&&d.categoria_id!=F.cat)return false;
+    if(F.anno&&!d.data_doc?.startsWith(F.anno))return false;
+    if(F.stato&&stato(d)[0]!==F.stato)return false;
+    if(parole.length){const t=`${S[d.soggetto_id]?.nome||''} ${d.descrizione||''} ${d.numero_doc||''} ${C[d.categoria_id].nome}`.toLowerCase();if(!parole.every(p=>t.includes(p)))return false}
+    return true}).sort((a,b)=>(b.data_doc||'').localeCompare(a.data_doc||'')||b.id-a.id);
+}
+function rows(){
+  const L=filtra();let te=0,tu=0;
+  document.getElementById('mvBody').innerHTML=L.map(d=>{const {tot,pag,res}=calc(d);const [st,cl]=stato(d);d.verso==='entrata'?te+=tot:tu+=tot;
+    return `<tr><td>${dit(d.data_doc)}</td><td><a href="#" onclick="dett(${d.id});return false">${esc(S[d.soggetto_id]?.nome||'—')}</a><div class="small mute">${esc(d.descrizione||'')}${d.numero_doc?' · n° '+esc(d.numero_doc):''}</div></td>
+    <td class="hide-s">${esc(C[d.categoria_id].nome)}${d.estranea?' <span class="chip c-grey">estranea</span>':''}</td><td class="hide-s">${TIPI[d.tipo_doc]}</td>
+    <td class="num" style="color:${d.verso==='entrata'?'var(--ok)':'inherit'}">${d.verso==='entrata'?'+':''}${eur(tot)}</td><td class="num hide-s">${eur(pag)}</td><td class="num">${Math.abs(res)<0.5?'<span class="mute">—</span>':eur(res)}</td>
+    <td><span class="chip ${cl}">${st}</span></td><td>${Math.abs(res)>=0.5?`<button class="small" onclick="apriPag(${d.id})">${azione(d)}</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="9" class="mute">Nessun movimento.</td></tr>';
+  document.getElementById('mvSum').textContent=`${L.length} documenti · uscite ${eur0(tu)} · entrate ${eur0(te)}`;
+}
+
+/* ---------- DETTAGLIO ---------- */
+function dett(id){
+  const d=DATA.documenti.find(x=>x.id===id);const {tot,pag,res}=calc(d);const P=pagati(id);
+  document.getElementById('docDett').innerHTML=`<div class="small" style="background:var(--blue-soft);color:var(--blue);padding:7px 10px;border-radius:7px;margin-bottom:10px">Scheda del documento: importi, ${d.verso==='uscita'?'pagamenti':'incassi'} già fatti e quanto resta. Per aggiungere un ${d.verso==='uscita'?'pagamento':'incasso'} premi il pulsante in basso.</div><h3>${esc(S[d.soggetto_id]?.nome||'—')}</h3><div class="mute small">${TIPI[d.tipo_doc]}${d.numero_doc?' n° '+esc(d.numero_doc):''} del ${dit(d.data_doc)} · ${esc(C[d.categoria_id].nome)}</div>
+  <p>${esc(d.descrizione||'')}</p>
+  <table><tr><td>Imponibile</td><td class="num">${eur(d.imponibile)}</td></tr><tr><td>IVA</td><td class="num">${eur(d.iva)}</td></tr><tr><td><b>Totale</b></td><td class="num"><b>${eur(tot)}</b></td></tr>${d.ritenuta?`<tr><td>Ritenuta d'acconto ${d.ritenuta_perc?d.ritenuta_perc+'%':''}${d.ritenuta_base?' su '+eur(d.ritenuta_base):''} (si versa con F24)</td><td class="num">−${eur(d.ritenuta)}</td></tr><tr><td><b>Netto da pagare</b></td><td class="num"><b>${eur(tot-d.ritenuta)}</b></td></tr>`:''}</table>${Array.isArray(d.righe)&&d.righe.length>1?`<div class="small mute" style="margin-top:4px">Voci: ${d.righe.map(r=>`${eur(r.imponibile)} + IVA ${r.aliquota==='m'?'manuale':r.aliquota+'%'} ${eur(r.iva)}`).join(' · ')}</div>`:''}
+  <h3 style="margin-top:14px;font-size:14px">${d.verso==='uscita'?'Pagamenti':'Incassi'}</h3>
+  <table>${P.map(p=>p.tipo==='differenza'?`<tr style="background:var(--warn-soft)"><td>${dit(p.data_pag)}</td><td>Chiusura: ${MOTIVI[p.motivo]}</td><td class="mute small">${esc(p.note||'')} <a href="#" onclick="annullaChiusura(${p.id});return false">annulla</a></td><td class="num">${eur(p.importo)}</td></tr>`:`<tr><td>${dit(p.data_pag)}</td><td>${p.tipo}${p.conto&&p.conto!=='Caraglio VAC2'?' · <span class="chip c-blue">'+esc(p.conto)+'</span>':''}</td><td class="mute small">${esc(p.note||'')}</td><td class="num">${eur(p.importo)}</td></tr>`).join('')||'<tr><td class="mute">Nessuno</td></tr>'}
+  <tr><td colspan="3"><b>Residuo</b></td><td class="num"><b>${eur(res)}</b></td></tr></table>
+  <div class="small mute" style="margin-top:8px">${d.riga_origine?'Riga '+d.riga_origine+' del vecchio foglio DATI (bilancio 16/11/2026)':'Inserito da '+esc(d.creato_da||'?')+' il '+dit((d.creato_il||'').slice(0,10))}${d.modificato_da?' · modificato da '+esc(d.modificato_da)+' il '+dit(d.modificato_il.slice(0,10)):''}</div>
+  <div class="actions"><label style="flex-direction:row;align-items:center;gap:6px;margin-right:auto"><input type="checkbox" ${d.estranea?'checked':''} onchange="setEstranea(${id},this.checked)"> Spesa estranea all'operazione</label>${Math.abs(res)>=0.5?`<button onclick="dlgDoc.close();apriChiudi(${id})">Chiudi con differenza</button>`:''}${Math.abs(res)>=0.5?`<button onclick="dlgDoc.close();apriPag(${id})">${d.verso==='uscita'?'Registra pagamento':'Registra incasso'}</button>`:''}<button class="primary" onclick="dlgDoc.close()">Chiudi scheda</button></div>`;
+  dlgDoc.showModal();
+}
+async function setEstranea(id,v){try{await db(sb.from('vac2_documenti').update({estranea:v}).eq('id',id),v?'Segnata come estranea':'Tolta da estranee');DATA.documenti.find(x=>x.id===id).estranea=v}catch(e){}render()}
+
+/* ---------- CHIUDI CON DIFFERENZA ---------- */
+const MOTIVI={trattenuta:'Trattenuta a garanzia',abbuono:'Abbuono / arrotondamento',sconto:'Sconto concordato',non_dovuto:'Importo non dovuto / errore',nota_credito:'Nota di credito attesa'};
+let chDoc=null;
+function apriChiudi(id){
+  chDoc=DATA.documenti.find(x=>x.id===id);const {res}=calc(chDoc);const u=chDoc.verso==='uscita';
+  cSub.textContent=`${S[chDoc.soggetto_id]?.nome||''} · ${TIPI[chDoc.tipo_doc]}${chDoc.numero_doc?' n° '+chDoc.numero_doc:''} del ${dit(chDoc.data_doc)}`;
+  cRes.textContent=eur(res);cDaPag.textContent=u?'da pagare':'da incassare';cPagata.textContent=u?'pagata':'incassata';
+  cMot.value='';cNote.value='';cOk.checked=false;cBtn.disabled=true;cErr.textContent='';cData.value=new Date().toISOString().slice(0,10);
+  dlgChiudi.showModal();
+}
+cOk.onchange=()=>cBtn.disabled=!cOk.checked;
+fChiudi.onsubmit=e=>{e.preventDefault();
+  if(!cMot.value){cErr.textContent='Scegli il motivo.';return}
+  if(!cOk.checked){cErr.textContent='Spunta la conferma.';return}
+  const {res}=calc(chDoc);
+  cBtn.disabled=true;db(sb.from('vac2_pagamenti').insert({documento_id:chDoc.id,data_pag:cData.value,importo:res,tipo:'differenza',motivo:cMot.value,note:cNote.value||null}).select().single(),'Documento chiuso con differenza')
+   .then(p=>{DATA.pagamenti.push(norm(p));dlgChiudi.close();render()}).catch(()=>{cBtn.disabled=false});
+};
+async function annullaChiusura(pid){if(!confirm('Annullare la chiusura con differenza?'))return;try{await db(sb.from('vac2_pagamenti').delete().eq('id',pid),'Chiusura annullata');const i=DATA.pagamenti.findIndex(p=>p.id===pid);if(i>=0)DATA.pagamenti.splice(i,1)}catch(e){}dlgDoc.close();render()}
+function trattenute(){return DATA.pagamenti.filter(p=>p.tipo==='differenza'&&p.motivo==='trattenuta')}
+
+/* ---------- PAGAMENTO ---------- */
+let pagDoc=null;
+function apriPag(id){
+  pagDoc=DATA.documenti.find(x=>x.id===id);const {tot,pag,res}=calc(pagDoc);
+  pTitle.textContent=isNC(pagDoc)?'Registra rimborso ricevuto (nota di credito)':(pagDoc.verso==='uscita'?'Registra pagamento':'Registra incasso');
+  pSub.textContent=`${S[pagDoc.soggetto_id]?.nome||''} · totale ${eur(tot)} · già ${pagDoc.verso==='uscita'?'pagato':'incassato'} ${eur(pag)}`;
+  pData.value=new Date().toISOString().slice(0,10);pImp.value=(isNC(pagDoc)?-res:res).toFixed(2);pTipo.value='saldo';pNote.value='';pErr.textContent='';
+  const opz=pagDoc.verso==='entrata'
+    ?[['Caraglio VAC2','Sul conto Caraglio'],['Diretto alla banca (mutuo)','Trattenuto dalla banca per ridurre il mutuo (rogito)'],['Compensazione','Compensato, senza movimento di denaro']]
+    :[['Caraglio VAC2','Dal conto Caraglio'],['Socio Max','Pagato da Max con soldi suoi'],['Socio Aris','Pagato da Aris con soldi suoi'],['Socio Intemelia','Pagato da Intemelia'],['Compensazione','Compensato con nota di credito, senza movimento di denaro']];
+  pConto.innerHTML=opz.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');pConto.value='Caraglio VAC2';pConto.onchange();
+  const P=pagati(id);pStorico.innerHTML=P.length?`<div style="margin:10px 0 0;padding:8px 10px;background:var(--bg);border-radius:7px"><b>${pagDoc.verso==='uscita'?'Pagamenti':'Incassi'} già registrati</b>${P.map(p=>`<div style="display:flex;justify-content:space-between"><span>${dit(p.data_pag)} · ${p.tipo}${p.note?' · '+esc(p.note):''}</span><span>${eur(p.importo)}</span></div>`).join('')}<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:4px;padding-top:4px"><b>Residuo</b><b>${eur(res)}</b></div></div>`:'';dlgPag.showModal();pImp.focus();pImp.select();
+}
+const AIUTO={'Diretto alla banca (mutuo)':'Verrà creata in automatico anche la riga di uscita "Rata mutuo" (Banca di Caraglio) per lo stesso importo e data: le due righe non passano dal conto e si compensano.',
+  'Socio Max':'Verrà creata in automatico anche un\'entrata "Finanziamento soci" da Max per lo stesso importo: la spesa risulta pagata con un suo finanziamento.',
+  'Socio Aris':'Verrà creata in automatico anche un\'entrata "Finanziamento soci" da Aris per lo stesso importo.',
+  'Socio Intemelia':'Verrà creata in automatico anche un\'entrata "Finanziamento soci" da Intemelia per lo stesso importo.',
+  'Compensazione':'Nessun movimento di denaro: usalo quando una fattura è saldata insieme a una nota di credito.'};
+pConto.onchange=()=>{pAiuto.textContent=AIUTO[pConto.value]||'';pMutL.style.display=pConto.value==='Diretto alla banca (mutuo)'?'flex':'none'};
+const SOCI={'Socio Max':37,'Socio Aris':29,'Socio Intemelia':6};
+fPag.onsubmit=async e=>{e.preventDefault();
+  let imp=+pImp.value;const {res}=calc(pagDoc);if(isNC(pagDoc)&&imp>0)imp=-imp;
+  if(!imp){pErr.textContent='Inserisci un importo.';return}
+  if(Math.abs(imp)>Math.abs(res)+0.5){pErr.textContent=`L'importo supera il residuo (${eur(res)}).`;return}
+  if(!pData.value){pErr.textContent='Inserisci la data.';return}
+  if(fPag.dataset.busy)return;fPag.dataset.busy=1;
+  const conto=pConto.value,imp2=+imp.toFixed(2),chi=S[pagDoc.soggetto_id]?.nome||'';
+  try{
+    const p=await db(sb.from('vac2_pagamenti').insert({documento_id:pagDoc.id,data_pag:pData.value,importo:imp2,tipo:Math.abs(imp)<Math.abs(res)-0.5&&pTipo.value==='saldo'?'acconto':pTipo.value,conto,note:pNote.value||null}).select().single());
+    DATA.pagamenti.push(norm(p));
+    let contro=null;
+    if(conto==='Diretto alla banca (mutuo)')contro={verso:'uscita',tipo_doc:'rata_mutuo',soggetto_id:1,categoria_id:3,descrizione:`Estinzione parziale mutuo n. ${pMut.value} trattenuta su incasso ${chi} (doc. ${pagDoc.id})`};
+    if(SOCI[conto])contro={verso:'entrata',tipo_doc:'versamento',soggetto_id:SOCI[conto],categoria_id:20,descrizione:`Spesa pagata dal socio: ${chi}${pagDoc.numero_doc?' fatt. '+pagDoc.numero_doc:''} (doc. ${pagDoc.id})`};
+    if(contro){
+      const d2=norm(await db(sb.from('vac2_documenti').insert({...contro,data_doc:pData.value,imponibile:Math.abs(imp2),iva:0,origine:'automatico',descrizione:contro.descrizione}).select().single()));
+      DATA.documenti.push(d2);
+      const p2=await db(sb.from('vac2_pagamenti').insert({documento_id:d2.id,data_pag:pData.value,importo:Math.abs(imp2),tipo:'saldo',conto,note:'creato in automatico dal pagamento '+p.id}).select().single());
+      DATA.pagamenti.push(norm(p2));
+    }
+    toast(contro?'Registrato, con la riga collegata':'Registrato');dlgPag.close();render();
+  }catch(e){}finally{fPag.dataset.busy=''}
+};
+
+/* ---------- NUOVO DOCUMENTO ---------- */
+const N={verso:'uscita'};
+function vNuovo(){
+  const el=document.getElementById('v-nuovo');
+  const cats=catSorted().filter(c=>N.verso==='uscita'?['costo_operazione','onere_finanziario','rimborso_capitale','rata_mutuo_da_ripartire'].includes(c.gruppo):['finanziamento','ricavo_vendita','altro_ricavo'].includes(c.gruppo));
+  const tipi=N.verso==='uscita'?['fattura','fattura_estera','nota_credito','rata_mutuo','imposta','commissioni','assicurazione','altro']:['versamento','erogazione_mutuo','vendita','fattura','altro'];
+  el.innerHTML=`<div class="card" style="max-width:760px"><h2>Nuovo documento</h2>
+  <div class="seg" style="margin-bottom:16px"><button class="${N.verso==='uscita'?'on':''}" onclick="N.verso='uscita';vNuovo()">Uscita (fattura, rata, imposta)</button><button class="${N.verso==='entrata'?'on':''}" onclick="N.verso='entrata';vNuovo()">Entrata (versamento, vendita)</button></div>
+  <form id="fDoc"><div class="grid2">
+    <label>Data documento<input type="date" id="nData" required value="${new Date().toISOString().slice(0,10)}"></label>
+    <label>Tipo documento<select id="nTipo">${tipi.map(t=>`<option value="${t}">${TIPI[t]}</option>`).join('')}</select></label>
+    <label class="rel">${N.verso==='uscita'?'Fornitore':'Da chi'}<input id="nSogg" autocomplete="off" placeholder="Scrivi per cercare o aggiungere" required><div class="sugg" id="nSugg"></div></label>
+    <label>N° documento<input id="nNum" placeholder="es. 66/2026"></label>
+    <label>Categoria<div id="nCat" class="full"></div></label>
+    <label>Scadenza pagamento<input type="date" id="nScad"></label>
+    <label>Imponibile €<input type="number" step="0.01" id="nImp" required placeholder="0,00"></label>
+    <label>Aliquota IVA<select id="nAliq"><option value="22">22%</option><option value="10">10%</option><option value="4">4%</option><option value="0">Esente / 0%</option><option value="m">Importo manuale</option></select></label>
+    <label>IVA €<span style="display:flex;gap:6px"><input type="number" step="0.01" id="nIva" readonly style="flex:1"><button type="button" id="nAdd" title="Aggiungi un'altra voce con aliquota IVA diversa" style="padding:6px 12px;font-weight:700">+</button></span></label>
+    <div id="nRighe" style="grid-column:1/-1"></div>
+    <label>Totale documento<div class="tot" id="nTot">€ 0,00</div></label>
+    ${N.verso==='uscita'?`<label>Ritenuta d'acconto<span style="display:flex;align-items:center;gap:8px;color:var(--ink);font-size:14px;padding:9px 0"><input type="checkbox" id="nRit"> soggetto a ritenuta d'acconto</span></label>
+    <div id="nRitBox" style="display:none;grid-column:1/-1;background:var(--bg);border-radius:8px;padding:10px 12px"><div class="grid2">
+      <label>Base della ritenuta (onorari) €<input type="number" step="0.01" id="nRitBase"></label>
+      <label>Percentuale %<input type="number" step="0.01" id="nRitPerc" value="20"></label>
+      <label>Ritenuta €<input id="nRitImp" readonly></label>
+      <label>Netto da pagare<div class="tot" id="nNetto">€ 0,00</div></label></div>
+      <div class="small mute" style="margin-top:6px">La base è l'onorario senza cassa previdenziale (<a href="#" id="nCassa">togli cassa 4%</a>). Il netto è ciò che esce dal conto; la ritenuta si versa con l'F24.</div></div>`:''}
+    <label class="full">Descrizione<input id="nDesc" placeholder="es. SAL n° 3, caparra interno 5…"></label>
+    <label class="full" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="nPagato"> ${N.verso==='uscita'?'Già pagato per intero (registra subito il pagamento)':'Già incassato (registra subito l\'incasso)'}</label>
+    <label class="full" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="nEstr"> Spesa estranea all'operazione Via al Capo 2</label>
+  </div><div class="err" id="nErr"></div>
+  <div class="actions"><button type="button" onclick="vNuovo()">Svuota</button><button class="primary">Salva documento</button></div></form></div>
+  <div class="card small mute" style="max-width:760px">La maschera applica le regole confermate: la fattura si registra quando arriva e il pagamento (anche a rate) si aggiunge dopo con "Paga". Il totale e il residuo vengono calcolati, mai digitati. Se il nuovo documento ha lo stesso fornitore, numero e importo di uno esistente, la maschera avvisa del doppione.</div>`;
+  const mkCat=(val)=>{const L=catSorted().filter(c=>(N.verso==='uscita'?GRUPPI_USCITA:GRUPPI_ENTRATA).includes(c.gruppo));
+    dropdown(nCat,{options:[...L.map(c=>({v:String(c.id),l:c.nome+(c.nuova?' (nuova)':'')})),{v:'__new',l:'+ Nuova categoria…'}],value:val,search:true,placeholder:'Scegli la categoria…',
+      onChange:v=>{if(v==='__new'){const prev=nCat.dataset.prev||'';apriNuovaCat(N.verso,id=>{mkCat(id);nCat.dataset.prev=id;fDoc.dataset.ok='';fDoc.dataset.coer=''},prev)}else{nCat.dataset.prev=v;fDoc.dataset.coer='';fDoc.dataset.catok=''}}})};
+  mkCat('');
+  if(N.verso==='entrata'){nAliq.value='0'}
+  const ALIQ=nAliq.innerHTML;
+  const totali=()=>{let imp=+nImp.value||0,iva=+nIva.value||0;nRighe.querySelectorAll('.riga').forEach(r=>{imp+=+r.querySelector('.rImp').value||0;iva+=+r.querySelector('.rIva').value||0});return {imp:+imp.toFixed(2),iva:+iva.toFixed(2)}};
+  const ritOn=()=>typeof nRit!=='undefined'&&nRit&&nRit.checked;
+  const upd=()=>{const i=+nImp.value||0;if(nAliq.value!=='m'){nIva.readOnly=true;nIva.value=(i*(+nAliq.value)/100).toFixed(2)}else nIva.readOnly=false;
+    nRighe.querySelectorAll('.riga').forEach(r=>{const a=r.querySelector('.rAliq'),v=r.querySelector('.rIva'),x=+r.querySelector('.rImp').value||0;if(a.value!=='m'){v.readOnly=true;v.value=(x*(+a.value)/100).toFixed(2)}else v.readOnly=false});
+    const t=totali();nTot.textContent=eur(t.imp+t.iva);
+    if(ritOn()){if(nRitBase.dataset.auto!=='0')nRitBase.value=t.imp.toFixed(2);const r=+((+nRitBase.value||0)*(+nRitPerc.value||0)/100).toFixed(2);nRitImp.value=r.toFixed(2);nNetto.textContent=eur(t.imp+t.iva-r)}};
+  nImp.oninput=upd;nAliq.onchange=upd;nIva.oninput=upd;
+  nAdd.onclick=()=>{const d=document.createElement('div');d.className='riga';d.innerHTML=`<input type="number" step="0.01" class="rImp" placeholder="Altro imponibile €"><select class="rAliq">${ALIQ}</select><input type="number" step="0.01" class="rIva" readonly placeholder="IVA €"><button type="button" class="rDel" title="Togli questa voce">×</button>`;
+    d.querySelector('.rAliq').value='10';d.querySelectorAll('input,select').forEach(x=>{x.oninput=upd;x.onchange=upd});d.querySelector('.rDel').onclick=()=>{d.remove();upd()};nRighe.appendChild(d);d.querySelector('.rImp').focus();upd()};
+  if(typeof nRit!=='undefined'&&nRit){nRit.onchange=()=>{nRitBox.style.display=nRit.checked?'block':'none';nRitBase.dataset.auto='1';upd()};
+    nRitBase.oninput=()=>{nRitBase.dataset.auto='0';upd()};nRitPerc.oninput=upd;
+    nCassa.onclick=e=>{e.preventDefault();nRitBase.dataset.auto='0';nRitBase.value=(totali().imp/1.04).toFixed(2);upd()}}
+  upd();
+  nTipo.onchange=()=>{fDoc.dataset.coer='';if(nTipo.value==='nota_credito'&&+nImp.value>0){nImp.value=-nImp.value;upd()}};
+  const nomi=DATA.soggetti.map(s=>s.nome).sort((a,b)=>a.localeCompare(b));
+  nSogg.oninput=()=>{const q=nSogg.value.toLowerCase();const m=nomi.filter(n=>n.toLowerCase().includes(q)).slice(0,8);
+    nSugg.innerHTML=m.map(n=>`<div>${esc(n)}</div>`).join('')+(q&&!nomi.some(n=>n.toLowerCase()===q)?`<div class="mute">+ Nuovo: "${esc(nSogg.value)}"</div>`:'');nSugg.style.display=q?'block':'none';
+    [...nSugg.children].forEach((c,i)=>c.onmousedown=()=>{if(m[i])nSogg.value=m[i];nSugg.style.display='none';suggerisciCat()})};
+  nSogg.onblur=()=>setTimeout(()=>{nSugg.style.display='none';suggerisciCat()},150);
+  function suggerisciCat(){const s=DATA.soggetti.find(x=>x.nome===nSogg.value);if(!s||nCat.value)return;const last=DATA.documenti.filter(d=>d.soggetto_id===s.id).sort((a,b)=>(b.data_doc||'').localeCompare(a.data_doc||''))[0];if(last&&cats.some(c=>c.id===last.categoria_id)){nCat.setValue(String(last.categoria_id));nCat.dataset.prev=String(last.categoria_id)}}
+  fDoc.onreset=()=>setTimeout(()=>{nCat.setValue('');upd()},0);
+  fDoc.onsubmit=async e=>{e.preventDefault();if(fDoc.dataset.busy)return;
+    const {imp,iva}=totali();
+    if(!nCat.value||nCat.value==='__new'){nErr.textContent='Scegli la categoria.';return}
+    if(!imp){nErr.textContent='Inserisci l\'imponibile.';return}
+    let s=DATA.soggetti.find(x=>x.nome.toLowerCase()===nSogg.value.trim().toLowerCase());
+    if(!nSogg.value.trim()){nErr.textContent='Scrivi il fornitore / soggetto.';return}
+    if(!s){try{s=await db(sb.from('vac2_soggetti').insert({nome:nSogg.value.trim(),tipo:N.verso==='uscita'?'fornitore':'acquirente'}).select().single());DATA.soggetti.push(s);S[s.id]=s}catch(e){return}}
+    const dup=DATA.documenti.find(d=>d.soggetto_id===s.id&&nNum.value&&d.numero_doc===nNum.value&&Math.abs(d.imponibile-imp)<0.01);
+    if(dup&&!fDoc.dataset.ok){nErr.textContent=`Attenzione: esiste già un documento n° ${nNum.value} di ${s.nome} con lo stesso importo (${dit(dup.data_doc)}). Premi di nuovo "Salva" per confermare.`;fDoc.dataset.ok=1;return}
+    const prec=DATA.documenti.filter(x=>x.soggetto_id===s.id&&x.verso===N.verso);let diversa='';
+    if(prec.length&&!prec.some(x=>x.categoria_id===+nCat.value)){const cnt={};prec.forEach(x=>cnt[x.categoria_id]=(cnt[x.categoria_id]||0)+1);const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+      diversa=`categoria diversa da quella usata finora per ${s.nome} ("${C[top].nome}")`;
+      if(!fDoc.dataset.catok){if(!confirm(`Attenzione: è stata selezionata una categoria diversa da quella già utilizzata per ${s.nome}.\n\nFinora: "${C[top].nome}"\nOra: "${C[+nCat.value].nome}"\n\nOK per confermare, Annulla per cambiarla.`))return;fDoc.dataset.catok=1}}
+    const prova={id:-1,soggetto_id:s.id,categoria_id:+nCat.value,tipo_doc:nTipo.value,verso:N.verso};const avv0=controlliCoerenza(prova);const avv=diversa?[...avv0,diversa]:avv0;
+    const conRit=N.verso==='uscita'&&typeof nRit!=='undefined'&&nRit&&nRit.checked;const rit=conRit?+(+nRitImp.value||0).toFixed(2):0;
+    const righe=nRighe.querySelectorAll('.riga').length?[{imponibile:+nImp.value||0,aliquota:nAliq.value,iva:+nIva.value||0},...[...nRighe.querySelectorAll('.riga')].map(r=>({imponibile:+r.querySelector('.rImp').value||0,aliquota:r.querySelector('.rAliq').value,iva:+r.querySelector('.rIva').value||0}))]:null;
+    if(avv0.length&&!fDoc.dataset.coer){nErr.innerHTML='<b>Controllo di coerenza:</b> '+avv0.map(esc).join('; ')+'.<br>Correggi, oppure premi di nuovo "Salva documento" per confermare: il documento verrà segnalato in "Da verificare".';fDoc.dataset.coer=1;return}
+    fDoc.dataset.busy=1;
+    try{
+      const d=norm(await db(sb.from('vac2_documenti').insert({incoerente:avv.length?avv.join('; '):null,data_doc:nData.value,verso:N.verso,tipo_doc:nTipo.value,numero_doc:nNum.value||null,soggetto_id:s.id,categoria_id:+nCat.value,imponibile:imp,iva:iva,righe,ritenuta:rit,ritenuta_perc:conRit?+nRitPerc.value||null:null,ritenuta_base:conRit?+nRitBase.value||null:null,scadenza:nScad.value||null,estranea:nEstr.checked,descrizione:nDesc.value||null,origine:'manuale'}).select().single()));
+      DATA.documenti.push(d);
+      if(nPagato.checked){const p=await db(sb.from('vac2_pagamenti').insert({documento_id:d.id,data_pag:nData.value,importo:+(imp+iva-rit).toFixed(2),tipo:'saldo'}).select().single());DATA.pagamenti.push(norm(p))}
+      toast('Documento salvato');F.q='';go('movimenti');
+    }catch(e){}finally{fDoc.dataset.busy=''}
+  };
+}
+
+/* ---------- SCADENZARIO ---------- */
+function vScad(){
+  const aperti=DATA.documenti.map(d=>({d,...calc(d)})).filter(x=>Math.abs(x.res)>=0.5);
+  const U=aperti.filter(x=>x.d.verso==='uscita'),E=aperti.filter(x=>x.d.verso==='entrata');
+  const tab=(L,lab)=>`<div class="card"><h2>${lab} · ${eur0(L.reduce((a,x)=>a+x.res,0))}</h2><div class="tblwrap"><table><thead><tr><th>Data doc.</th><th>Soggetto</th><th class="hide-s">Descrizione</th><th class="num">Totale</th><th class="num">Residuo</th><th></th></tr></thead><tbody>
+  ${L.sort((a,b)=>(a.d.data_doc||'').localeCompare(b.d.data_doc||'')).map(x=>`<tr><td>${dit(x.d.data_doc)}</td><td><a href="#" onclick="dett(${x.d.id});return false">${esc(S[x.d.soggetto_id]?.nome||'—')}</a></td><td class="hide-s small">${esc(x.d.descrizione||C[x.d.categoria_id].nome)}</td><td class="num">${eur(x.tot)}</td><td class="num"><b>${eur(x.res)}</b></td><td style="white-space:nowrap"><button class="small" onclick="apriPag(${x.d.id})">${azione(x.d)}</button> <button class="small" title="Chiudi con differenza" onclick="apriChiudi(${x.d.id})">Chiudi…</button></td></tr>`).join('')||'<tr><td colspan="6" class="mute">Niente in sospeso.</td></tr>'}</tbody></table></div></div>`;
+  const T=trattenute();
+  const tt=`<div class="card"><h2>Trattenute a garanzia da svincolare · ${eur0(T.reduce((a,p)=>a+p.importo,0))}</h2>${T.length?`<table><tbody>${T.map(p=>{const d=DATA.documenti.find(x=>x.id===p.documento_id);return `<tr><td>${dit(p.data_pag)}</td><td><a href="#" onclick="dett(${d.id});return false">${esc(S[d.soggetto_id]?.nome||'—')}</a></td><td class="small">${esc(p.note||'')}</td><td class="num"><b>${eur(p.importo)}</b></td></tr>`}).join('')}</tbody></table>`:'<p class="mute small">Nessuna trattenuta registrata.</p>'}</div>`;
+  document.getElementById('v-scadenzario').innerHTML=tab(U,'Fornitori da pagare')+tab(E,'Da incassare')+tt;
+}
+
+/* ---------- RIEPILOGO ---------- */
+function vRiep(){
+  const g={};for(const d of DATA.documenti){if(d.estranea)continue;const k=C[d.categoria_id].gruppo;g[k]=(g[k]||0)+d.imponibile}
+  const est=DATA.documenti.filter(d=>d.estranea).reduce((a,d)=>a+d.imponibile,0);
+  const cat={};for(const d of DATA.documenti){if(d.estranea||d.verso!=='uscita')continue;const c=C[d.categoria_id];if(c.gruppo!=='costo_operazione')continue;cat[c.nome]=(cat[c.nome]||0)+d.imponibile}
+  const cs=Object.entries(cat).sort((a,b)=>b[1]-a[1]);const max=cs[0]?.[1]||1;
+  const ricavi=(g.ricavo_vendita||0)+(g.altro_ricavo||0),costi=(g.costo_operazione||0)+(g.onere_finanziario||0);
+  document.getElementById('v-riepilogo').innerHTML=`<div class="kpis">
+   <div class="kpi"><div class="l">Costi operazione (imponibile)</div><div class="v">${eur0(g.costo_operazione||0)}</div></div>
+   <div class="kpi"><div class="l">Rate mutuo pagate (capitale + interessi)</div><div class="v">${eur0(g.rata_mutuo_da_ripartire||0)}</div></div>
+   <div class="kpi"><div class="l">Vendite registrate (imponibile)</div><div class="v">${eur0(g.ricavo_vendita||0)}</div></div>
+   <div class="kpi"><div class="l">Finanziamenti ricevuti</div><div class="v">${eur0(g.finanziamento||0)}</div></div>
+   <div class="kpi"><div class="l">Spese segnate estranee</div><div class="v">${eur0(est)}</div></div>
+   <div class="kpi"><div class="l">Ritenute d'acconto trattenute (da versare con F24)</div><div class="v">${eur0(DATA.documenti.reduce((a,d)=>a+(d.ritenuta||0),0))}</div></div></div>
+  <div class="card"><h2>Costi dell'operazione per categoria</h2><table>${cs.map(([n,v])=>`<tr><td style="width:34%">${esc(n)}</td><td><div class="bar"><i style="width:${(v/max*100).toFixed(1)}%"></i></div></td><td class="num" style="width:140px">${eur0(v)}</td></tr>`).join('')}</table></div>
+  <div class="card small mute">Le rate del mutuo sono mostrate a parte perché contengono anche la quota capitale, che non è un costo. Per separarla dagli interessi serve il piano di ammortamento (cartella 02 su Drive). Il riepilogo esclude le spese segnate come estranee.</div>`;
+}
+
+/* ---------- ANOMALIE ---------- */
+function multiCat(){
+  const m={};for(const d of DATA.documenti){if(d.verso!=='uscita'||!d.soggetto_id)continue;(m[d.soggetto_id]=m[d.soggetto_id]||[]).push(d)}
+  return Object.entries(m).filter(([,L])=>new Set(L.map(d=>d.categoria_id)).size>1).map(([sid,L])=>({sid:+sid,L})).sort((a,b)=>S[a.sid].nome.localeCompare(S[b.sid].nome,'it'));
+}
+let verificati=new Set();try{verificati=new Set(JSON.parse(localStorage.getItem('vac2_verificati')||'[]'))}catch(e){}const aperti=new Set();
+function salvaVer(){try{localStorage.setItem('vac2_verificati',JSON.stringify([...verificati]))}catch(e){}}
+function vAnom(){
+  const byR={};for(const d of DATA.documenti)if(d.riga_origine)byR[d.riga_origine]=byR[d.riga_origine]||d;
+  const MC=multiCat().filter(x=>!verificati.has(x.sid));
+  const catOpts=catSorted().filter(c=>['costo_operazione','onere_finanziario','rimborso_capitale','rata_mutuo_da_ripartire'].includes(c.gruppo)).map(c=>({v:String(c.id),l:c.nome}));
+  const NC=DATA.categorie.filter(c=>c.nuova&&!c.verificata);const INC=DATA.documenti.filter(d=>d.incoerente&&!d.verificato);
+  const catOptsAll=catSorted().map(c=>({v:String(c.id),l:c.nome}));
+  document.getElementById('v-anomalie').innerHTML=`
+  ${NC.length?`<div class="card"><h2>Categorie nuove da controllare (${NC.length})</h2><p class="small mute">Create dalla maschera Nuovo documento. Confermale, oppure uniscile a una categoria esistente: i documenti vengono spostati e la categoria nuova eliminata.</p>
+  <table><tbody>${NC.map(c=>`<tr><td><b>${esc(c.nome)}</b><div class="small mute">${GRUPPI[c.gruppo]} · creata il ${dit((c.creato_il||'').slice(0,10))} da ${esc(c.creato_da||'')} · ${DATA.documenti.filter(d=>d.categoria_id===c.id).length} documenti</div></td>${isAdmin()?`<td style="width:240px"><div class="unisci" data-id="${c.id}"></div></td><td style="width:110px"><button class="small" onclick="confermaCat(${c.id})">Va bene così</button></td>`:'<td class="small mute">la controlla Max</td>'}</tr>`).join('')}</tbody></table></div>`:''}
+  ${INC.length?`<div class="card"><h2>Documenti salvati nonostante l'avviso di coerenza (${INC.length})</h2><table><tbody>${INC.map(d=>`<tr><td>${dit(d.data_doc)}</td><td><a href="#" onclick="dett(${d.id});return false">${esc(S[d.soggetto_id]?.nome||'')}</a><div class="small mute">${esc(d.incoerente)}</div></td><td style="width:240px"><div class="catfix" data-id="${d.id}"></div></td><td style="width:110px"><button class="small" onclick="docOk(${d.id})">Va bene così</button></td></tr>`).join('')}</tbody></table></div>`:''}
+  <div class="card"><h2>Fornitori con fatture in più categorie (${MC.length})</h2>
+  <p class="small mute">Clicca su un fornitore per aprirlo, controlla la categoria delle singole fatture e correggila dal menu. Se le categorie diverse sono giuste (es. un fornitore che ha dato sia lavori sia arredi), premi "Va bene così".</p>
+  ${MC.map(x=>{const cnt={};x.L.forEach(d=>cnt[C[d.categoria_id].nome]=(cnt[C[d.categoria_id].nome]||0)+1);
+    return `<details class="mc" ${aperti.has(x.sid)?'open':''} ontoggle="this.open?aperti.add(${x.sid}):aperti.delete(${x.sid})"><summary>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><b style="margin-right:6px">${esc(S[x.sid].nome)}</b>${Object.entries(cnt).map(([n,c])=>`<span class="catchip">${esc(n)} <b>${c}</b></span>`).join('')}</div>
+    <span><span class="small mute">${x.L.length} fatture ▾</span> <button class="small" onclick="event.preventDefault();verificati.add(${x.sid});salvaVer();vAnom();toast('Segnato come verificato')">Va bene così</button></span></summary>
+    <table><tbody>${x.L.sort((a,b)=>(a.data_doc||'').localeCompare(b.data_doc||'')).map(d=>`<tr><td style="width:100px">${dit(d.data_doc)}</td><td class="small">${esc(d.descrizione||'')}${d.numero_doc?' · n° '+esc(d.numero_doc):''}</td><td class="num" style="width:120px">${eur(d.imponibile+d.iva)}</td><td style="width:260px"><div class="catfix" data-id="${d.id}"></div></td></tr>`).join('')}</tbody></table></details>`}).join('')||'<p class="mute">Nessun fornitore da controllare.</p>'}
+  </div>
+  <div class="card"><h2>Righe del vecchio foglio da verificare (${DATA.anomalie.length})</h2><p class="small mute">Emerse durante l'importazione. Le righe sono state importate comunque, con la scelta indicata; puoi aprire il documento e correggerlo.</p>
+  <div class="tblwrap"><table><thead><tr><th>Riga</th><th>Problema</th><th>Documento</th></tr></thead><tbody>${DATA.anomalie.map(a=>{const d=byR[a.riga];return `<tr><td>${a.riga}</td><td>${esc(a.problema)}</td><td>${d?`<a href="#" onclick="dett(${d.id});return false">${esc(S[d.soggetto_id]?.nome||'—')} · ${eur(d.imponibile+d.iva)}</a>`:''}</td></tr>`}).join('')}</tbody></table></div></div>`;
+  document.querySelectorAll('.catfix').forEach(el=>{const d=DATA.documenti.find(x=>x.id===+el.dataset.id);
+    dropdown(el,{options:catOpts,value:String(d.categoria_id),search:true,onChange:async v=>{try{await db(sb.from('vac2_documenti').update({categoria_id:+v}).eq('id',d.id),'Categoria aggiornata');d.categoria_id=+v}catch(e){}setTimeout(vAnom,400)}})});
+  document.querySelectorAll('.unisci').forEach(el=>{const id=+el.dataset.id;dropdown(el,{options:catOptsAll.filter(o=>+o.v!==id),value:'',search:true,placeholder:'Unisci a…',onChange:v=>uniscCat(id,+v)})});
+  contaVerifiche();
+}
+async function confermaCat(id){try{await db(sb.from('vac2_categorie').update({verificata:true}).eq('id',id),'Categoria confermata');C[id].verificata=true}catch(e){}vAnom()}
+async function docOk(id){try{await db(sb.from('vac2_documenti').update({verificato:true}).eq('id',id),'Segnato come verificato');DATA.documenti.find(x=>x.id===id).verificato=true}catch(e){}vAnom()}
+async function uniscCat(da,a){if(!confirm(`Spostare i documenti di "${C[da].nome}" in "${C[a].nome}" ed eliminare "${C[da].nome}"?`)){vAnom();return}
+  try{await db(sb.from('vac2_documenti').update({categoria_id:a}).eq('categoria_id',da));await db(sb.from('vac2_categorie').delete().eq('id',da),'Categorie unite');
+  DATA.documenti.forEach(d=>{if(d.categoria_id===da)d.categoria_id=a});const i=DATA.categorie.findIndex(c=>c.id===da);DATA.categorie.splice(i,1);delete C[da]}catch(e){}vAnom()}
+function contaVerifiche(){document.getElementById('nAnom').textContent=DATA.anomalie.length+multiCat().filter(x=>!verificati.has(x.sid)).length+DATA.categorie.filter(c=>c.nuova&&!c.verificata).length+DATA.documenti.filter(d=>d.incoerente&&!d.verificato).length}
+
+
+
+/* ---------- AIUTO ---------- */
+const AIUTO_VOCI=[
+['Registrare una fattura arrivata',`<ol><li>Vai su <kbd>+ Nuovo documento</kbd> → <kbd>Uscita</kbd>.</li><li>Data e n° della fattura, fornitore (scrivi le prime lettere: se esiste lo trovi, altrimenti viene creato), categoria, imponibile e aliquota IVA. Il totale si calcola da solo.</li><li>Se è già pagata per intero spunta <i>Già pagato</i>; altrimenti il pagamento si registra dopo.</li><li>Se l'app avvisa di un doppione o di una categoria insolita, controlla prima di confermare.</li></ol>`],
+['Pagare una fattura (anche a rate o in acconto)',`<ol><li>Trova la fattura in <kbd>Movimenti</kbd> o in <kbd>Da pagare / incassare</kbd> e premi <kbd>Paga</kbd>.</li><li>Metti la data <b>dell'estratto conto</b> e l'importo realmente pagato. Se è meno del totale diventa un acconto e il resto rimane da pagare.</li><li>In <kbd>Come</kbd> lascia <i>Dal conto Caraglio</i>, salvo i casi qui sotto.</li></ol>`],
+['Spesa pagata da un socio (Max, Aris, Intemelia)',`<p>Nel pagamento scegli in <kbd>Come</kbd> <i>Pagato da Max / Aris / Intemelia</i>. L'app crea da sola l'entrata <i>Finanziamento soci</i> dello stesso importo. Non passa dal conto, quindi non va cercato nell'estratto conto.</p>`],
+['Incasso di un rogito (parte sul conto, parte trattenuta dalla banca)',`<ol><li>Apri la vendita in <kbd>Movimenti</kbd> (filtro Entrate) e premi <kbd>Incassa</kbd>.</li><li>Registra <b>due incassi separati</b>: quello arrivato sul conto con <i>Sul conto Caraglio</i>; quello trattenuto dalla banca con <i>Trattenuto dalla banca per ridurre il mutuo</i> e il numero del mutuo.</li><li>Per la parte trattenuta l'app crea da sola l'uscita <i>Rata mutuo</i>: non inserirla a mano.</li></ol>`],
+['Rata del mutuo mensile',`<p><kbd>+ Nuovo documento</kbd> → Uscita, tipo <i>Rata mutuo</i>, fornitore <i>Banca di Caraglio</i>, categoria <i>Rata mutuo (da ripartire)</i>, IVA esente, spunta <i>Già pagato</i>. Data e importo come nell'estratto conto.</p>`],
+['Commissioni, canoni e bolli della banca',`<p>Un documento al mese: tipo <i>Commissioni</i>, fornitore <i>Banca di Caraglio</i>, categoria <i>Spese e commissioni bancarie</i>, IVA esente, importo = totale delle spese del mese nell'estratto conto, <i>Già pagato</i>.</p>`],
+['F24 e ritenute d\'acconto',`<p>Ogni F24 pagato è un documento tipo <i>Imposta</i>, già pagato, con data e importo dell'estratto conto. Quando paghi un professionista con ritenuta, il pagamento alla persona è l'importo netto che esce dal conto; la ritenuta è nell'F24.</p>`],
+['Fattura con più aliquote IVA',`<p>Nel nuovo documento premi <kbd>+</kbd> accanto all'IVA per aggiungere un altro imponibile con la sua aliquota. Il totale somma tutte le voci.</p>`],
+['Professionista con ritenuta d\'acconto',`<p>Spunta <i>soggetto a ritenuta d'acconto</i>: metti la base (gli onorari, senza cassa: usa <i>togli cassa 4%</i>) e la percentuale (di solito 20%). L'app calcola il netto da pagare: è quello che esce dal conto. Il totale del documento resta il lordo, come nel Cassetto fiscale. La ritenuta si versa con l'F24 (documento tipo <i>Imposta</i>).</p>`],
+['Fattura estera',`<p>Tipo documento <i>Fattura estera</i>: non arriva nel Cassetto fiscale, quindi nei Controlli il pagamento non viene segnalato tra le fatture da ricevere.</p>`],
+['Controlli con banca e Cassetto fiscale',`<ol><li>Vai su <kbd>Controlli</kbd>.</li><li>Carica l'estratto conto Caraglio in CSV (storico o lista movimenti) e le fatture ricevute scaricate dal Cassetto fiscale (ZIP con gli XML, oppure l'elenco CSV).</li><li>Scegli il periodo e premi <kbd>Esegui controlli</kbd>: escono le fatture da ricevere, i movimenti in banca non registrati nell'app e quelli registrati ma non in banca.</li></ol>`],
+['Due persone collegate',`<p>In alto vedi chi è collegato. Modifica solo chi è entrato per primo; gli altri vedono la scritta <i>Sola lettura</i> e possono solo consultare finché il primo non esce.</p>`],
+['Nota di credito',`<p><kbd>+ Nuovo documento</kbd> → tipo <i>Nota di credito</i>: l'importo diventa negativo. Se il fornitore la rimborsa, premi <kbd>Rimborso</kbd> sulla nota. Se invece viene scalata da una fattura, sulla fattura e sulla nota usa <kbd>Come</kbd> = <i>Compensato</i>.</p>`],
+['Trattenuta a garanzia, abbuono, sconto',`<p>Quando una fattura non verrà pagata per intero apri la scheda e premi <kbd>Chiudi con differenza</kbd>, scegliendo il motivo. La <i>Trattenuta a garanzia</i> resta visibile in <kbd>Da pagare / incassare</kbd> finché non viene pagata.</p>`],
+['Ho sbagliato un documento',`<p>Puoi cambiare la categoria da <kbd>Da verificare</kbd> e annullare una chiusura con differenza dalla scheda. Per altri errori (importi, date, documento da cancellare) scrivi a Max indicando fornitore, data e importo: le cancellazioni le fa l'amministratore.</p>`],
+['Controllo mensile con l\'estratto conto Caraglio',`<ol><li>Scarica l'estratto conto del mese.</li><li>Per ogni riga verifica che nell'app ci sia un pagamento o un incasso con <b>stessa data e stesso importo</b> e <i>Come</i> = conto Caraglio.</li><li>Le righe <i>Trattenuto dalla banca</i>, <i>Pagato da socio</i> e <i>Compensato</i> non compaiono nell'estratto conto: è normale.</li><li>Il saldo finale dell'estratto conto deve tornare. Riferimento: 502.219,18 € al 16/11/2026.</li></ol>`]
+];
+let HQ='';
+function vAiuto(){
+  document.getElementById('v-aiuto').innerHTML=`<div class="card help" style="max-width:820px"><h2>Aiuto – come si fa</h2><p class="small mute">Cerca con più parole insieme (es. <i>rata mutuo</i>): compaiono solo le voci che le contengono tutte. Regola d'oro: date e importi si prendono sempre dall'estratto conto Caraglio.</p>
+  <div class="rel" style="display:flex;margin-bottom:10px"><input id="hq" placeholder="Cerca nell'aiuto…" style="flex:1" value="${esc(HQ)}"></div><div id="hlist"></div>
+  <h3>Elenco delle sistemazioni in corso</h3><p class="small">Le voci da sistemare dopo il passaggio dal foglio Excel (codici D, E, U) sono nel documento <i>Normalizzazione dati nell'app</i> che ti ha mandato Max.</p></div>`;
+  const draw=()=>{const P=HQ.toLowerCase().split(/\s+/).filter(Boolean);
+    const L=AIUTO_VOCI.filter(([t,h])=>{const x=(t+' '+h.replace(/<[^>]+>/g,' ')).toLowerCase();return P.every(p=>x.includes(p))});
+    hlist.innerHTML=L.map(([t,h])=>`<details ${P.length?'open':''}><summary>${t}</summary><div>${h}</div></details>`).join('')||'<p class="small mute">Nessuna voce contiene tutte queste parole.</p>'};
+  hq.oninput=e=>{HQ=e.target.value;draw()};hq.onkeydown=e=>{if(e.key==='Escape'){HQ='';hq.value='';draw()}};draw();
+}
+
+/* ---------- PRESENZA: chi è collegato, solo il primo modifica ---------- */
+let CH=null,EDIT=true,EDITOR=null;
+function nomeBreve(u){return String(u.nome||u.email||'').trim().split(/[\s@.]/)[0].toLowerCase()}
+function avviaPresenza(){
+  try{
+    if(CH)sb.removeChannel(CH);
+    CH=sb.channel('vac2-presenza',{config:{presence:{key:ME.email}}});
+    CH.on('presence',{event:'sync'},()=>{
+      const st=CH.presenceState();
+      const L=Object.values(st).map(a=>a.reduce((m,x)=>(!m||x.since<m.since)?x:m,null)).filter(Boolean).sort((a,b)=>a.since-b.since);
+      aggiornaPresenza(L);
+    });
+    CH.subscribe(async s=>{if(s==='SUBSCRIBED')await CH.track({email:ME.email,nome:ME.nome,since:Date.now()})});
+  }catch(e){}
+}
+function aggiornaPresenza(L){
+  EDITOR=L[0]||null;EDIT=!EDITOR||EDITOR.email===ME.email;
+  const el=document.getElementById('presenza');
+  el.textContent=L.length?`${L.length} ${L.length===1?'utente collegato':'utenti collegati'}: ${L.map(nomeBreve).join('-')}`:'';
+  el.style.display=L.length?'inline-block':'none';
+  const rb=document.getElementById('roBanner');
+  rb.style.display=EDIT?'none':'block';
+  rb.innerHTML=EDIT?'':`<b>Sola lettura.</b> In questo momento sta modificando <b>${esc(EDITOR.nome||EDITOR.email)}</b>: puoi consultare ma non salvare. Quando esce dall'app potrai modificare tu.`;
+}
+function fermaPresenza(){if(CH){try{CH.untrack();sb.removeChannel(CH)}catch(e){}CH=null}EDIT=true;EDITOR=null;const el=document.getElementById('presenza');if(el){el.textContent='';el.style.display='none'}const rb=document.getElementById('roBanner');if(rb)rb.style.display='none'}
+
+/* ---------- CONTROLLI: banca / cassetto fiscale / app ---------- */
+const CTRL={banca:[],cassetto:[],fileB:[],fileC:[],errC:[],dal:'',al:'',res:null};
+function numIt(s){if(s==null)return 0;s=String(s).trim().replace(/[\s€"]/g,'');if(!s)return 0;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const n=parseFloat(s);return isNaN(n)?0:n}
+function dataIt(s){s=String(s||'').trim();let m=s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[0]:''}
+function csvRows(t){
+  t=t.replace(/^﻿/,'');const first=t.split(/\r?\n/)[0]||'';const sep=(first.match(/;/g)||[]).length>=(first.match(/,/g)||[]).length?';':',';
+  const out=[];let row=[],cur='',q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];
+    if(q){if(c==='"'){if(t[i+1]==='"'){cur+='"';i++}else q=false}else cur+=c}
+    else if(c==='"')q=true;else if(c===sep){row.push(cur);cur=''}else if(c==='\n'){row.push(cur.replace(/\r$/,''));out.push(row);row=[];cur=''}else cur+=c}
+  if(cur||row.length){row.push(cur);out.push(row)}
+  return out.filter(r=>r.some(x=>String(x).trim()));
+}
+function giorni(a,b){return Math.round((new Date(a)-new Date(b))/86400000)}
+const STOP=new Set(['srl','spa','sas','snc','s','r','l','societa','soc','studio','della','delle','degli','dello','coop','scrl','sede','ditta','italia','bordighera','imperia','sanremo','via','capo','fav','iban','bonifico','pagamento','fattura','saldo','acconto','servizi','group','gruppo','and','the','dott','geom','arch','ing']);
+function tokens(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').split(' ').filter(w=>w.length>=4&&!STOP.has(w)&&!/^\d+$/.test(w))}
+function simNome(a,b){const A=new Set(tokens(a));let n=0;for(const w of new Set(tokens(b)))if(A.has(w))n++;return n}
+function beneficiario(desc){
+  const m=desc.match(/A\s*fav\.?:?\s*(.+?)(?=\s+(?:IBAN|ID[\s.:]|ID Pag|RICON|Coordinate|Sede)|[,;]|$)/i)||desc.match(/ordinante\s+(.+?)(?=\)|\s+Indirizzo|\s+IBAN|[,;]|$)/i);
+  return m?m[1].trim():desc.slice(0,60);
+}
+function parseBanca(text,fname){
+  const rows=csvRows(text);if(!rows.length)throw new Error('file vuoto');
+  const h=rows[0].map(x=>x.trim().toUpperCase());const ix=n=>h.indexOf(n);const out=[];
+  if(ix('DATA OPERAZIONE')>=0&&ix('IMPORTO')>=0){
+    const iN=ix('NUMERO MOVIMENTO'),iD=ix('DATA OPERAZIONE'),iI=ix('IMPORTO'),iS=ix('SEGNO'),iC=ix('DESCRIZIONE CAUSALE');
+    const iM=h.map((x,i)=>x.startsWith('DESCRIZIONE MOVIMENTO')?i:-1).filter(i=>i>=0);
+    for(const r of rows.slice(1)){if(iN>=0&&String(r[iN]).trim()==='0')continue;const data=dataIt(r[iD]);if(!data||data<'1990')continue;
+      let imp=numIt(r[iI]);if(String(r[iS]).trim()==='D'&&imp>0)imp=-imp;if(!imp)continue;
+      const desc=[r[iC],...iM.map(i=>r[i])].map(x=>String(x||'').trim()).filter(Boolean).join(' ');out.push({data,imp:+imp.toFixed(2),desc,file:fname})}
+  }else if(ix('DATA')>=0&&ix('DARE')>=0&&ix('AVERE')>=0){
+    const iD=ix('DATA'),iDa=ix('DARE'),iAv=ix('AVERE'),iDe=ix('DESCRIZIONE_OPERAZIONE')>=0?ix('DESCRIZIONE_OPERAZIONE'):ix('DESCRIZIONE');
+    for(const r of rows.slice(1)){const desc=String(r[iDe]||'').trim();if(/^(saldo|disponibilit)/i.test(desc))continue;const data=dataIt(r[iD]);if(!data)continue;
+      const imp=+(numIt(r[iAv])-numIt(r[iDa])).toFixed(2);if(!imp)continue;out.push({data,imp,desc,file:fname})}
+  }else throw new Error('formato non riconosciuto (servono le colonne Data operazione/Importo oppure DATA/DARE/AVERE)');
+  return out;
+}
+function unisciBanca(lista){
+  const res=[];
+  for(const f of lista){const presi=new Set();
+    for(const m of f){const k=res.findIndex((x,i)=>!presi.has(i)&&x.file!==m.file&&x.data===m.data&&Math.abs(x.imp-m.imp)<0.005);
+      if(k>=0){presi.add(k);if(m.desc.length>res[k].desc.length)res[k].desc=m.desc}else{res.push(m);presi.add(res.length-1)}}}
+  return res.sort((a,b)=>a.data.localeCompare(b.data)||a.imp-b.imp).map((m,i)=>({...m,id:i+1,benef:beneficiario(m.desc)}));
+}
+/* fatture del cassetto: XML FatturaPA, p7m, ZIP, CSV */
+function txt(el,n){const x=el&&el.getElementsByTagName(n)[0];return x?x.textContent.trim():''}
+function parseXmlFattura(xml,fname){
+  const doc=new DOMParser().parseFromString(xml,'application/xml');if(doc.getElementsByTagName('parsererror').length)throw new Error('XML non leggibile');
+  const ced=doc.getElementsByTagName('CedentePrestatore')[0];const an=ced&&ced.getElementsByTagName('Anagrafica')[0];
+  const forn=txt(an,'Denominazione')||[txt(an,'Nome'),txt(an,'Cognome')].filter(Boolean).join(' ');const piva=txt(ced,'IdCodice');
+  const out=[];
+  for(const b of doc.getElementsByTagName('FatturaElettronicaBody')){
+    const g=b.getElementsByTagName('DatiGeneraliDocumento')[0];const tipo=txt(g,'TipoDocumento');const segno=tipo==='TD04'?-1:1;
+    const pf=s=>parseFloat(s)||0;let imp=0,iva=0;for(const r of b.getElementsByTagName('DatiRiepilogo')){imp+=pf(txt(r,'ImponibileImporto'));iva+=pf(txt(r,'Imposta'))}
+    let rit=0;for(const r of g.getElementsByTagName('DatiRitenuta'))rit+=pf(txt(r,'ImportoRitenuta'));
+    const totDoc=pf(txt(g,'ImportoTotaleDocumento'))||+(imp+iva).toFixed(2);
+    let pag=0;for(const p of b.getElementsByTagName('DettaglioPagamento'))pag+=pf(txt(p,'ImportoPagamento'));
+    out.push({fornitore:forn,piva,tipo,numero:txt(g,'Numero'),data:txt(g,'Data'),imponibile:+(segno*imp).toFixed(2),iva:+(segno*iva).toFixed(2),totale:+(segno*totDoc).toFixed(2),ritenuta:+(segno*rit).toFixed(2),netto:pag?+(segno*pag).toFixed(2):null,file:fname,fonte:'xml'});
+  }
+  return out;
+}
+function xmlDaP7m(buf){
+  const s=new TextDecoder('latin1').decode(new Uint8Array(buf));
+  const a=s.search(/<\?xml|<[A-Za-z0-9_]*:?FatturaElettronica[\s>]/);const m=s.match(/<\/[A-Za-z0-9_]*:?FatturaElettronica>/);
+  if(a<0||!m)throw new Error('firma p7m non leggibile');
+  let x=s.slice(a,s.indexOf(m[0])+m[0].length);
+  x=x.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+  return new TextDecoder('utf-8').decode(Uint8Array.from(x,c=>c.charCodeAt(0)));
+}
+function parseCsvCassetto(text,fname){
+  const rows=csvRows(text);const h=rows[0].map(x=>x.toLowerCase());
+  const f=(ks,no=[])=>{for(const k of ks){const i=h.findIndex(x=>x.includes(k)&&!no.some(n=>x.includes(n)));if(i>=0)return i}return -1};
+  const iNum=f(['numero']),iData=f(['data emissione','data documento','data fattura','data']),iForn=f(['denominazione','ragione sociale','cedente','fornitore'],['iva','identificativo','codice','fiscale']),iPiva=f(['partita iva','identificativo']),iImp=f(['imponibile']),iIva=f(['imposta'],['imponibile']),iTipo=f(['tipo documento']),iTot=f(['totale'],['imponibile','imposta']);
+  if(iForn<0||iImp<0)throw new Error('colonne non riconosciute (servono fornitore e imponibile)');
+  return rows.slice(1).map(r=>{const tipo=String(r[iTipo]||'');const segno=/TD04|nota di credito/i.test(tipo)?-1:1;const imp=Math.abs(numIt(r[iImp]))*segno,iva=Math.abs(numIt(r[iIva]))*segno;
+    return {fornitore:String(r[iForn]||'').trim(),piva:iPiva>=0?String(r[iPiva]||'').trim():'',tipo,numero:iNum>=0?String(r[iNum]||'').trim():'',data:dataIt(r[iData]),imponibile:+imp.toFixed(2),iva:+iva.toFixed(2),totale:iTot>=0&&numIt(r[iTot])?+(segno*Math.abs(numIt(r[iTot]))).toFixed(2):+(imp+iva).toFixed(2),ritenuta:0,netto:null,file:fname,fonte:'csv'}}).filter(x=>x.fornitore&&(x.imponibile||x.totale));
+}
+async function caricaJSZip(){if(window.JSZip)return;await new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';s.onload=ok;s.onerror=()=>ko(new Error('impossibile caricare il lettore ZIP'));document.head.appendChild(s)})}
+async function leggiCassetto(files){
+  const out=[],err=[];
+  const uno=async(name,getText,getBuf)=>{
+    try{const n=name.toLowerCase();
+      if(n.endsWith('.xml'))out.push(...parseXmlFattura(await getText(),name));
+      else if(n.endsWith('.p7m'))out.push(...parseXmlFattura(xmlDaP7m(await getBuf()),name));
+      else if(n.endsWith('.csv')||n.endsWith('.txt'))out.push(...parseCsvCassetto(await getText(),name));
+    }catch(e){err.push(name+': '+e.message)}
+  };
+  for(const f of files){
+    if(f.name.toLowerCase().endsWith('.zip')){
+      try{await caricaJSZip();const z=await JSZip.loadAsync(f);
+        for(const e of Object.values(z.files)){if(e.dir)continue;await uno(e.name.split('/').pop(),()=>e.async('string'),()=>e.async('arraybuffer'))}}
+      catch(e){err.push(f.name+': '+e.message)}
+    }else await uno(f.name,()=>f.text(),()=>f.arrayBuffer());
+  }
+  const viste=new Set();
+  return {fatture:out.filter(x=>{const k=(x.piva||x.fornitore)+'|'+x.numero+'|'+x.data+'|'+x.totale;if(viste.has(k))return false;viste.add(k);return true}),err};
+}
+const ESCLUSI=[[/RATA MUTUO|MUTUO N|FINANZIAMENTO|ESTINZ/i,'Mutuo'],[/^(IMPOSTA DI BOLLO|COMMISSIONI|COMPETENZE|CANONE INBANK|SPESE|INTERESSI)/i,'Spese bancarie'],[/\bF24\b|DELEGA|TRIBUT|ERARIO|AGENZIA DELLE ENTRATE/i,'F24 / imposte'],[/A\s*fav\.?:?\s*(COMUNE|REGIONE|PROVINCIA|TESORER)|COMUNE DI [A-Z]+ TESORER/i,'Comune / enti (senza fattura)'],[/CONDOMINIO/i,'Condominio (senza fattura)'],[/GIROCONTO|GIROFONDI|INTEMELIA|BLANCARDI/i,'Giroconti / soci']];
+function importiBanca(m){const a=[-m.imp];const x=m.desc.match(/IMP\.\s*E\s*([\d.]+,\d{2})/i);if(x)a.push(numIt(x[1]));return a}
+function escluso(m){for(const [re,l] of ESCLUSI)if(re.test(m.desc))return l;return ''}
+function importiFattura(f){
+  const c=[[f.totale,'totale']];
+  if(f.netto!=null&&Math.abs(f.netto-f.totale)>0.01)c.push([f.netto,'netto da pagare']);
+  if(f.ritenuta)c.push([+(f.totale-f.ritenuta).toFixed(2),'totale meno ritenuta']);
+  if(!f.ritenuta&&f.netto==null&&f.imponibile>0){const I=f.imponibile,T=f.totale;
+    c.push([+(T-0.2*I/1.04).toFixed(2),'netto: ritenuta 20% su onorari (cassa 4%)'],[+(T-0.2*I).toFixed(2),'netto: ritenuta 20%'],[+(T-0.046*I).toFixed(2),'netto: ritenuta agenti 4,6%'],[+(T-0.115*I).toFixed(2),'netto: ritenuta agenti 11,5%'])}
+  return c;
+}
+function* combinazioni(arr,k,start=0,pre=[]){if(pre.length===k){yield pre;return}for(let i=start;i<arr.length;i++)yield* combinazioni(arr,k,i+1,[...pre,arr[i]])}
+function controllo1(banca,fatture){
+  const usc=banca.filter(m=>m.imp<0);const escl=[],cand=[];for(const m of usc){const e=escluso(m);e?escl.push({...m,motivo:e}):cand.push(m)}
+  const F=fatture.map((f,i)=>({...f,i,imps:importiFattura(f)}));const usataF=new Set(),usataB=new Set(),abb=[];
+  const prova=(soglia,serveNome,finestra)=>{
+    for(const m of cand){if(usataB.has(m.id))continue;const AA=importiBanca(m);let best=null;
+      for(const f of F){if(usataF.has(f.i))continue;const s=simNome(m.desc,f.fornitore);if(serveNome&&!s)continue;
+        const hit=f.imps.find(([v])=>AA.some(A=>Math.abs(v-A)<=soglia));if(!hit)continue;const gg=f.data?giorni(m.data,f.data):0;if(gg<-finestra[0]||gg>finestra[1])continue;
+        const sc=(s?0:1000)+Math.abs(gg);if(!best||sc<best.sc)best={f,hit,sc,s}}
+      if(best){usataB.add(m.id);usataF.add(best.f.i);abb.push({b:[m],f:[best.f],come:best.hit[1]+(best.s?'':' (nome diverso)')})}}
+  };
+  prova(0.02,true,[240,400]);prova(0.02,false,[60,120]);
+  for(const m of cand){if(usataB.has(m.id))continue;const A=-m.imp;const pool=F.filter(f=>!usataF.has(f.i)&&simNome(m.desc,f.fornitore)>0);
+    let fatto=false;for(const k of [2,3]){if(fatto||pool.length>18)break;for(const c of combinazioni(pool,k)){const tot=c.reduce((a,f)=>a+f.totale,0),net=c.reduce((a,f)=>a+(f.netto??f.totale-f.ritenuta),0);
+      if(Math.abs(tot-A)<=0.03||Math.abs(net-A)<=0.03){usataB.add(m.id);c.forEach(f=>usataF.add(f.i));abb.push({b:[m],f:c,come:`${k} fatture pagate con un bonifico`});fatto=true;break}}}}
+  for(const f of F){if(usataF.has(f.i))continue;const pool=cand.filter(m=>!usataB.has(m.id)&&simNome(m.desc,f.fornitore)>0);
+    let fatto=false;for(const k of [2,3,4]){if(fatto||pool.length>16)break;for(const c of combinazioni(pool,k)){const A=-c.reduce((a,m)=>a+m.imp,0);
+      if(f.imps.some(([v])=>Math.abs(v-A)<=0.03)){c.forEach(m=>usataB.add(m.id));usataF.add(f.i);abb.push({b:c,f:[f],come:`fattura pagata in ${k} bonifici (acconti)`});fatto=true;break}}}}
+  const esteri=[];const daRicevere=[];
+  for(const m of cand){if(usataB.has(m.id))continue;
+    const est=DATA.documenti.find(d=>d.tipo_doc==='fattura_estera'&&pagati(d.id).some(p=>p.tipo!=='differenza'&&Math.abs(p.importo+m.imp)<=0.02&&Math.abs(giorni(p.data_pag,m.data))<=10));
+    const forn=F.map(f=>f.fornitore).find(n=>simNome(m.desc,n)>0);
+    (est?esteri:daRicevere).push({...m,fornitore:forn||'',doc:est||null})}
+  const nonPagate=F.filter(f=>!usataF.has(f.i));
+  return {abb,escl,daRicevere,esteri,nonPagate,nCand:cand.length};
+}
+function pagamentiApp(dal,al){
+  const out=[];for(const p of DATA.pagamenti){if(p.tipo==='differenza')continue;if(p.conto&&p.conto!=='Caraglio VAC2')continue;if(!p.data_pag||p.data_pag<dal||p.data_pag>al)continue;
+    const d=DATA.documenti.find(x=>x.id===p.documento_id);if(!d)continue;out.push({p,d,imp:+(d.verso==='uscita'?-p.importo:p.importo).toFixed(2),data:p.data_pag})}
+  return out;
+}
+function controllo2(banca,dal,al){
+  const B=banca.filter(m=>m.data>=dal&&m.data<=al);const P=pagamentiApp(dal,al).map((x,i)=>({...x,i}));const uB=new Set(),uP=new Set(),abb=[];
+  for(const win of [0,3,7]){for(const m of B){if(uB.has(m.id))continue;let best=null;for(const x of P){if(uP.has(x.i)||Math.abs(x.imp-m.imp)>0.011)continue;const gg=Math.abs(giorni(x.data,m.data));if(gg<=win&&(!best||gg<best.gg))best={x,gg}}
+    if(best){uB.add(m.id);uP.add(best.x.i);abb.push({b:[m],p:[best.x]})}}}
+  for(const m of B){if(uB.has(m.id))continue;const pool=P.filter(x=>!uP.has(x.i)&&Math.abs(giorni(x.data,m.data))<=5&&(x.imp<0)===(m.imp<0));
+    let fatto=false;for(const k of [2,3]){if(fatto||pool.length>20)break;for(const c of combinazioni(pool,k)){if(Math.abs(c.reduce((a,x)=>a+x.imp,0)-m.imp)<=0.02){uB.add(m.id);c.forEach(x=>uP.add(x.i));abb.push({b:[m],p:c});fatto=true;break}}}}
+  for(const x of P){if(uP.has(x.i))continue;const pool=B.filter(m=>!uB.has(m.id)&&Math.abs(giorni(x.data,m.data))<=10&&(x.imp<0)===(m.imp<0));
+    let fatto=false;for(const k of [2,3,4]){if(fatto||pool.length>16)break;for(const c of combinazioni(pool,k)){if(Math.abs(c.reduce((a,m)=>a+m.imp,0)-x.imp)<=0.02){c.forEach(m=>uB.add(m.id));uP.add(x.i);abb.push({b:c,p:[x]});fatto=true;break}}}}
+  return {abb,soloBanca:B.filter(m=>!uB.has(m.id)),soloApp:P.filter(x=>!uP.has(x.i)),nB:B.length,nP:P.length,saldo:B.reduce((a,m)=>a+m.imp,0)};
+}
+function vControlli(){
+  const el=document.getElementById('v-controlli');const c=CTRL;
+  el.innerHTML=`<div class="card" style="max-width:980px"><h2>Controlli automatici</h2>
+  <p class="small mute" style="margin-top:-6px">La banca comanda. <b>Controllo 1</b>: ogni uscita del conto deve avere la sua fattura nel Cassetto fiscale. <b>Controllo 2</b>: ogni movimento del conto deve essere registrato nell'app. I file restano su questo computer: non vengono salvati.</p>
+  <div class="grid2">
+   <label>1. Estratto conto Caraglio (CSV: storico movimenti e/o lista movimenti)<input type="file" id="cB" accept=".csv,.txt" multiple></label>
+   <label>2. Fatture ricevute dal Cassetto fiscale (ZIP, XML, P7M o elenco CSV)<input type="file" id="cC" accept=".zip,.xml,.p7m,.csv,.txt" multiple></label>
+  </div>
+  <div class="small" id="cInfo" style="margin:8px 0">${c.banca.length?`Banca: <b>${c.banca.length}</b> movimenti dal ${dit(c.banca[0].data)} al ${dit(c.banca[c.banca.length-1].data)} (${c.fileB.map(esc).join(', ')})`:'Banca: nessun file caricato'} · ${c.cassetto.length?`Cassetto: <b>${c.cassetto.length}</b> fatture (${c.fileC.length} file)`:'Cassetto: nessun file caricato'}${c.errC.length?` · <span style="color:var(--accent)">${c.errC.length} file non letti</span>`:''}</div>
+  <div class="filters"><label>Dal<input type="date" id="cDal" value="${c.dal}"></label><label>Al<input type="date" id="cAl" value="${c.al}"></label><span class="grow" style="flex:1"></span>
+   <button class="primary" id="cGo" ${c.banca.length?'':'disabled'}>Esegui controlli</button><button id="cPrint" ${c.res?'':'disabled'}>Stampa report</button></div>
+  ${c.errC.length?`<details class="small"><summary>File del cassetto non letti (${c.errC.length})</summary>${c.errC.map(e=>`<div>${esc(e)}</div>`).join('')}</details>`:''}
+  </div><div id="cRes">${c.res?reportControlli(c.res):''}</div>`;
+  cB.onchange=async e=>{const L=[],nomi=[];for(const f of e.target.files){try{L.push(parseBanca(await f.text(),f.name));nomi.push(f.name)}catch(er){alert(f.name+': '+er.message)}}
+    if(L.length){c.banca=unisciBanca(L);c.fileB=nomi;c.dal=c.banca[0].data;c.al=c.banca[c.banca.length-1].data;c.res=null}vControlli()};
+  cC.onchange=async e=>{document.getElementById('loading').style.display='grid';try{const r=await leggiCassetto([...e.target.files]);c.cassetto=r.fatture;c.errC=r.err;c.fileC=[...e.target.files].map(f=>f.name);c.res=null}finally{document.getElementById('loading').style.display='none'}vControlli()};
+  cDal.onchange=e=>{c.dal=e.target.value};cAl.onchange=e=>{c.al=e.target.value};
+  cGo.onclick=()=>{const B=c.banca.filter(m=>m.data>=c.dal&&m.data<=c.al);
+    c.res={dal:c.dal,al:c.al,c1:c.cassetto.length?controllo1(B,c.cassetto.filter(f=>!f.data||f.data<=c.al)):null,c2:controllo2(c.banca,c.dal,c.al),multi:multiCat().filter(x=>!verificati.has(x.sid))};vControlli()};
+  cPrint.onclick=()=>window.print();
+}
+function rigaB(m,extra=''){return `<tr><td>${dit(m.data)}</td><td class="num" style="color:${m.imp<0?'inherit':'var(--ok)'}">${eur(m.imp)}</td><td class="small">${esc(m.benef||'')}<div class="mute">${esc(m.desc.slice(0,140))}</div></td>${extra}</tr>`}
+function blocco(tit,n,tot,html,aperto){return `<details class="mc" ${aperto?'open':''}><summary><b>${tit}</b><span><span class="chip ${n?'c-red':'c-ok'}">${n}</span>${tot!=null?` <span class="small mute">${eur(tot)}</span>`:''}</span></summary><div style="padding:8px 12px">${n?`<div class="tblwrap" style="max-height:none"><table>${html}</table></div>`:'<p class="small mute">Nessuna voce.</p>'}</div></details>`}
+function reportControlli(r){
+  let h=`<div class="card" style="max-width:980px"><h2>Report controlli · dal ${dit(r.dal)} al ${dit(r.al)}</h2>`;
+  if(r.c1){const c=r.c1;
+    h+=`<h3 style="font-size:14px;margin:10px 0 6px">Controllo 1 – Banca → Cassetto fiscale</h3><p class="small mute">${c.nCand} uscite da verificare: ${c.abb.length} abbinate a fatture del cassetto; ${c.escl.length} escluse perché non hanno fattura (spese bancarie, F24, mutuo, PagoPA, condominio, giroconti).</p>`;
+    h+=blocco('Fatture da ricevere (pagato in banca, nessuna fattura nel cassetto)',c.daRicevere.length,c.daRicevere.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Beneficiario / descrizione</th><th>Fornitore nel cassetto</th></tr>'+c.daRicevere.map(m=>rigaB(m,`<td class="small">${esc(m.fornitore||'—')}</td>`)).join(''),true);
+    h+=blocco('Pagamenti a fatture estere (registrate in app, non nel cassetto)',c.esteri.length,c.esteri.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Beneficiario</th><th>Documento app</th></tr>'+c.esteri.map(m=>rigaB(m,`<td class="small"><a href="#" onclick="dett(${m.doc.id});return false">${esc(S[m.doc.soggetto_id]?.nome||'')}</a></td>`)).join(''));
+    h+=blocco('Fatture nel cassetto senza pagamento in banca nel periodo',c.nonPagate.length,c.nonPagate.reduce((a,f)=>a+f.totale,0),'<tr><th>Data</th><th>Fornitore</th><th>N°</th><th class="num">Totale</th><th class="num">Ritenuta</th></tr>'+c.nonPagate.sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(f=>`<tr><td>${dit(f.data)}</td><td>${esc(f.fornitore)}</td><td>${esc(f.numero)}</td><td class="num">${eur(f.totale)}</td><td class="num">${f.ritenuta?eur(f.ritenuta):''}</td></tr>`).join(''));
+    h+=blocco('Uscite abbinate a fatture',c.abb.length,null,'<tr><th>Banca</th><th>Fattura</th><th>Come</th></tr>'+c.abb.map(a=>`<tr><td class="small">${a.b.map(m=>`${dit(m.data)} ${eur(m.imp)}`).join('<br>')}</td><td class="small">${a.f.map(f=>`${esc(f.fornitore)} n° ${esc(f.numero)} del ${dit(f.data)} · ${eur(f.totale)}`).join('<br>')}</td><td class="small mute">${esc(a.come)}</td></tr>`).join(''));
+    h+=blocco('Uscite escluse dal controllo fatture',c.escl.length,c.escl.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Descrizione</th><th>Motivo</th></tr>'+c.escl.map(m=>rigaB(m,`<td class="small">${esc(m.motivo)}</td>`)).join(''));
+  }else h+=`<p class="small mute">Controllo 1 non eseguito: carica le fatture del Cassetto fiscale.</p>`;
+  const c=r.c2;
+  h+=`<h3 style="font-size:14px;margin:16px 0 6px">Controllo 2 – Banca → App</h3><p class="small mute">${c.nB} movimenti in banca, ${c.nP} pagamenti e incassi "conto Caraglio" nell'app nel periodo. Somma dei movimenti in banca nel periodo: ${eur(c.saldo)}.</p>`;
+  h+=blocco('Movimenti da verificare: in banca ma non nell\'app',c.soloBanca.length,c.soloBanca.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Descrizione</th></tr>'+c.soloBanca.map(m=>rigaB(m)).join(''),true);
+  h+=blocco('Registrati nell\'app come "conto Caraglio" ma non in banca',c.soloApp.length,c.soloApp.reduce((a,x)=>a+x.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Documento</th></tr>'+c.soloApp.map(x=>`<tr><td>${dit(x.data)}</td><td class="num">${eur(x.imp)}</td><td class="small"><a href="#" onclick="dett(${x.d.id});return false">${esc(S[x.d.soggetto_id]?.nome||'—')}</a> · ${esc(x.d.descrizione||C[x.d.categoria_id]?.nome||'')}</td></tr>`).join(''),true);
+  h+=`<h3 style="font-size:14px;margin:16px 0 6px">Altri controlli</h3>`;
+  h+=blocco('Fornitori con fatture in più categorie',r.multi.length,null,'<tr><th>Fornitore</th><th>Fatture</th></tr>'+r.multi.map(x=>`<tr><td><a href="#anomalie" onclick="go('anomalie');return false">${esc(S[x.sid].nome)}</a></td><td>${x.L.length}</td></tr>`).join(''));
+  return h+'</div>';
+}
+
+/* ---------- MODULI: funzionano anche dove l'invio dei form è bloccato (anteprime, allegati) ---------- */
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('form button.primary');if(!btn)return;
+  const f=btn.closest('form');if(!f||typeof f.onsubmit!=='function')return;
+  e.preventDefault();if(btn.disabled)return;f.onsubmit({preventDefault(){}});
+},true);
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;const f=e.target.closest&&e.target.closest('form');
+  if(!f||e.target.tagName==='TEXTAREA'||e.target.closest('.dd'))return;
+  if(typeof f.onsubmit==='function'){e.preventDefault();const b=f.querySelector('button.primary');if(b&&!b.disabled)f.onsubmit({preventDefault(){}})}
+},true);
+
+/* ---------- ROUTER (funziona anche senza #indirizzo, es. anteprime e allegati) ---------- */
+const VIEWS={movimenti:vMovimenti,nuovo:vNuovo,scadenzario:vScad,riepilogo:vRiep,anomalie:vAnom,controlli:vControlli,aiuto:vAiuto};
+let VISTA='movimenti';
+try{const h=(location.hash||'').slice(1);if(VIEWS[h])VISTA=h}catch(e){}
+function go(v){if(!VIEWS[v])v='movimenti';VISTA=v;try{history.replaceState(null,'','#'+v)}catch(e){}render();try{window.scrollTo(0,0)}catch(e){}}
+function render(){
+  const cur=VISTA;
+  for(const k in VIEWS)document.getElementById('v-'+k).style.display=k===cur?'block':'none';
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===cur));
+  VIEWS[cur]();contaVerifiche();
+}
+document.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();go(a.dataset.v)}));
+try{window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(VIEWS[h]&&h!==VISTA){VISTA=h;render()}})}catch(e){}
+sb.auth.getSession().then(({data})=>avvio(data.session));
+</script>
+</body>
+</html>
