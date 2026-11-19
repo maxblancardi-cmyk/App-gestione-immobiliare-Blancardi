@@ -2926,7 +2926,7 @@ function sessView(id) {
   openModal(`${esc(s.type)}${e ? ' · ' + esc(e.circuit || '') : ''}`, `<div class="subtle" style="margin-bottom:10px">${s.date ? parse(s.date).toLocaleDateString(LOC()) : ''} · ${s.rows.length} righe · ${esc(s.title || '')}</div>
     <div class="card" style="padding:4px 8px;overflow-x:auto"><table class="cls"><tr><th>Pos</th><th>N°</th><th>Pilota</th><th>Cl.</th><th class="r">Best</th><th class="r">Gap</th></tr>
     ${s.rows.map((r) => `<tr class="${mineNums.has(r) ? 'mine' : ''}"><td>${esc(r.pos)}</td><td><b>${esc(r.num)}</b></td><td>${esc(r.name || (r.raw || '').slice(0, 40))}</td><td>${esc(r.cls)}</td><td class="r mono">${esc(r.best)}</td><td class="r mono">${esc(r.gap)}</td></tr>`).join('')}</table></div>
-    <div class="row between" style="margin-top:12px"><button class="btn danger" data-act="sessdel" data-id="${s.id}">Elimina</button><span class="subtle">In verde i tuoi piloti</span></div>`);
+    ${/^https?:/i.test(s.source_url || '') ? `<a class="btn" style="display:block;text-align:center;margin-top:10px;text-decoration:none" href="${esc(s.source_url)}" target="_blank" rel="noopener">📄 Apri il PDF originale</a>` : ''}<div class="row between" style="margin-top:12px"><button class="btn danger" data-act="sessdel" data-id="${s.id}">Elimina</button><span class="subtle">In verde i tuoi piloti</span></div>`);
 }
 
 /* ---------- PROGRAMMA DEL WEEKEND (time-table) ---------- */
@@ -3077,8 +3077,9 @@ async function ttImport(f) {
   } catch (err) { return toast('Errore nel file: ' + (err.message || err), true); }
   if (!rows.length && !img) return toast('Non trovo orari: carica il PDF o incolla il testo con gli orari', true);
   const g = S.events.filter((x) => sameEv(x, e));
-  if (fd.get('replace')) { const ids = new Set(g.map((x) => x.id)); for (const x of (S.tt || []).filter((z) => ids.has(z.event_id))) await del('tt', x.id); }
-  await put('tt', { id: uuid(), event_id: g[0].id, title, img, rows, created: new Date().toISOString() });
+  let keep = {};
+  if (fd.get('replace')) { const ids = new Set(g.map((x) => x.id)); const prev = (S.tt || []).filter((z) => ids.has(z.event_id)).sort((a, b) => (b.created || '').localeCompare(a.created || ''))[0]; if (prev) keep = { mine: prev.mine, cal: prev.cal && prev.cal.status === 'done' ? { ...prev.cal, status: 'pending', requested: new Date().toISOString() } : prev.cal }; for (const x of (S.tt || []).filter((z) => ids.has(z.event_id))) await del('tt', x.id); }
+  await put('tt', { id: uuid(), event_id: g[0].id, title, img, rows, created: new Date().toISOString(), ...keep });
   closeModal(); render();
   const fc = rows.filter((r) => r.fc).length;
   toast(rows.length ? `${rows.length} sessioni importate${fc ? ' · ' + fc + ' Ferrari' : ''}` : 'Immagine salvata (orari non leggibili da foto: usa "Correggi" per scriverli)', !rows.length);
@@ -3122,22 +3123,52 @@ function inbSuggestTxt(it) {
   const s = it.suggest || {}, e = S.events.find((x) => x.id === (it.event_id || s.event_id)), d = driver(it.driver_id || s.driver_id), c = champ(it.championship_id || s.championship_id || e?.championship_id);
   return [c?.name, e ? `${e.circuit || ''} ${fmtRange(e.start_date, e.end_date)}`.trim() : '', d ? dname(d) : ''].filter(Boolean).join(' · ');
 }
+function inbSrcLinks(it) {
+  const out = [];
+  if (/^https?:/i.test(it.msg_id || '')) out.push(`<a class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="${esc(it.msg_id)}" target="_blank" rel="noopener">📄 Apri il PDF originale</a>`);
+  else if (it.msg_id) out.push(`<a class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:8px" href="https://mail.google.com/mail/u/0/#all/${esc(it.msg_id)}" target="_blank" rel="noopener">✉️ Apri la mail con l'allegato</a>`);
+  return out.join('');
+}
+function inbInfo(it) {
+  const rows = (it.parsed && Array.isArray(it.parsed.rows)) ? it.parsed.rows : [];
+  if (it.kind === 'timetable' && rows.length) {
+    const days = [...new Set(rows.map((r) => r.day).filter(Boolean))].sort();
+    return `<b>${rows.length} orari</b>${days.length ? ` · ${fmtShort(days[0])} → ${fmtShort(days[days.length - 1])}` : ''}`;
+  }
+  if (it.kind === 'results' && rows.length) {
+    const mine = S.drivers.filter((d) => d.race_number).map((d) => { const r = rows.find((x) => String(x.num) === String(d.race_number)); return r ? `${dname(d)} <b>P${esc(r.pos)}</b>${r.best ? ' · ' + esc(r.best) : ''}` : ''; }).filter(Boolean);
+    return `<b>${esc(it.parsed.session_type || 'Classifica')}</b>${it.parsed.category ? ' · ' + esc(it.parsed.category) : ''} · ${rows.length} piloti${mine.length ? '<br>' + mine.join('<br>') : ''}`;
+  }
+  return '';
+}
 function inbPopup(it) {
   if (!it || document.querySelector('#modal-root .overlay')) return;
   S.inbShown = S.inbShown || new Set(); S.inbShown.add(it.id);
   const more = inbNew().length - 1;
   openModal('📎 Nuovo allegato', `<div class="card" style="margin-bottom:12px"><div class="lbl" style="margin:0">${esc(inbKind(it.kind))}</div><div class="evv" style="font-size:18px;word-break:break-word">${esc(it.filename || it.subject || 'Allegato')}</div>
-    <div class="subtle">Da ${esc(it.from || '?')}${it.date ? ' · ' + fmtShort(it.date.slice(0, 10)) : ''}</div>${it.subject ? `<div class="subtle">✉️ ${esc(it.subject)}</div>` : ''}${it.summary ? `<p style="margin:8px 0 0">${esc(it.summary)}</p>` : ''}
+    <div class="subtle">Da ${esc(it.from || '?')}${it.date ? ' · ' + fmtShort(it.date.slice(0, 10)) : ''}</div>${it.subject ? `<div class="subtle">✉️ ${esc(it.subject)}</div>` : ''}${inbInfo(it) ? `<p style="margin:10px 0 0;font-size:17px">${inbInfo(it)}</p>` : (it.summary ? `<p style="margin:8px 0 0">${esc(it.summary.replace(/;?\s*file (non salvato|grande)[^.]*\.?/i, '').trim())}</p>` : '')}
     ${inbSuggestTxt(it) ? `<div style="margin-top:8px"><b>Proposta:</b> ${esc(inbSuggestTxt(it))}</div>` : ''}</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><button class="btn" data-act="inbview" data-id="${it.id}">👁 Vedi</button><button class="btn primary" data-act="inbimp" data-id="${it.id}">⬇ Importa</button><button class="btn" data-act="inbsave" data-id="${it.id}">💾 Salva in…</button></div>
     <div class="row between" style="margin-top:12px"><button class="btn small" data-act="inbdismiss" data-id="${it.id}">Ignora</button>${more > 0 ? `<button class="btn small" data-act="inbgo">Altri ${more} ›</button>` : '<span></span>'}</div>`);
 }
 function inbCheck() { if (!S.loaded) return; S.inbShown = S.inbShown || new Set(); const it = inbNew().find((x) => !S.inbShown.has(x.id)); if (it) setTimeout(() => inbPopup(it), 400); }
+function inbPreview(it) {
+  const rows = (it.parsed && Array.isArray(it.parsed.rows)) ? it.parsed.rows : [];
+  let body = '';
+  if (it.kind === 'timetable' && rows.length) {
+    const byDay = new Map(); rows.slice().sort((a, b) => (a.day || '9').localeCompare(b.day || '9') || (a.start || '').localeCompare(b.start || '')).forEach((r) => (byDay.get(r.day) || byDay.set(r.day, []).get(r.day)).push(r));
+    body = [...byDay.entries()].map(([d, rs]) => `<div class="lbl" style="margin:12px 0 4px">${esc(d ? ttDayLabel(d) : 'Senza giorno')}</div>` + rs.map((r) => { const sp = ttSplit(r); return `<div style="display:grid;grid-template-columns:86px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--gb)"><div class="mono" style="font-weight:700">${esc(r.start || '')}${r.end ? `<br><span style="font-weight:400;opacity:.7">${esc(r.end)}</span>` : ''}</div><div><b>${esc(sp.what)}</b>${sp.who ? `<div class="subtle">${esc(sp.who)}</div>` : ''}</div></div>`; }).join('')).join('');
+  } else if (it.kind === 'results' && rows.length) {
+    const nums = new Set(S.drivers.map((d) => String(d.race_number || '')).filter(Boolean));
+    body = `<div class="card" style="padding:4px 8px;overflow-x:auto"><table class="cls"><tr><th>Pos</th><th>N°</th><th>Pilota</th><th>Cl.</th><th class="r">Best</th><th class="r">Gap</th></tr>${rows.map((r) => `<tr class="${nums.has(String(r.num)) ? 'mine' : ''}"><td>${esc(r.pos)}</td><td><b>${esc(r.num)}</b></td><td>${esc(r.name)}</td><td>${esc(r.cls || '')}</td><td class="r mono">${esc(r.best || '')}</td><td class="r mono">${esc(r.gap || '')}</td></tr>`).join('')}</table></div>`;
+  } else body = `<p>${esc(it.summary || 'Anteprima non disponibile.')}</p>`;
+  openModal(esc(it.filename || 'Allegato'), body + inbSrcLinks(it) + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="btn primary" data-act="inbimp" data-id="${it.id}">⬇ Importa</button><button class="btn" data-act="inbsave" data-id="${it.id}">💾 Salva in…</button></div>`);
+}
 async function inbView(id) {
   const it = (S.inbox || []).find((x) => x.id === id); if (!it) return;
   toast('Apro il file…');
-  let f; try { f = await inbFile(it); } catch (e) { return toast(e.message, true); }
-  if (!f) return toast('Nessun file allegato', true);
+  let f = null; try { f = await inbFile(it); } catch (e) { f = null; }
+  if (!f) return inbPreview(it);
   let html = '';
   if (inbIsPdf(f)) {
     if (!window.pdfjsLib) { await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js'); await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js'); }
@@ -3202,8 +3233,10 @@ async function inbImport(id, fromForm) {
       if (f) { img = await receiptDataUrl(f).catch(() => null); if (!rows.length && inbIsPdf(f)) rows = ttParse(await pdfLines(f), e); }
       if (!e) return toast('Scegli un evento', true);
       const g = S.events.filter((x) => sameEv(x, e)), ids = new Set(g.map((x) => x.id));
+      const prev = (S.tt || []).filter((z) => ids.has(z.event_id)).sort((a, b) => (b.created || '').localeCompare(a.created || ''))[0];
       for (const x of (S.tt || []).filter((z) => ids.has(z.event_id))) await del('tt', x.id);
-      await put('tt', { id: uuid(), event_id: g[0].id, title: it.filename || it.subject || 'Programma', img, rows, created: new Date().toISOString(), source: 'mail' });
+      const keep = prev ? { mine: prev.mine, cal: prev.cal && prev.cal.status === 'done' ? { ...prev.cal, status: 'pending', requested: new Date().toISOString() } : prev.cal } : {};
+      await put('tt', { id: uuid(), event_id: g[0].id, title: it.filename || it.subject || 'Programma', img, rows, created: new Date().toISOString(), source: 'mail', ...keep });
       toast(rows.length + ' sessioni nel programma del weekend');
     } else if (k === 'results') {
       if (!e) return toast('Scegli un evento', true);
