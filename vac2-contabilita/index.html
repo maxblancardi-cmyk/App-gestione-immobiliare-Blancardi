@@ -96,7 +96,7 @@ select option:checked{background:var(--accent) linear-gradient(0deg,var(--accent
 .pres{display:none;font-size:12px;font-weight:600;color:var(--ok);background:var(--ok-soft);border-radius:9px;padding:2px 9px;margin-left:8px;vertical-align:middle}
 #roBanner{display:none;background:var(--blue-soft);color:var(--blue);border:1px solid #c9d9ea;border-radius:8px;padding:9px 12px;margin-bottom:16px;font-size:13px}
 .riga{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:6px;align-items:center}
-@media print{header,.banner,#roBanner,#login,#loading,.toast,#v-controlli>.card:first-child{display:none!important}body{background:#fff}.card{border:0}details.mc{break-inside:avoid}details.mc>div{display:block}}
+@media print{header,.banner,#roBanner,#login,#loading,.toast,#v-controlli>.card{display:none!important}body{background:#fff}.card{border:0}details.mc{break-inside:avoid}details.mc>div{display:block}}
 .drop{border:2px dashed #d9cfc4;border-radius:10px;padding:14px;text-align:center;color:var(--mute);margin-bottom:14px;background:#fffdf9}
 .drop label{display:inline;color:var(--accent);font-weight:600;cursor:pointer;font-size:inherit}
 body.drag .drop,body.drag main{outline:3px dashed var(--accent);outline-offset:4px}
@@ -603,7 +603,7 @@ const AIUTO_VOCI=[
 ['Fattura con più aliquote IVA',`<p>Nel nuovo documento premi <kbd>+</kbd> accanto all'IVA per aggiungere un altro imponibile con la sua aliquota. Il totale somma tutte le voci.</p>`],
 ['Professionista con ritenuta d\'acconto',`<p>Spunta <i>soggetto a ritenuta d'acconto</i>: metti la base (gli onorari, senza cassa: usa <i>togli cassa 4%</i>) e la percentuale (di solito 20%). L'app calcola il netto da pagare: è quello che esce dal conto. Il totale del documento resta il lordo, come nel Cassetto fiscale. La ritenuta si versa con l'F24 (documento tipo <i>Imposta</i>).</p>`],
 ['Fattura estera',`<p>Tipo documento <i>Fattura estera</i>: non arriva nel Cassetto fiscale, quindi nei Controlli il pagamento non viene segnalato tra le fatture da ricevere.</p>`],
-['Controlli con banca e Cassetto fiscale',`<ol><li>Vai su <kbd>Controlli</kbd>.</li><li>Carica l'estratto conto Caraglio in CSV (storico o lista movimenti) e le fatture ricevute scaricate dal Cassetto fiscale (ZIP con gli XML, oppure l'elenco CSV).</li><li>Scegli il periodo e premi <kbd>Esegui controlli</kbd>: escono le fatture da ricevere, i movimenti in banca non registrati nell'app e quelli registrati ma non in banca.</li></ol>`],
+['Controlli con banca e Cassetto fiscale',`<ol><li>Vai su <kbd>Controlli</kbd>.</li><li>Trascina nell'<i>Archivio file</i> l'estratto conto Caraglio in CSV (storico o lista movimenti) e le fatture ricevute scaricate dal Cassetto fiscale (ZIP con gli XML, oppure l'elenco CSV): vengono salvati nelle cartelle <i>Estratti conto</i> e <i>Cassetto fiscale</i> e restano disponibili per le volte successive. Spunta i file da usare.</li><li>Scegli il periodo e premi <kbd>Esegui controlli</kbd>: escono le fatture da ricevere, i movimenti in banca non registrati nell'app e quelli registrati ma non in banca.</li></ol>`],
 ['Due persone collegate',`<p>In alto vedi chi è collegato. Modifica solo chi è entrato per primo; gli altri vedono la scritta <i>Sola lettura</i> e possono solo consultare finché il primo non esce.</p>`],
 ['Nota di credito',`<p><kbd>+ Nuovo documento</kbd> → tipo <i>Nota di credito</i>: l'importo diventa negativo. Se il fornitore la rimborsa, premi <kbd>Rimborso</kbd> sulla nota. Se invece viene scalata da una fattura, sulla fattura e sulla nota usa <kbd>Come</kbd> = <i>Compensato</i>.</p>`],
 ['Trattenuta a garanzia, abbuono, sconto',`<p>Quando una fattura non verrà pagata per intero apri la scheda e premi <kbd>Chiudi con differenza</kbd>, scegliendo il motivo. La <i>Trattenuta a garanzia</i> resta visibile in <kbd>Da pagare / incassare</kbd> finché non viene pagata.</p>`],
@@ -798,20 +798,15 @@ function controllo2(banca,dal,al){
 }
 function vControlli(){
   const el=document.getElementById('v-controlli');const c=CTRL;
-  el.innerHTML=`<div class="card" style="max-width:980px"><h2>Controlli automatici</h2>
-  <p class="small mute" style="margin-top:-6px">La banca comanda. <b>Controllo 1</b>: ogni uscita del conto deve avere la sua fattura nel Cassetto fiscale. <b>Controllo 2</b>: ogni movimento del conto deve essere registrato nell'app. I file restano su questo computer: non vengono salvati.</p>
-  <div class="grid2">
-   <label>1. Estratto conto Caraglio (CSV: storico movimenti e/o lista movimenti)<input type="file" id="cB" accept=".csv,.txt" multiple></label>
-   <label>2. Fatture ricevute dal Cassetto fiscale (ZIP, XML, P7M o elenco CSV)<input type="file" id="cC" accept=".zip,.xml,.p7m,.csv,.txt" multiple></label>
-  </div>
+  if(!ARCH.letto&&!ARCH.leggendo){ARCH.leggendo=true;archLista().then(()=>{ARCH.leggendo=false;if(VISTA==='controlli'){const a=ARCH.sel.size;vControlli();if(a&&!CTRL.banca.length)archCaricaControlli()}}).catch(()=>{ARCH.leggendo=false})}
+  el.innerHTML=archHtml()+`<div class="card" style="max-width:980px"><h2>Controlli automatici</h2>
+  <p class="small mute" style="margin-top:-6px">La banca comanda. <b>Controllo 1</b>: ogni uscita del conto deve avere la sua fattura nel Cassetto fiscale. <b>Controllo 2</b>: ogni movimento del conto deve essere registrato nell'app. Usano i file spuntati nell'archivio qui sopra.</p>
   <div class="small" id="cInfo" style="margin:8px 0">${c.banca.length?`Banca: <b>${c.banca.length}</b> movimenti dal ${dit(c.banca[0].data)} al ${dit(c.banca[c.banca.length-1].data)} (${c.fileB.map(esc).join(', ')})`:'Banca: nessun file caricato'} · ${c.cassetto.length?`Cassetto: <b>${c.cassetto.length}</b> fatture (${c.fileC.length} file)`:'Cassetto: nessun file caricato'}${c.errC.length?` · <span style="color:var(--accent)">${c.errC.length} file non letti</span>`:''}</div>
   <div class="filters"><label>Dal<input type="date" id="cDal" value="${c.dal}"></label><label>Al<input type="date" id="cAl" value="${c.al}"></label><span class="grow" style="flex:1"></span>
    <button class="primary" id="cGo" ${c.banca.length?'':'disabled'}>Esegui controlli</button><button id="cPrint" ${c.res?'':'disabled'}>Stampa report</button></div>
   ${c.errC.length?`<details class="small"><summary>File del cassetto non letti (${c.errC.length})</summary>${c.errC.map(e=>`<div>${esc(e)}</div>`).join('')}</details>`:''}
   </div><div id="cRes">${c.res?reportControlli(c.res):''}</div>`;
-  cB.onchange=async e=>{const L=[],nomi=[];for(const f of e.target.files){try{L.push(parseBanca(await f.text(),f.name));nomi.push(f.name)}catch(er){alert(f.name+': '+er.message)}}
-    if(L.length){c.banca=unisciBanca(L);c.fileB=nomi;c.dal=c.banca[0].data;c.al=c.banca[c.banca.length-1].data;c.res=null}vControlli()};
-  cC.onchange=async e=>{document.getElementById('loading').style.display='grid';try{const r=await leggiCassetto([...e.target.files]);c.cassetto=r.fatture;c.errC=r.err;c.fileC=[...e.target.files].map(f=>f.name);c.res=null}finally{document.getElementById('loading').style.display='none'}vControlli()};
+  archBind();
   cDal.onchange=e=>{c.dal=e.target.value};cAl.onchange=e=>{c.al=e.target.value};
   cGo.onclick=()=>{const B=c.banca.filter(m=>m.data>=c.dal&&m.data<=c.al);
     c.res={dal:c.dal,al:c.al,c1:c.cassetto.length?controllo1(B,c.cassetto.filter(f=>!f.data||f.data<=c.al)):null,c2:controllo2(c.banca,c.dal,c.al),multi:multiCat().filter(x=>!verificati.has(x.sid))};vControlli()};
@@ -822,7 +817,7 @@ function blocco(tit,n,tot,html,aperto){return `<details class="mc" ${aperto?'ope
 function reportControlli(r){
   let h=`<div class="card" style="max-width:980px"><h2>Report controlli · dal ${dit(r.dal)} al ${dit(r.al)}</h2>`;
   if(r.c1){const c=r.c1;
-    h+=`<h3 style="font-size:14px;margin:10px 0 6px">Controllo 1 – Banca → Cassetto fiscale</h3><p class="small mute">${c.nCand} uscite da verificare: ${c.abb.length} abbinate a fatture del cassetto; ${c.escl.length} escluse perché non hanno fattura (spese bancarie, F24, mutuo, PagoPA, condominio, giroconti).</p>`;
+    h+=`<h3 style="font-size:14px;margin:10px 0 6px">Controllo 1 – Banca → Cassetto fiscale</h3><p class="small mute">${c.nCand} uscite da verificare: ${c.abb.length} abbinate a fatture del cassetto; ${c.escl.length} escluse perché non hanno fattura (spese bancarie, F24, mutuo, Comune, condominio, giroconti).</p>`;
     h+=blocco('Fatture da ricevere (pagato in banca, nessuna fattura nel cassetto)',c.daRicevere.length,c.daRicevere.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Beneficiario / descrizione</th><th>Fornitore nel cassetto</th></tr>'+c.daRicevere.map(m=>rigaB(m,`<td class="small">${esc(m.fornitore||'—')}</td>`)).join(''),true);
     h+=blocco('Pagamenti a fatture estere (registrate in app, non nel cassetto)',c.esteri.length,c.esteri.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Beneficiario</th><th>Documento app</th></tr>'+c.esteri.map(m=>rigaB(m,`<td class="small"><a href="#" onclick="dett(${m.doc.id});return false">${esc(S[m.doc.soggetto_id]?.nome||'')}</a></td>`)).join(''));
     h+=blocco('Fatture nel cassetto senza pagamento in banca nel periodo',c.nonPagate.length,c.nonPagate.reduce((a,f)=>a+f.totale,0),'<tr><th>Data</th><th>Fornitore</th><th>N°</th><th class="num">Totale</th><th class="num">Ritenuta</th></tr>'+c.nonPagate.sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(f=>`<tr><td>${dit(f.data)}</td><td>${esc(f.fornitore)}</td><td>${esc(f.numero)}</td><td class="num">${eur(f.totale)}</td><td class="num">${f.ritenuta?eur(f.ritenuta):''}</td></tr>`).join(''));
@@ -951,10 +946,72 @@ document.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.clas
 document.addEventListener('drop',e=>{if(!e.dataTransfer||!e.dataTransfer.files.length)return;document.body.classList.remove('drag');
   if(e.target.closest&&e.target.closest('input[type=file]'))return;e.preventDefault();
   if(document.getElementById('login').style.display==='grid')return;
-  if(VISTA==='controlli'){toast('Nei Controlli usa i pulsanti di caricamento');return}
-  if(e.dataTransfer.files.length>1)toast('Importo il primo file: le fatture si caricano una alla volta');
-  importaFattura(e.dataTransfer.files[0]);
+  const L=[...e.dataTransfer.files];
+  if(VISTA==='controlli'||L.some(f=>/\.(csv|txt|zip)$/i.test(f.name))){archiviaFile(L);return}
+  if(L.length>1)toast('Importo il primo file: le fatture si caricano una alla volta');
+  importaFattura(L[0]);
 });
+
+
+/* ---------- ARCHIVIO FILE (Supabase Storage: estratti conto e cassetto fiscale) ---------- */
+const BKT='vac2-archivio';const ARCH={b:[],c:[],sel:new Set(),letto:false};
+const kb=n=>n?(n>1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB'):'';
+const caricamento=v=>{document.getElementById('loading').style.display=v?'grid':'none'};
+async function archLista(){
+  const st=sb.storage.from(BKT);const [a,b]=await Promise.all(['estratti-conto','cassetto-fiscale'].map(d=>st.list(d,{limit:1000,sortBy:{column:'name',order:'desc'}})));
+  if(a.error||b.error){ARCH.err=(a.error||b.error).message}else ARCH.err='';
+  ARCH.b=(a.data||[]).filter(x=>x.id).map(x=>({...x,path:'estratti-conto/'+x.name}));ARCH.c=(b.data||[]).filter(x=>x.id).map(x=>({...x,path:'cassetto-fiscale/'+x.name}));
+  if(!ARCH.letto){[...ARCH.b,...ARCH.c].forEach(x=>ARCH.sel.add(x.path));ARCH.letto=true}
+}
+async function classificaFile(f){
+  const n=f.name.toLowerCase();if(/\.(zip|xml|p7m)$/.test(n))return 'cassetto-fiscale';
+  if(/\.(csv|txt)$/.test(n)){const t=await f.text();try{parseBanca(t,f.name);return 'estratti-conto'}catch(e){}try{if(parseCsvCassetto(t,f.name).length)return 'cassetto-fiscale'}catch(e){}}
+  return null;
+}
+const nomeArch=n=>new Date().toISOString().slice(0,10)+'_'+n.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w.\-]+/g,'_');
+async function archiviaFile(files){
+  if(!EDIT){alert(`Sola lettura: in questo momento sta modificando ${EDITOR?.nome||EDITOR?.email||'un altro utente'}.`);return}
+  caricamento(true);const ok=[],ko=[];
+  try{for(const f of files){const dir=await classificaFile(f);
+    if(!dir){ko.push(`${f.name}: tipo non riconosciuto (servono il CSV dell'estratto conto Caraglio oppure ZIP/XML/P7M/CSV del Cassetto fiscale)`);continue}
+    let path=dir+'/'+nomeArch(f.name);let r=await sb.storage.from(BKT).upload(path,f,{upsert:false,contentType:f.type||'application/octet-stream'});
+    if(r.error&&/exist|duplicate/i.test(r.error.message)){path=path.replace(/(\.[^.\/]+)?$/,'_'+Date.now()+'$1');r=await sb.storage.from(BKT).upload(path,f,{upsert:false})}
+    if(r.error){ko.push(f.name+': '+r.error.message);continue}
+    ok.push(path);ARCH.sel.add(path)}
+  await archLista()}finally{caricamento(false)}
+  if(ko.length)alert('Non archiviati:\n'+ko.join('\n'));
+  if(ok.length){toast(`${ok.length} file salvati nell'archivio`);if(VISTA!=='controlli')go('controlli');await archCaricaControlli()}else vControlli();
+}
+async function archScarica(path){const {data,error}=await sb.storage.from(BKT).download(path);if(error)throw new Error(path.split('/').pop()+': '+error.message);return new File([data],path.split('/').pop(),{type:data.type})}
+async function caricaBanca(files){const L=[],nomi=[];for(const f of files){try{L.push(parseBanca(await f.text(),f.name));nomi.push(f.name)}catch(er){alert(f.name+': '+er.message)}}
+  CTRL.banca=L.length?unisciBanca(L):[];CTRL.fileB=nomi;if(CTRL.banca.length){CTRL.dal=CTRL.banca[0].data;CTRL.al=CTRL.banca[CTRL.banca.length-1].data}CTRL.res=null}
+async function caricaCassetto(files){if(!files.length){CTRL.cassetto=[];CTRL.errC=[];CTRL.fileC=[];return}const r=await leggiCassetto(files);CTRL.cassetto=r.fatture;CTRL.errC=r.err;CTRL.fileC=files.map(f=>f.name);CTRL.res=null}
+async function archCaricaControlli(){
+  caricamento(true);
+  try{const fb=await Promise.all(ARCH.b.filter(x=>ARCH.sel.has(x.path)).map(x=>archScarica(x.path)));const fc=await Promise.all(ARCH.c.filter(x=>ARCH.sel.has(x.path)).map(x=>archScarica(x.path)));
+    await caricaBanca(fb);await caricaCassetto(fc)}
+  catch(e){alert("Errore nel leggere l'archivio: "+e.message)}finally{caricamento(false)}
+  vControlli();
+}
+async function archApri(path){const {data,error}=await sb.storage.from(BKT).createSignedUrl(path,120,{download:true});if(error){alert(error.message);return}window.open(data.signedUrl,'_blank')}
+async function archElimina(path){if(!confirm(`Eliminare dall'archivio il file\n${path.split('/').pop()}?`))return;const {error}=await sb.storage.from(BKT).remove([path]);if(error){alert('Non eliminato: '+error.message);return}ARCH.sel.delete(path);await archLista();vControlli()}
+function archCartella(t,L){
+  return `<div><h3 style="font-size:14px;margin:4px 0 6px">${t} <span class="mute">(${L.length})</span></h3>${L.length?`<div class="tblwrap" style="max-height:260px"><table>${L.map(x=>`<tr><td style="width:26px"><input type="checkbox" class="aSel" data-p="${esc(x.path)}" ${ARCH.sel.has(x.path)?'checked':''}></td><td class="small" style="word-break:break-all">${esc(x.name)}<div class="mute">caricato il ${dit((x.created_at||'').slice(0,10))} · ${kb(x.metadata&&x.metadata.size)}</div></td><td style="white-space:nowrap"><button class="small aDl" data-p="${esc(x.path)}">Scarica</button>${isAdmin()?` <button class="small aRm" data-p="${esc(x.path)}" title="Elimina">×</button>`:''}</td></tr>`).join('')}</table></div>`:'<p class="small mute">Nessun file.</p>'}</div>`;
+}
+function archHtml(){
+  return `<div class="card" style="max-width:980px"><h2>Archivio file</h2>
+  <div class="drop">Trascina qui gli <b>estratti conto</b> (CSV) e i file dell'<b>Agenzia delle Entrate</b> (ZIP, XML, P7M o CSV): l'app riconosce il tipo e li salva nella cartella giusta. Oppure <label>scegli i file<input type="file" id="aFile" multiple accept=".csv,.txt,.zip,.xml,.p7m" style="display:none"></label></div>
+  ${ARCH.err?`<p class="err">Archivio non disponibile: ${esc(ARCH.err)}</p>`:''}
+  <div class="grid2">${archCartella('Estratti conto Caraglio',ARCH.b)}${archCartella('Cassetto fiscale – fatture ricevute',ARCH.c)}</div>
+  <div class="actions"><span class="small mute" style="margin-right:auto">Spunta i file da usare: per il controllo completo servono tutti gli estratti conto (storico + liste successive).</span><button id="aLoad">Usa i file spuntati nei controlli</button></div></div>`;
+}
+function archBind(){
+  aFile.onchange=e=>{const L=[...e.target.files];if(L.length)archiviaFile(L)};
+  document.querySelectorAll('.aSel').forEach(x=>x.onchange=()=>{x.checked?ARCH.sel.add(x.dataset.p):ARCH.sel.delete(x.dataset.p)});
+  document.querySelectorAll('.aDl').forEach(x=>x.onclick=()=>archApri(x.dataset.p));
+  document.querySelectorAll('.aRm').forEach(x=>x.onclick=()=>archElimina(x.dataset.p));
+  aLoad.onclick=archCaricaControlli;
+}
 
 /* ---------- MODULI: funzionano anche dove l'invio dei form è bloccato (anteprime, allegati) ---------- */
 document.addEventListener('click',e=>{
