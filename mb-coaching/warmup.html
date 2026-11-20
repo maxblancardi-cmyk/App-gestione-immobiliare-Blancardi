@@ -24,9 +24,11 @@ h1{margin:2px 0 0;font-family:'Space Grotesk',sans-serif;font-size:26px;line-hei
 .count{font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:700;line-height:1}
 .cue{font-size:16px;line-height:1.45;text-align:center;color:#2B2B28;min-height:46px}
 .prep{font-size:92px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--red)}
-.controls{display:grid;grid-template-columns:1fr 2fr 1fr;gap:10px}
+.controls{display:flex;justify-content:center;align-items:center;gap:22px}
+.controls #prev,.controls #nextb{width:64px;height:64px;min-height:0;border-radius:50%;font-size:20px;padding:0}
 button{font:inherit;font-weight:800;font-size:17px;border-radius:14px;border:2px solid var(--ink);background:#fff;color:var(--ink);min-height:56px;cursor:pointer}
-button.go{background:var(--red);border-color:var(--red);color:#fff;font-size:20px}
+button.go{background:var(--red);border-color:var(--red);color:#fff;font-size:22px;width:124px;height:124px;min-height:0;border-radius:50%;padding:0;letter-spacing:.04em;box-shadow:0 6px 18px rgba(213,43,30,.35)}
+button.go:active{transform:scale(.96)}
 button:disabled{opacity:.35}
 .next{font-size:14px;color:var(--mut);text-align:center}
 .list{display:flex;flex-direction:column;gap:6px}
