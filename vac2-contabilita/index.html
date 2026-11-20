@@ -21,6 +21,7 @@ header{background:var(--card);border-bottom:1px solid var(--line);position:stick
 nav{display:flex;gap:2px;padding:0 20px;max-width:1240px;margin:auto;overflow-x:auto}
 nav a{padding:10px 14px;color:var(--mute);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500}
 nav a.on{color:var(--ink);border-color:var(--accent)}
+nav a .n:empty{display:none}#v-quesiti .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.qcard{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px}.qcard.qperme{border-color:#e7b4b0;background:#fffafa}.qcard.qchiuso{opacity:.75}.qrisp{border-left:3px solid var(--blue-soft);padding:4px 10px;margin-top:6px;background:#fafbfc}
 nav a .n{background:var(--accent-soft);color:var(--accent);border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
 main{max-width:1240px;margin:auto;padding:20px}
 .banner{background:var(--warn-soft);color:#6b4100;border:1px solid #f1d9ad;border-radius:8px;padding:9px 12px;margin-bottom:16px;font-size:13px}
@@ -113,6 +114,7 @@ body.drag .drop,body.drag main{outline:3px dashed var(--accent);outline-offset:4
     <a href="#riepilogo" data-v="riepilogo">Riepilogo</a>
     <a href="#anomalie" data-v="anomalie">Da verificare <span class="n" id="nAnom"></span></a>
     <a href="#controlli" data-v="controlli">Controlli</a>
+    <a href="#quesiti" data-v="quesiti">Quesiti <span class="n" id="nQues"></span></a>
     <a href="#aiuto" data-v="aiuto">? Aiuto</a>
   </nav>
 </header>
@@ -125,6 +127,7 @@ body.drag .drop,body.drag main{outline:3px dashed var(--accent);outline-offset:4
   <section id="v-riepilogo"></section>
   <section id="v-anomalie"></section>
   <section id="v-controlli"></section>
+  <section id="v-quesiti"></section>
   <section id="v-aiuto"></section>
 </main>
 
@@ -199,7 +202,7 @@ async function carica(msg){
   document.getElementById('loading').style.display='grid';
   try{
     const [so,ca,doc,pag,an]=await Promise.all([tutto('vac2_soggetti'),tutto('vac2_categorie'),tutto('vac2_documenti'),tutto('vac2_pagamenti'),tutto('vac2_anomalie')]);
-    DATA={soggetti:so,categorie:ca,documenti:doc,pagamenti:pag,anomalie:an.filter(a=>!a.risolta)};reindex();
+    DATA={soggetti:so,categorie:ca,documenti:doc,pagamenti:pag,anomalie:an.filter(a=>!a.risolta)};reindex();caricaQuesiti().then(()=>{if(VISTA==='quesiti')vQuesiti()});
     render();if(msg)toast('Dati aggiornati');
   }catch(e){alert('Errore nel caricamento dei dati: '+(e.message||e))}
   finally{document.getElementById('loading').style.display='none'}
@@ -361,7 +364,7 @@ function dett(id){
   <table>${P.map(p=>p.tipo==='differenza'?`<tr style="background:var(--warn-soft)"><td>${dit(p.data_pag)}</td><td>Chiusura: ${MOTIVI[p.motivo]}</td><td class="mute small">${esc(p.note||'')} <a href="#" onclick="annullaChiusura(${p.id});return false">annulla</a></td><td class="num">${eur(p.importo)}</td></tr>`:`<tr><td>${dit(p.data_pag)}</td><td>${p.tipo}${p.conto&&p.conto!=='Caraglio VAC2'?' · <span class="chip c-blue">'+esc(p.conto)+'</span>':''}</td><td class="mute small">${esc(p.note||'')}</td><td class="num">${eur(p.importo)}</td></tr>`).join('')||'<tr><td class="mute">Nessuno</td></tr>'}
   <tr><td colspan="3"><b>Residuo</b></td><td class="num"><b>${eur(res)}</b></td></tr></table>
   <div class="small mute" style="margin-top:8px">${d.riga_origine?'Riga '+d.riga_origine+' del vecchio foglio DATI (bilancio 16/11/2026)':'Inserito da '+esc(d.creato_da||'?')+' il '+dit((d.creato_il||'').slice(0,10))}${d.modificato_da?' · modificato da '+esc(d.modificato_da)+' il '+dit(d.modificato_il.slice(0,10)):''}</div>
-  <div class="actions"><label style="flex-direction:row;align-items:center;gap:6px;margin-right:auto"><input type="checkbox" ${d.estranea?'checked':''} onchange="setEstranea(${id},this.checked)"> Spesa estranea all'operazione</label>${Math.abs(res)>=0.5?`<button onclick="dlgDoc.close();apriChiudi(${id})">Chiudi con differenza</button>`:''}${Math.abs(res)>=0.5?`<button onclick="dlgDoc.close();apriPag(${id})">${d.verso==='uscita'?'Registra pagamento':'Registra incasso'}</button>`:''}<button class="primary" onclick="dlgDoc.close()">Chiudi scheda</button></div>`;
+  <div class="actions"><label style="flex-direction:row;align-items:center;gap:6px;margin-right:auto"><input type="checkbox" ${d.estranea?'checked':''} onchange="setEstranea(${id},this.checked)"> Spesa estranea all'operazione</label>${Math.abs(res)>=0.5?`<button onclick="dlgDoc.close();apriChiudi(${id})">Chiudi con differenza</button>`:''}${Math.abs(res)>=0.5?`<button onclick="dlgDoc.close();apriPag(${id})">${d.verso==='uscita'?'Registra pagamento':'Registra incasso'}</button>`:''}<button onclick="quesitoDaDoc(${id})">Fai una domanda</button><button class="primary" onclick="dlgDoc.close()">Chiudi scheda</button></div>`;
   dlgDoc.showModal();
 }
 async function setEstranea(id,v){try{await db(sb.from('vac2_documenti').update({estranea:v}).eq('id',id),v?'Segnata come estranea':'Tolta da estranee');DATA.documenti.find(x=>x.id===id).estranea=v}catch(e){}render()}
@@ -593,6 +596,7 @@ function contaVerifiche(){document.getElementById('nAnom').textContent=DATA.anom
 
 /* ---------- AIUTO ---------- */
 const AIUTO_VOCI=[
+['Fare una domanda a Max, Aris o Caterina (Quesiti)',`<ol><li>Vai su <kbd>Quesiti</kbd>, scrivi la domanda, scegli <i>Per</i> (Tutti, Max, Aris, Caterina) e, se serve, il mese.</li><li>Per una domanda su un documento apri la sua scheda e premi <kbd>Fai una domanda</kbd>: resta collegata al documento.</li><li>Gli altri rispondono sotto. Quando è risolto, premi <kbd>Segna come risolto</kbd>.</li><li>Il numero accanto a <kbd>Quesiti</kbd> conta quelli aperti; quelli per te sono evidenziati in rosso.</li></ol><p>I quesiti si scrivono anche quando un altro utente sta modificando l'app.</p>`],
 ['Registrare una fattura arrivata',`<ol><li>Vai su <kbd>+ Nuovo documento</kbd> → <kbd>Uscita</kbd>.</li><li>Data e n° della fattura, fornitore (scrivi le prime lettere: se esiste lo trovi, altrimenti viene creato), categoria, imponibile e aliquota IVA. Il totale si calcola da solo.</li><li>Se è già pagata per intero spunta <i>Già pagato</i>; altrimenti il pagamento si registra dopo.</li><li>Se l'app avvisa di un doppione o di una categoria insolita, controlla prima di confermare.</li></ol>`],
 ['Pagare una fattura (anche a rate o in acconto)',`<ol><li>Trova la fattura in <kbd>Movimenti</kbd> o in <kbd>Da pagare / incassare</kbd> e premi <kbd>Paga</kbd>.</li><li>Metti la data <b>dell'estratto conto</b> e l'importo realmente pagato. Se è meno del totale diventa un acconto e il resto rimane da pagare.</li><li>In <kbd>Come</kbd> lascia <i>Dal conto Caraglio</i>, salvo i casi qui sotto.</li></ol>`],
 ['Spesa pagata da un socio (Max, Aris, Intemelia)',`<p>Nel pagamento scegli in <kbd>Come</kbd> <i>Pagato da Max / Aris / Intemelia</i>. L'app crea da sola l'entrata <i>Finanziamento soci</i> dello stesso importo. Non passa dal conto, quindi non va cercato nell'estratto conto.</p>`],
@@ -1147,8 +1151,60 @@ document.addEventListener('keydown',e=>{
   if(typeof f.onsubmit==='function'){e.preventDefault();const b=f.querySelector('button.primary');if(b&&!b.disabled)f.onsubmit({preventDefault(){}})}
 },true);
 
+
+/* ---------- QUESITI: domande e risposte tra Max, Aris e Caterina ---------- */
+let QS={lista:[],risp:[],letto:false,filtro:'aperto',nuovoDoc:null};
+async function caricaQuesiti(){try{const [a,b]=await Promise.all([sb.from('vac2_quesiti').select('*').order('creato_il',{ascending:false}),sb.from('vac2_quesiti_risposte').select('*').order('creato_il')]);if(a.error)throw a.error;QS.lista=a.data||[];QS.risp=b.data||[];QS.letto=true}catch(e){console.warn('quesiti',e)}contaQuesiti()}
+function contaQuesiti(){const n=QS.lista.filter(q=>q.stato==='aperto').length;const e=document.getElementById('nQues');if(e)e.textContent=n||''}
+const qNomeMio=()=>(ME.nome||ME.email||'').split(' ')[0];
+const perMe=q=>q.stato==='aperto'&&q.per&&q.per!=='Tutti'&&q.per.toLowerCase()===qNomeMio().toLowerCase();
+async function qdb(q,msg){const {data,error}=await q;if(error){alert('Non salvato: '+error.message);throw error}if(msg)toast(msg);return data}
+function quesitoDaDoc(id){try{dlgDoc.close()}catch(e){}QS.nuovoDoc=id;go('quesiti')}
+function vQuesiti(){
+  const el=document.getElementById('v-quesiti');
+  if(!QS.letto){el.innerHTML='<div class="card mute">Caricamento dei quesiti…</div>';caricaQuesiti().then(()=>{if(VISTA==='quesiti')vQuesiti()});return}
+  const d0=QS.nuovoDoc?DATA.documenti.find(x=>x.id===QS.nuovoDoc):null;
+  const docTxt=d=>d?`${S[d.soggetto_id]?.nome||'—'} · ${TIPI[d.tipo_doc]||''}${d.numero_doc?' n° '+d.numero_doc:''} del ${dit(d.data_doc)}`:'';
+  let L=QS.lista.filter(q=>QS.filtro==='tutti'||q.stato===QS.filtro);
+  L.sort((a,b)=>(perMe(b)-perMe(a))||b.creato_il.localeCompare(a.creato_il));
+  const nA=QS.lista.filter(q=>q.stato==='aperto').length,nC=QS.lista.length-nA;
+  const dt=s=>{const x=new Date(s);return x.toLocaleDateString('it-IT')+' '+x.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})};
+  const meseTxt=m=>{if(!m)return'';const [y,mm]=m.split('-');return new Date(+y,+mm-1,1).toLocaleDateString('it-IT',{month:'long',year:'numeric'})};
+  el.innerHTML=`<div class="card"><h2>Nuovo quesito</h2>
+   <div class="small mute" style="margin-bottom:8px">Una domanda per Max, Aris o Caterina. Si può collegare a un documento (dalla sua scheda: "Fai una domanda") o a un mese. Chi risponde scrive sotto; chi ha chiesto lo chiude quando è risolto.</div>
+   <form id="fQ" onsubmit="return false"><div class="grid2">
+    <label style="grid-column:1/-1">Domanda<input id="qT" maxlength="200" placeholder="es. Questa fattura va nei costi dell'operazione?" required></label>
+    <label style="grid-column:1/-1">Dettagli (facoltativi)<textarea id="qX" rows="3"></textarea></label>
+    <label>Per<select id="qP"><option>Tutti</option><option>Max</option><option>Aris</option><option>Caterina</option></select></label>
+    <label>Mese (facoltativo)<input type="month" id="qM"></label>
+    <label style="grid-column:span 2">Documento collegato<div class="row">${d0?`<span class="chip c-blue">${esc(docTxt(d0))}</span> <a href="#" id="qDx">togli</a>`:'<span class="mute small">nessuno</span>'}</div></label></div>
+    <div style="text-align:right;margin-top:8px"><button class="primary" id="qAdd">Invia quesito</button></div></form></div>
+  <div class="card"><div class="row" style="margin-bottom:10px"><h2 style="margin:0;flex:1">Quesiti</h2>
+   <div class="seg" id="qSeg"><button type="button" data-f="aperto" class="${QS.filtro==='aperto'?'on':''}">Aperti (${nA})</button><button type="button" data-f="chiuso" class="${QS.filtro==='chiuso'?'on':''}">Chiusi (${nC})</button><button type="button" data-f="tutti" class="${QS.filtro==='tutti'?'on':''}">Tutti</button></div>
+   <button class="small" id="qRel">↻</button></div>
+   ${L.map(q=>{const R=QS.risp.filter(r=>r.quesito_id===q.id);const d=q.documento_id?DATA.documenti.find(x=>x.id===q.documento_id):null;const mio=q.autore_email===ME.email;
+    return `<div class="qcard${q.stato==='chiuso'?' qchiuso':''}${perMe(q)?' qperme':''}" data-q="${q.id}">
+     <div class="row"><b style="flex:1">${esc(q.titolo)}</b>${perMe(q)?'<span class="chip c-red">per te</span>':''}<span class="chip ${q.stato==='aperto'?'c-warn':'c-ok'}">${q.stato==='aperto'?'aperto':'chiuso'}</span></div>
+     <div class="small mute">${esc(q.autore_nome||q.autore_email)} · ${dt(q.creato_il)}${q.per&&q.per!=='Tutti'?' · per '+esc(q.per):''}${q.mese?' · '+esc(meseTxt(q.mese)):''}${d?` · <a href="#" onclick="dett(${d.id});return false">${esc(docTxt(d))}</a>`:''}</div>
+     ${q.testo?`<div style="margin-top:6px;white-space:pre-wrap">${esc(q.testo)}</div>`:''}
+     ${R.map(r=>`<div class="qrisp"><div class="small mute">${esc(r.autore_nome||r.autore_email)} · ${dt(r.creato_il)}${r.autore_email===ME.email||isAdmin()?` · <a href="#" data-xr="${r.id}">elimina</a>`:''}</div><div style="white-space:pre-wrap">${esc(r.testo)}</div></div>`).join('')}
+     ${q.stato==='aperto'?`<div class="row" style="margin-top:8px"><textarea rows="1" data-r="${q.id}" placeholder="Rispondi…" style="flex:1;min-width:200px"></textarea><button class="small primary" data-rs="${q.id}">Rispondi</button></div>`:`<div class="small mute" style="margin-top:6px">Chiuso da ${esc(q.chiuso_da||'?')} il ${q.chiuso_il?dt(q.chiuso_il):'?'}</div>`}
+     <div class="row" style="margin-top:6px;justify-content:flex-end">${q.stato==='aperto'?`<button class="small" data-ch="${q.id}">Segna come risolto</button>`:`<button class="small" data-ri="${q.id}">Riapri</button>`}${mio||isAdmin()?`<button class="small" data-xq="${q.id}">Elimina</button>`:''}</div></div>`}).join('')||`<p class="mute">Nessun quesito ${QS.filtro==='aperto'?'aperto':QS.filtro==='chiuso'?'chiuso':''}.</p>`}</div>`;
+  const dx=document.getElementById('qDx');if(dx)dx.onclick=e=>{e.preventDefault();QS.nuovoDoc=null;vQuesiti()};
+  document.getElementById('fQ').onsubmit=async e=>{e&&e.preventDefault&&e.preventDefault();const t=qT.value.trim();if(!t){qT.focus();return}
+    try{await qdb(sb.from('vac2_quesiti').insert({titolo:t,testo:qX.value.trim()||null,per:qP.value,mese:qM.value||null,documento_id:QS.nuovoDoc,autore_email:ME.email,autore_nome:ME.nome}),'Quesito inviato');QS.nuovoDoc=null;QS.filtro='aperto';await caricaQuesiti();vQuesiti()}catch(e){}};
+  document.querySelectorAll('#qSeg button').forEach(b=>b.onclick=()=>{QS.filtro=b.dataset.f;vQuesiti()});
+  qRel.onclick=async()=>{await caricaQuesiti();vQuesiti();toast('Quesiti aggiornati')};
+  document.querySelectorAll('[data-rs]').forEach(b=>b.onclick=async()=>{const id=+b.dataset.rs;const ta=document.querySelector(`textarea[data-r="${id}"]`);const t=ta.value.trim();if(!t){ta.focus();return}
+    try{await qdb(sb.from('vac2_quesiti_risposte').insert({quesito_id:id,testo:t,autore_email:ME.email,autore_nome:ME.nome}),'Risposta inviata');await caricaQuesiti();vQuesiti()}catch(e){}});
+  document.querySelectorAll('[data-ch]').forEach(b=>b.onclick=async()=>{try{await qdb(sb.from('vac2_quesiti').update({stato:'chiuso',chiuso_il:new Date().toISOString(),chiuso_da:ME.nome}).eq('id',+b.dataset.ch),'Quesito chiuso');await caricaQuesiti();vQuesiti()}catch(e){}});
+  document.querySelectorAll('[data-ri]').forEach(b=>b.onclick=async()=>{try{await qdb(sb.from('vac2_quesiti').update({stato:'aperto',chiuso_il:null,chiuso_da:null}).eq('id',+b.dataset.ri),'Quesito riaperto');await caricaQuesiti();vQuesiti()}catch(e){}});
+  document.querySelectorAll('[data-xq]').forEach(b=>b.onclick=async()=>{if(!confirm('Eliminare il quesito e le sue risposte?'))return;try{await qdb(sb.from('vac2_quesiti').delete().eq('id',+b.dataset.xq),'Eliminato');await caricaQuesiti();vQuesiti()}catch(e){}});
+  document.querySelectorAll('[data-xr]').forEach(a=>a.onclick=async e=>{e.preventDefault();if(!confirm('Eliminare questa risposta?'))return;try{await qdb(sb.from('vac2_quesiti_risposte').delete().eq('id',+a.dataset.xr),'Eliminata');await caricaQuesiti();vQuesiti()}catch(e){}});
+}
+
 /* ---------- ROUTER (funziona anche senza #indirizzo, es. anteprime e allegati) ---------- */
-const VIEWS={movimenti:vMovimenti,nuovo:vNuovo,scadenzario:vScad,riepilogo:vRiep,anomalie:vAnom,controlli:vControlli,aiuto:vAiuto};
+const VIEWS={movimenti:vMovimenti,nuovo:vNuovo,scadenzario:vScad,riepilogo:vRiep,anomalie:vAnom,controlli:vControlli,quesiti:vQuesiti,aiuto:vAiuto};
 let VISTA='movimenti';
 try{const h=(location.hash||'').slice(1);if(VIEWS[h])VISTA=h}catch(e){}
 function go(v){if(!VIEWS[v])v='movimenti';VISTA=v;try{history.replaceState(null,'','#'+v)}catch(e){}render();try{window.scrollTo(0,0)}catch(e){}}
