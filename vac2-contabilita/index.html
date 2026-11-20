@@ -105,7 +105,7 @@ body.drag .drop,body.drag main{outline:3px dashed var(--accent);outline-offset:4
 </head>
 <body>
 <header>
-  <div class="top"><div class="logo">B</div><div><h1>Via al Capo 2 – Gestione<span id="presenza" class="pres"></span></h1><div class="sub" id="subTop">Contabilità – controllata ogni mese con l'estratto conto Caraglio</div></div><div class="who"><span id="whoName"></span><button class="small" onclick="carica(true)" title="Ricarica i dati dal database">↻ Aggiorna</button><button class="small" onclick="cambiaPw()">Password</button><button class="small" onclick="esci()">Esci</button></div></div>
+  <div class="top"><div class="logo">B</div><div><h1>Via al Capo 2 – Gestione<span id="presenza" class="pres"></span><span id="verBadge" class="pres" style="background:var(--ok);color:#fff"></span></h1><div class="sub" id="subTop">Contabilità – controllata ogni mese con l'estratto conto Caraglio</div></div><div class="who"><span id="whoName"></span><button class="small" onclick="carica(true)" title="Ricarica i dati dal database">↻ Aggiorna</button><button class="small" onclick="cambiaPw()">Password</button><button class="small" onclick="esci()">Esci</button></div></div>
   <nav id="nav">
     <a href="#movimenti" data-v="movimenti">Movimenti</a>
     <a href="#nuovo" data-v="nuovo">+ Nuovo documento</a>
@@ -215,6 +215,7 @@ async function avvio(session){
   document.getElementById('login').style.display='none';
   avviaPresenza();
   await carica();
+  caricaVerifiche();
 }
 async function cambiaPw(){const a=prompt('Nuova password (almeno 8 caratteri):');if(!a)return;if(a.length<8){alert('Troppo corta: almeno 8 caratteri.');return}if(prompt('Ripeti la nuova password:')!==a){alert('Le due password non coincidono.');return}const {error}=await sb.auth.updateUser({password:a});alert(error?'Password non cambiata: '+error.message:'Password cambiata. Vale anche per Gestione Blancardi.')}
 async function esci(){fermaPresenza();try{await sb.auth.signOut({scope:'local'})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k))}catch(e){}DATA={soggetti:[],categorie:[],documenti:[],pagamenti:[],anomalie:[]};ME={email:'',ruolo:'',nome:''};document.getElementById('whoName').textContent='';lPw.value='';lErr.textContent='';document.getElementById('login').style.display='grid';try{history.replaceState(null,'',location.pathname)}catch(e){}}
@@ -603,7 +604,7 @@ const AIUTO_VOCI=[
 ['Fattura con più aliquote IVA',`<p>Nel nuovo documento premi <kbd>+</kbd> accanto all'IVA per aggiungere un altro imponibile con la sua aliquota. Il totale somma tutte le voci.</p>`],
 ['Professionista con ritenuta d\'acconto',`<p>Spunta <i>soggetto a ritenuta d'acconto</i>: metti la base (gli onorari, senza cassa: usa <i>togli cassa 4%</i>) e la percentuale (di solito 20%). L'app calcola il netto da pagare: è quello che esce dal conto. Il totale del documento resta il lordo, come nel Cassetto fiscale. La ritenuta si versa con l'F24 (documento tipo <i>Imposta</i>).</p>`],
 ['Fattura estera',`<p>Tipo documento <i>Fattura estera</i>: non arriva nel Cassetto fiscale, quindi nei Controlli il pagamento non viene segnalato tra le fatture da ricevere.</p>`],
-['Controlli con banca e Cassetto fiscale',`<ol><li>Vai su <kbd>Controlli</kbd>.</li><li>Trascina nell'<i>Archivio file</i> l'estratto conto Caraglio in CSV (storico o lista movimenti) e le fatture ricevute scaricate dal Cassetto fiscale (ZIP con gli XML, oppure l'elenco CSV): vengono salvati nelle cartelle <i>Estratti conto</i> e <i>Cassetto fiscale</i> e restano disponibili per le volte successive. Spunta i file da usare.</li><li>Scegli il periodo e premi <kbd>Esegui controlli</kbd>: escono le fatture da ricevere, i movimenti in banca non registrati nell'app e quelli registrati ma non in banca.</li></ol>`],
+['Controlli con banca e Cassetto fiscale',`<ol><li>Vai su <kbd>Controlli</kbd>.</li><li>Trascina nell'<i>Archivio file</i> l'estratto conto Caraglio in CSV (storico o lista movimenti) e le fatture ricevute scaricate dal Cassetto fiscale (ZIP con gli XML, oppure l'elenco CSV): vengono salvati nelle cartelle <i>Estratti conto</i> e <i>Cassetto fiscale</i> e restano disponibili per le volte successive. Spunta i file da usare.</li><li>Si apre una maschera: conferma tipo, ente e periodo; il file prende un nome standard.</li><li>Scegli il periodo e premi <kbd>Esegui controlli</kbd>. <b>Controllo 1</b>: mese per mese entrate e uscite della banca contro quelle registrate a banca nell'app (ALERT se non coincidono). <b>Controllo 2</b>: uscite della banca senza fattura all'Agenzia delle Entrate. I mesi senza dati sono segnalati.</li><li>Quando un mese torna premi <kbd>Segna verificato</kbd> (o <kbd>Giustifica</kbd> con una nota): in alto compare <i>DATI VERIFICATI FINO AL…</i>.</li></ol>`],
 ['Due persone collegate',`<p>In alto vedi chi è collegato. Modifica solo chi è entrato per primo; gli altri vedono la scritta <i>Sola lettura</i> e possono solo consultare finché il primo non esce.</p>`],
 ['Nota di credito',`<p><kbd>+ Nuovo documento</kbd> → tipo <i>Nota di credito</i>: l'importo diventa negativo. Se il fornitore la rimborsa, premi <kbd>Rimborso</kbd> sulla nota. Se invece viene scalata da una fattura, sulla fattura e sulla nota usa <kbd>Come</kbd> = <i>Compensato</i>.</p>`],
 ['Trattenuta a garanzia, abbuono, sconto',`<p>Quando una fattura non verrà pagata per intero apri la scheda e premi <kbd>Chiudi con differenza</kbd>, scegliendo il motivo. La <i>Trattenuta a garanzia</i> resta visibile in <kbd>Da pagare / incassare</kbd> finché non viene pagata.</p>`],
@@ -796,43 +797,6 @@ function controllo2(banca,dal,al){
     let fatto=false;for(const k of [2,3,4]){if(fatto||pool.length>16)break;for(const c of combinazioni(pool,k)){if(Math.abs(c.reduce((a,m)=>a+m.imp,0)-x.imp)<=0.02){c.forEach(m=>uB.add(m.id));uP.add(x.i);abb.push({b:c,p:[x]});fatto=true;break}}}}
   return {abb,soloBanca:B.filter(m=>!uB.has(m.id)),soloApp:P.filter(x=>!uP.has(x.i)),nB:B.length,nP:P.length,saldo:B.reduce((a,m)=>a+m.imp,0)};
 }
-function vControlli(){
-  const el=document.getElementById('v-controlli');const c=CTRL;
-  if(!ARCH.letto&&!ARCH.leggendo){ARCH.leggendo=true;archLista().then(()=>{ARCH.leggendo=false;if(VISTA==='controlli'){const a=ARCH.sel.size;vControlli();if(a&&!CTRL.banca.length)archCaricaControlli()}}).catch(()=>{ARCH.leggendo=false})}
-  el.innerHTML=archHtml()+`<div class="card" style="max-width:980px"><h2>Controlli automatici</h2>
-  <p class="small mute" style="margin-top:-6px">La banca comanda. <b>Controllo 1</b>: ogni uscita del conto deve avere la sua fattura nel Cassetto fiscale. <b>Controllo 2</b>: ogni movimento del conto deve essere registrato nell'app. Usano i file spuntati nell'archivio qui sopra.</p>
-  <div class="small" id="cInfo" style="margin:8px 0">${c.banca.length?`Banca: <b>${c.banca.length}</b> movimenti dal ${dit(c.banca[0].data)} al ${dit(c.banca[c.banca.length-1].data)} (${c.fileB.map(esc).join(', ')})`:'Banca: nessun file caricato'} · ${c.cassetto.length?`Cassetto: <b>${c.cassetto.length}</b> fatture (${c.fileC.length} file)`:'Cassetto: nessun file caricato'}${c.errC.length?` · <span style="color:var(--accent)">${c.errC.length} file non letti</span>`:''}</div>
-  <div class="filters"><label>Dal<input type="date" id="cDal" value="${c.dal}"></label><label>Al<input type="date" id="cAl" value="${c.al}"></label><span class="grow" style="flex:1"></span>
-   <button class="primary" id="cGo" ${c.banca.length?'':'disabled'}>Esegui controlli</button><button id="cPrint" ${c.res?'':'disabled'}>Stampa report</button></div>
-  ${c.errC.length?`<details class="small"><summary>File del cassetto non letti (${c.errC.length})</summary>${c.errC.map(e=>`<div>${esc(e)}</div>`).join('')}</details>`:''}
-  </div><div id="cRes">${c.res?reportControlli(c.res):''}</div>`;
-  archBind();
-  cDal.onchange=e=>{c.dal=e.target.value};cAl.onchange=e=>{c.al=e.target.value};
-  cGo.onclick=()=>{const B=c.banca.filter(m=>m.data>=c.dal&&m.data<=c.al);
-    c.res={dal:c.dal,al:c.al,c1:c.cassetto.length?controllo1(B,c.cassetto.filter(f=>!f.data||f.data<=c.al)):null,c2:controllo2(c.banca,c.dal,c.al),multi:multiCat().filter(x=>!verificati.has(x.sid))};vControlli()};
-  cPrint.onclick=()=>window.print();
-}
-function rigaB(m,extra=''){return `<tr><td>${dit(m.data)}</td><td class="num" style="color:${m.imp<0?'inherit':'var(--ok)'}">${eur(m.imp)}</td><td class="small">${esc(m.benef||'')}<div class="mute">${esc(m.desc.slice(0,140))}</div></td>${extra}</tr>`}
-function blocco(tit,n,tot,html,aperto){return `<details class="mc" ${aperto?'open':''}><summary><b>${tit}</b><span><span class="chip ${n?'c-red':'c-ok'}">${n}</span>${tot!=null?` <span class="small mute">${eur(tot)}</span>`:''}</span></summary><div style="padding:8px 12px">${n?`<div class="tblwrap" style="max-height:none"><table>${html}</table></div>`:'<p class="small mute">Nessuna voce.</p>'}</div></details>`}
-function reportControlli(r){
-  let h=`<div class="card" style="max-width:980px"><h2>Report controlli · dal ${dit(r.dal)} al ${dit(r.al)}</h2>`;
-  if(r.c1){const c=r.c1;
-    h+=`<h3 style="font-size:14px;margin:10px 0 6px">Controllo 1 – Banca → Cassetto fiscale</h3><p class="small mute">${c.nCand} uscite da verificare: ${c.abb.length} abbinate a fatture del cassetto; ${c.escl.length} escluse perché non hanno fattura (spese bancarie, F24, mutuo, Comune, condominio, giroconti).</p>`;
-    h+=blocco('Fatture da ricevere (pagato in banca, nessuna fattura nel cassetto)',c.daRicevere.length,c.daRicevere.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Beneficiario / descrizione</th><th>Fornitore nel cassetto</th></tr>'+c.daRicevere.map(m=>rigaB(m,`<td class="small">${esc(m.fornitore||'—')}</td>`)).join(''),true);
-    h+=blocco('Pagamenti a fatture estere (registrate in app, non nel cassetto)',c.esteri.length,c.esteri.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Beneficiario</th><th>Documento app</th></tr>'+c.esteri.map(m=>rigaB(m,`<td class="small"><a href="#" onclick="dett(${m.doc.id});return false">${esc(S[m.doc.soggetto_id]?.nome||'')}</a></td>`)).join(''));
-    h+=blocco('Fatture nel cassetto senza pagamento in banca nel periodo',c.nonPagate.length,c.nonPagate.reduce((a,f)=>a+f.totale,0),'<tr><th>Data</th><th>Fornitore</th><th>N°</th><th class="num">Totale</th><th class="num">Ritenuta</th></tr>'+c.nonPagate.sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(f=>`<tr><td>${dit(f.data)}</td><td>${esc(f.fornitore)}</td><td>${esc(f.numero)}</td><td class="num">${eur(f.totale)}</td><td class="num">${f.ritenuta?eur(f.ritenuta):''}</td></tr>`).join(''));
-    h+=blocco('Uscite abbinate a fatture',c.abb.length,null,'<tr><th>Banca</th><th>Fattura</th><th>Come</th></tr>'+c.abb.map(a=>`<tr><td class="small">${a.b.map(m=>`${dit(m.data)} ${eur(m.imp)}`).join('<br>')}</td><td class="small">${a.f.map(f=>`${esc(f.fornitore)} n° ${esc(f.numero)} del ${dit(f.data)} · ${eur(f.totale)}`).join('<br>')}</td><td class="small mute">${esc(a.come)}</td></tr>`).join(''));
-    h+=blocco('Uscite escluse dal controllo fatture',c.escl.length,c.escl.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Descrizione</th><th>Motivo</th></tr>'+c.escl.map(m=>rigaB(m,`<td class="small">${esc(m.motivo)}</td>`)).join(''));
-  }else h+=`<p class="small mute">Controllo 1 non eseguito: carica le fatture del Cassetto fiscale.</p>`;
-  const c=r.c2;
-  h+=`<h3 style="font-size:14px;margin:16px 0 6px">Controllo 2 – Banca → App</h3><p class="small mute">${c.nB} movimenti in banca, ${c.nP} pagamenti e incassi "conto Caraglio" nell'app nel periodo. Somma dei movimenti in banca nel periodo: ${eur(c.saldo)}.</p>`;
-  h+=blocco('Movimenti da verificare: in banca ma non nell\'app',c.soloBanca.length,c.soloBanca.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Descrizione</th></tr>'+c.soloBanca.map(m=>rigaB(m)).join(''),true);
-  h+=blocco('Registrati nell\'app come "conto Caraglio" ma non in banca',c.soloApp.length,c.soloApp.reduce((a,x)=>a+x.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Documento</th></tr>'+c.soloApp.map(x=>`<tr><td>${dit(x.data)}</td><td class="num">${eur(x.imp)}</td><td class="small"><a href="#" onclick="dett(${x.d.id});return false">${esc(S[x.d.soggetto_id]?.nome||'—')}</a> · ${esc(x.d.descrizione||C[x.d.categoria_id]?.nome||'')}</td></tr>`).join(''),true);
-  h+=`<h3 style="font-size:14px;margin:16px 0 6px">Altri controlli</h3>`;
-  h+=blocco('Fornitori con fatture in più categorie',r.multi.length,null,'<tr><th>Fornitore</th><th>Fatture</th></tr>'+r.multi.map(x=>`<tr><td><a href="#anomalie" onclick="go('anomalie');return false">${esc(S[x.sid].nome)}</a></td><td>${x.L.length}</td></tr>`).join(''));
-  return h+'</div>';
-}
-
 
 /* ---------- IMPORTA FATTURA DA FILE (PDF, XML, P7M) ---------- */
 let IMPORT=null;
@@ -969,23 +933,7 @@ async function classificaFile(f){
   return null;
 }
 const nomeArch=n=>new Date().toISOString().slice(0,10)+'_'+n.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w.\-]+/g,'_');
-async function archiviaFile(files){
-  if(!EDIT){alert(`Sola lettura: in questo momento sta modificando ${EDITOR?.nome||EDITOR?.email||'un altro utente'}.`);return}
-  caricamento(true);const ok=[],ko=[];
-  try{for(const f of files){const dir=await classificaFile(f);
-    if(!dir){ko.push(`${f.name}: tipo non riconosciuto (servono il CSV dell'estratto conto Caraglio oppure ZIP/XML/P7M/CSV del Cassetto fiscale)`);continue}
-    let path=dir+'/'+nomeArch(f.name);let r=await sb.storage.from(BKT).upload(path,f,{upsert:false,contentType:f.type||'application/octet-stream'});
-    if(r.error&&/exist|duplicate/i.test(r.error.message)){path=path.replace(/(\.[^.\/]+)?$/,'_'+Date.now()+'$1');r=await sb.storage.from(BKT).upload(path,f,{upsert:false})}
-    if(r.error){ko.push(f.name+': '+r.error.message);continue}
-    ok.push(path);ARCH.sel.add(path)}
-  await archLista()}finally{caricamento(false)}
-  if(ko.length)alert('Non archiviati:\n'+ko.join('\n'));
-  if(ok.length){toast(`${ok.length} file salvati nell'archivio`);if(VISTA!=='controlli')go('controlli');await archCaricaControlli()}else vControlli();
-}
 async function archScarica(path){const {data,error}=await sb.storage.from(BKT).download(path);if(error)throw new Error(path.split('/').pop()+': '+error.message);return new File([data],path.split('/').pop(),{type:data.type})}
-async function caricaBanca(files){const L=[],nomi=[];for(const f of files){try{L.push(parseBanca(await f.text(),f.name));nomi.push(f.name)}catch(er){alert(f.name+': '+er.message)}}
-  CTRL.banca=L.length?unisciBanca(L):[];CTRL.fileB=nomi;if(CTRL.banca.length){CTRL.dal=CTRL.banca[0].data;CTRL.al=CTRL.banca[CTRL.banca.length-1].data}CTRL.res=null}
-async function caricaCassetto(files){if(!files.length){CTRL.cassetto=[];CTRL.errC=[];CTRL.fileC=[];return}const r=await leggiCassetto(files);CTRL.cassetto=r.fatture;CTRL.errC=r.err;CTRL.fileC=files.map(f=>f.name);CTRL.res=null}
 async function archCaricaControlli(){
   caricamento(true);
   try{const fb=await Promise.all(ARCH.b.filter(x=>ARCH.sel.has(x.path)).map(x=>archScarica(x.path)));const fc=await Promise.all(ARCH.c.filter(x=>ARCH.sel.has(x.path)).map(x=>archScarica(x.path)));
@@ -998,19 +946,193 @@ async function archElimina(path){if(!confirm(`Eliminare dall'archivio il file\n$
 function archCartella(t,L){
   return `<div><h3 style="font-size:14px;margin:4px 0 6px">${t} <span class="mute">(${L.length})</span></h3>${L.length?`<div class="tblwrap" style="max-height:260px"><table>${L.map(x=>`<tr><td style="width:26px"><input type="checkbox" class="aSel" data-p="${esc(x.path)}" ${ARCH.sel.has(x.path)?'checked':''}></td><td class="small" style="word-break:break-all">${esc(x.name)}<div class="mute">caricato il ${dit((x.created_at||'').slice(0,10))} · ${kb(x.metadata&&x.metadata.size)}</div></td><td style="white-space:nowrap"><button class="small aDl" data-p="${esc(x.path)}">Scarica</button>${isAdmin()?` <button class="small aRm" data-p="${esc(x.path)}" title="Elimina">×</button>`:''}</td></tr>`).join('')}</table></div>`:'<p class="small mute">Nessun file.</p>'}</div>`;
 }
-function archHtml(){
-  return `<div class="card" style="max-width:980px"><h2>Archivio file</h2>
-  <div class="drop">Trascina qui gli <b>estratti conto</b> (CSV) e i file dell'<b>Agenzia delle Entrate</b> (ZIP, XML, P7M o CSV): l'app riconosce il tipo e li salva nella cartella giusta. Oppure <label>scegli i file<input type="file" id="aFile" multiple accept=".csv,.txt,.zip,.xml,.p7m" style="display:none"></label></div>
-  ${ARCH.err?`<p class="err">Archivio non disponibile: ${esc(ARCH.err)}</p>`:''}
-  <div class="grid2">${archCartella('Estratti conto Caraglio',ARCH.b)}${archCartella('Cassetto fiscale – fatture ricevute',ARCH.c)}</div>
-  <div class="actions"><span class="small mute" style="margin-right:auto">Spunta i file da usare: per il controllo completo servono tutti gli estratti conto (storico + liste successive).</span><button id="aLoad">Usa i file spuntati nei controlli</button></div></div>`;
-}
 function archBind(){
   aFile.onchange=e=>{const L=[...e.target.files];if(L.length)archiviaFile(L)};
   document.querySelectorAll('.aSel').forEach(x=>x.onchange=()=>{x.checked?ARCH.sel.add(x.dataset.p):ARCH.sel.delete(x.dataset.p)});
   document.querySelectorAll('.aDl').forEach(x=>x.onclick=()=>archApri(x.dataset.p));
   document.querySelectorAll('.aRm').forEach(x=>x.onclick=()=>archElimina(x.dataset.p));
   aLoad.onclick=archCaricaControlli;
+}
+
+/* ---------- CONTROLLI v2: banca ↔ app (1), banca ↔ Agenzia Entrate (2), periodi, registro ---------- */
+const NOMI_MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+const meseLab=m=>NOMI_MESI[+m.slice(5,7)-1]+' '+m.slice(0,4);
+const fineMese=m=>{const d=new Date(+m.slice(0,4),+m.slice(5,7),0);return m+'-'+String(d.getDate()).padStart(2,'0')};
+const piuGiorno=d=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+1);return x.toISOString().slice(0,10)};
+function elencoMesi(dal,al){const out=[];let y=+dal.slice(0,4),m=+dal.slice(5,7);const Y=+al.slice(0,4),M=+al.slice(5,7);while(y<Y||(y===Y&&m<=M)){out.push(`${y}-${String(m).padStart(2,'0')}`);m++;if(m>12){m=1;y++}}return out}
+function unisciIntervalli(R){const L=R.filter(r=>r&&r.dal&&r.al).map(r=>({dal:r.dal,al:r.al})).sort((a,b)=>a.dal.localeCompare(b.dal));const out=[];
+  for(const r of L){const u=out[out.length-1];if(u&&r.dal<=piuGiorno(u.al)){if(r.al>u.al)u.al=r.al}else out.push({...r})}return out}
+function meseCoperto(iv,m,dal,al){const a=m+'-01'<dal?dal:m+'-01',b=fineMese(m)>al?al:fineMese(m);return iv.some(r=>r.dal<=a&&r.al>=b)}
+function periodoDaNome(n){const m=String(n).match(/(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})_([A-Za-z]+)_/);return m?{dal:m[1],al:m[2],ente:m[3]}:null}
+
+/* registro dei mesi verificati */
+let VER=[];
+async function caricaVerifiche(){try{const {data,error}=await sb.from('vac2_controlli').select('*').order('mese');if(!error)VER=data||[]}catch(e){}aggiornaBadge()}
+function verificatoFino(tipo){const S=new Set(VER.filter(v=>v.tipo===tipo).map(v=>v.mese.slice(0,7)));if(!S.size)return null;
+  const L=[...S].sort();let m=L[0],last=null;while(S.has(m)){last=m;const [y,mm]=m.split('-').map(Number);m=mm===12?`${y+1}-01`:`${y}-${String(mm+1).padStart(2,'0')}`}return fineMese(last)}
+function aggiornaBadge(){const el=document.getElementById('verBadge');if(!el)return;const f=verificatoFino('banca_app');
+  el.style.display=f?'inline-block':'none';el.textContent=f?`✔ DATI VERIFICATI FINO AL ${dit(f)}`:'';el.title=f?`Banca ↔ app verificata mese per mese fino al ${dit(f)}`+(verificatoFino('banca_ade')?` · Banca ↔ Agenzia Entrate fino al ${dit(verificatoFino('banca_ade'))}`:''):''}
+const verDi=(tipo,m)=>VER.find(v=>v.tipo===tipo&&v.mese.slice(0,7)===m);
+async function segnaMese(tipo,m,diff){
+  let esito='ok',nota=null;
+  if(Math.abs(diff)>=0.01){nota=prompt(`La differenza di ${meseLab(m)} è ${eur(diff)}.\nScrivi perché è giustificata (es. pagamento registrato il giorno dopo):`);if(!nota)return;esito='giustificato'}
+  try{await db(sb.from('vac2_controlli').upsert({tipo,mese:m+'-01',esito,differenza:+(+diff).toFixed(2),nota},{onConflict:'tipo,mese'}),'Mese segnato come verificato');await caricaVerifiche();vControlli()}catch(e){}
+}
+async function annullaMese(tipo,m){if(!confirm(`Togliere ${meseLab(m)} dai mesi verificati?`))return;try{await db(sb.from('vac2_controlli').delete().eq('tipo',tipo).eq('mese',m+'-01'),'Verifica tolta');await caricaVerifiche();vControlli()}catch(e){}}
+
+/* caricamento dei file nei controlli */
+async function caricaBanca(files){const L=[],nomi=[],R=[],err=[];
+  for(const f of files){try{const x=parseBanca(await f.text(),f.name);if(!x.length)throw new Error('nessun movimento');L.push(x);nomi.push(f.name);
+      const p=periodoDaNome(f.name);const ds=x.map(m=>m.data).sort();R.push({nome:f.name,dal:p?.dal||ds[0],al:p?.al||ds[ds.length-1]})}
+    catch(er){err.push(f.name+': '+er.message)}}
+  CTRL.banca=L.length?unisciBanca(L):[];CTRL.fileB=nomi;CTRL.rangeB=R;CTRL.errB=err;
+  if(CTRL.banca.length){CTRL.dal=CTRL.banca[0].data;CTRL.al=CTRL.banca[CTRL.banca.length-1].data}CTRL.res=null}
+async function caricaCassetto(files){if(!files.length){CTRL.cassetto=[];CTRL.errC=[];CTRL.fileC=[];CTRL.rangeC=[];return}
+  const r=await leggiCassetto(files);CTRL.cassetto=r.fatture;CTRL.errC=r.err;CTRL.fileC=files.map(f=>f.name);
+  const ds=r.fatture.map(f=>f.data).filter(Boolean).sort();
+  CTRL.rangeC=files.map(f=>{const p=periodoDaNome(f.name);return p?{nome:f.name,dal:p.dal,al:p.al}:null}).filter(Boolean);
+  if(!CTRL.rangeC.length&&ds.length)CTRL.rangeC=[{nome:'fatture',dal:ds[0],al:ds[ds.length-1]}];CTRL.res=null}
+
+/* Controllo 1: banca ↔ app, mese per mese */
+function pagamentiTutti(dal,al){const out=[];for(const p of DATA.pagamenti){if(p.tipo==='differenza'||!p.data_pag||p.data_pag<dal||p.data_pag>al)continue;
+  const d=DATA.documenti.find(x=>x.id===p.documento_id);if(!d)continue;const imp=+(d.verso==='uscita'?-p.importo:p.importo).toFixed(2);
+  out.push({p,d,imp,data:p.data_pag,aBanca:!p.conto||p.conto==='Caraglio VAC2'})}return out}
+function controlloBancaApp(dal,al){
+  const iv=unisciIntervalli(CTRL.rangeB||[]);const B=CTRL.banca.filter(m=>m.data>=dal&&m.data<=al);const P=pagamentiTutti(dal,al);
+  const righe=elencoMesi(dal,al).map(m=>{const b=B.filter(x=>x.data.startsWith(m)),p=P.filter(x=>x.data.startsWith(m));const s=(L,f)=>+L.filter(f).reduce((a,x)=>a+x.imp,0).toFixed(2);
+    const r={mese:m,coperto:meseCoperto(iv,m,dal,al),eB:s(b,x=>x.imp>0),eA:s(p,x=>x.aBanca&&x.imp>0),eN:s(p,x=>!x.aBanca&&x.imp>0),uB:-s(b,x=>x.imp<0),uA:-s(p,x=>x.aBanca&&x.imp<0),uN:-s(p,x=>!x.aBanca&&x.imp<0)};
+    r.dE=+(r.eB-r.eA).toFixed(2);r.dU=+(r.uB-r.uA).toFixed(2);r.ok=r.coperto&&Math.abs(r.dE)<0.01&&Math.abs(r.dU)<0.01;return r});
+  return {righe,dettaglio:controllo2(CTRL.banca,dal,al)};
+}
+/* Controllo 2: banca ↔ Agenzia Entrate, solo sui mesi coperti da entrambi */
+function controlloBancaAdE(dal,al){
+  const ivB=unisciIntervalli(CTRL.rangeB||[]),ivC=unisciIntervalli(CTRL.rangeC||[]);const mesi=elencoMesi(dal,al);
+  const ok=mesi.filter(m=>meseCoperto(ivB,m,dal,al)&&meseCoperto(ivC,m,dal,al)),manca=mesi.filter(m=>!ok.includes(m));
+  if(!ok.length)return {mesi:[],manca,res:null};
+  const B=CTRL.banca.filter(m=>m.data>=dal&&m.data<=al&&ok.includes(m.data.slice(0,7)));
+  const res=controllo1(B,CTRL.cassetto.filter(f=>!f.data||f.data<=al));
+  const righe=ok.map(m=>{const usc=B.filter(x=>x.imp<0&&x.data.startsWith(m));const dr=res.daRicevere.filter(x=>x.data.startsWith(m));const es=res.escl.filter(x=>x.data.startsWith(m));
+    return {mese:m,uscite:usc.length,escluse:es.length,daRic:dr.length,daRicTot:+dr.reduce((a,x)=>a+x.imp,0).toFixed(2),ok:!dr.length}});
+  return {mesi:righe,manca,res};
+}
+function rigaB(m,extra=''){return `<tr><td>${dit(m.data)}</td><td class="num" style="color:${m.imp<0?'inherit':'var(--ok)'}">${eur(m.imp)}</td><td class="small">${esc(m.benef||'')}<div class="mute">${esc(m.desc.slice(0,140))}</div></td>${extra}</tr>`}
+function blocco(tit,n,tot,html,aperto){return `<details class="mc" ${aperto?'open':''}><summary><b>${tit}</b><span><span class="chip ${n?'c-red':'c-ok'}">${n}</span>${tot!=null?` <span class="small mute">${eur(tot)}</span>`:''}</span></summary><div style="padding:8px 12px">${n?`<div class="tblwrap" style="max-height:none"><table>${html}</table></div>`:'<p class="small mute">Nessuna voce.</p>'}</div></details>`}
+function cellaVer(tipo,r,diff){const v=verDi(tipo,r.mese);
+  if(v){const ancora=tipo==='banca_app'?(r.ok||v.esito==='giustificato'&&Math.abs(diff-v.differenza)<0.01):r.ok||v.esito==='giustificato';
+    return `<span class="chip ${ancora?'c-ok':'c-warn'}" title="${esc((v.nota||'')+' · '+(v.creato_da||'')+' '+dit((v.creato_il||'').slice(0,10)))}">${ancora?(v.esito==='ok'?'Verificato':'Giustificato'):'Verificato, ora non torna'}</span>${isAdmin()?` <a href="#" onclick="annullaMese('${tipo}','${r.mese}');return false" class="small">togli</a>`:''}`}
+  if(!r.coperto&&tipo==='banca_app')return '<span class="chip c-grey">Dati mancanti</span>';
+  return r.ok?`<button class="small" onclick="segnaMese('${tipo}','${r.mese}',0)">✔ Segna verificato</button>`:`<span class="chip c-red">ALERT</span> <button class="small" onclick="segnaMese('${tipo}','${r.mese}',${diff})">Giustifica…</button>`}
+const n2=v=>Math.abs(v)<0.005?'<span class="mute">—</span>':eur(v);
+function reportControlli(r){
+  let h=`<div class="card" style="max-width:1100px"><h2>Report controlli · dal ${dit(r.dal)} al ${dit(r.al)}</h2>`;
+  const c=r.c1;const R=c.righe;const tot=k=>R.reduce((a,x)=>a+x[k],0);
+  h+=`<h3 style="font-size:14px;margin:10px 0 4px">Controllo 1 – Banca ↔ App (entrate e uscite al centesimo)</h3>
+  <p class="small mute">Per ogni mese: <b>1</b> = movimenti in banca, <b>2</b> = registrati nell'app come \"conto Caraglio\", <b>3</b> = registrati nell'app ma non passati dalla banca (trattenuti per il mutuo, pagati dai soci, compensati). 1 e 2 devono coincidere, altrimenti ALERT. Totale dell'app = 2 + 3. Una differenza a cavallo di fine mese può essere solo una data diversa: controlla il dettaglio sotto.</p>
+  <div class="tblwrap" style="max-height:none"><table><thead><tr><th>Mese</th><th class="num">Entrate 1 banca</th><th class="num">2 app a banca</th><th class="num">Δ</th><th class="num">3 non a banca</th><th class="num">Uscite 1 banca</th><th class="num">2 app a banca</th><th class="num">Δ</th><th class="num">3 non a banca</th><th>Stato</th></tr></thead><tbody>
+  ${R.map(x=>`<tr${x.coperto?'':' style="opacity:.6"'}><td>${meseLab(x.mese)}</td><td class="num">${n2(x.eB)}</td><td class="num">${n2(x.eA)}</td><td class="num" style="color:${Math.abs(x.dE)>=0.01?'var(--accent)':'inherit'}">${n2(x.dE)}</td><td class="num mute">${n2(x.eN)}</td><td class="num">${n2(x.uB)}</td><td class="num">${n2(x.uA)}</td><td class="num" style="color:${Math.abs(x.dU)>=0.01?'var(--accent)':'inherit'}">${n2(x.dU)}</td><td class="num mute">${n2(x.uN)}</td><td style="white-space:nowrap">${cellaVer('banca_app',x,+(Math.abs(x.dE)+Math.abs(x.dU)).toFixed(2))}</td></tr>`).join('')}
+  <tr style="font-weight:600"><td>Totale</td><td class="num">${eur(tot('eB'))}</td><td class="num">${eur(tot('eA'))}</td><td class="num">${n2(tot('dE'))}</td><td class="num">${eur(tot('eN'))}</td><td class="num">${eur(tot('uB'))}</td><td class="num">${eur(tot('uA'))}</td><td class="num">${n2(tot('dU'))}</td><td class="num">${eur(tot('uN'))}</td><td class="small">${R.filter(x=>!x.coperto).length?`${R.filter(x=>!x.coperto).length} mesi senza estratto conto`:''}</td></tr></tbody></table></div>
+  <p class="small" style="margin:6px 0">Totale entrate nell'app (2 + 3): <b>${eur(tot('eA')+tot('eN'))}</b> · Totale uscite nell'app (2 + 3): <b>${eur(tot('uA')+tot('uN'))}</b></p>`;
+  const d=c.dettaglio;
+  h+=blocco('Movimenti da verificare: in banca ma non nell\'app',d.soloBanca.length,d.soloBanca.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Descrizione</th></tr>'+d.soloBanca.map(m=>rigaB(m)).join(''),true);
+  h+=blocco('Registrati nell\'app come "conto Caraglio" ma non in banca',d.soloApp.length,d.soloApp.reduce((a,x)=>a+x.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Documento</th></tr>'+d.soloApp.map(x=>`<tr><td>${dit(x.data)}</td><td class="num">${eur(x.imp)}</td><td class="small"><a href="#" onclick="dett(${x.d.id});return false">${esc(S[x.d.soggetto_id]?.nome||'—')}</a> · ${esc(x.d.descrizione||C[x.d.categoria_id]?.nome||'')}</td></tr>`).join(''),true);
+  const a=r.c2;
+  h+=`<h3 style="font-size:14px;margin:16px 0 4px">Controllo 2 – Banca ↔ Agenzia delle Entrate (fatture)</h3>`;
+  if(a.manca.length)h+=`<p class="small" style="color:var(--warn)">Mesi senza dati per il confronto (manca l'estratto conto o il file dell'Agenzia Entrate): ${a.manca.map(meseLab).join(', ')}.</p>`;
+  if(!a.res)h+=`<p class="small mute">Nessun mese coperto sia dall'estratto conto sia dai file dell'Agenzia Entrate: carica i file nell'archivio.</p>`;
+  else{const x=a.res;
+    h+=`<div class="tblwrap" style="max-height:none"><table><thead><tr><th>Mese</th><th class="num">Uscite in banca</th><th class="num">Escluse (senza fattura)</th><th class="num">Fatture da ricevere</th><th class="num">Importo</th><th>Stato</th></tr></thead><tbody>${a.mesi.map(m=>`<tr><td>${meseLab(m.mese)}</td><td class="num">${m.uscite}</td><td class="num">${m.escluse}</td><td class="num">${m.daRic||'<span class="mute">—</span>'}</td><td class="num">${n2(m.daRicTot)}</td><td style="white-space:nowrap">${cellaVer('banca_ade',{...m,coperto:true},m.daRicTot)}</td></tr>`).join('')}</tbody></table></div>`;
+    h+=blocco('Fatture da ricevere (pagato in banca, nessuna fattura nel cassetto)',x.daRicevere.length,x.daRicevere.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Beneficiario / descrizione</th><th>Fornitore nel cassetto</th></tr>'+x.daRicevere.map(m=>rigaB(m,`<td class="small">${esc(m.fornitore||'—')}</td>`)).join(''),true);
+    h+=blocco('Pagamenti a fatture estere (registrate in app, non nel cassetto)',x.esteri.length,x.esteri.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Beneficiario</th><th>Documento app</th></tr>'+x.esteri.map(m=>rigaB(m,`<td class="small"><a href="#" onclick="dett(${m.doc.id});return false">${esc(S[m.doc.soggetto_id]?.nome||'')}</a></td>`)).join(''));
+    h+=blocco('Fatture nel cassetto senza pagamento in banca',x.nonPagate.length,x.nonPagate.reduce((a,f)=>a+f.totale,0),'<tr><th>Data</th><th>Fornitore</th><th>N°</th><th class="num">Totale</th><th class="num">Ritenuta</th></tr>'+x.nonPagate.sort((a,b)=>(a.data||'').localeCompare(b.data||'')).map(f=>`<tr><td>${dit(f.data)}</td><td>${esc(f.fornitore)}</td><td>${esc(f.numero)}</td><td class="num">${eur(f.totale)}</td><td class="num">${f.ritenuta?eur(f.ritenuta):''}</td></tr>`).join(''));
+    h+=blocco('Uscite abbinate a fatture',x.abb.length,null,'<tr><th>Banca</th><th>Fattura</th><th>Come</th></tr>'+x.abb.map(a=>`<tr><td class="small">${a.b.map(m=>`${dit(m.data)} ${eur(m.imp)}`).join('<br>')}</td><td class="small">${a.f.map(f=>`${esc(f.fornitore)} n° ${esc(f.numero)} del ${dit(f.data)} · ${eur(f.totale)}`).join('<br>')}</td><td class="small mute">${esc(a.come)}</td></tr>`).join(''));
+    h+=blocco('Uscite escluse dal controllo fatture',x.escl.length,x.escl.reduce((a,m)=>a+m.imp,0),'<tr><th>Data</th><th class="num">Importo</th><th>Descrizione</th><th>Motivo</th></tr>'+x.escl.map(m=>rigaB(m,`<td class="small">${esc(m.motivo)}</td>`)).join(''));}
+  h+=`<h3 style="font-size:14px;margin:16px 0 6px">Altri controlli</h3>`;
+  h+=blocco('Fornitori con fatture in più categorie',r.multi.length,null,'<tr><th>Fornitore</th><th>Fatture</th></tr>'+r.multi.map(x=>`<tr><td><a href="#anomalie" onclick="go('anomalie');return false">${esc(S[x.sid].nome)}</a></td><td>${x.L.length}</td></tr>`).join(''));
+  return h+'</div>';
+}
+function registroHtml(){
+  if(!VER.length)return '';
+  const L=[...VER].sort((a,b)=>b.mese.localeCompare(a.mese)||a.tipo.localeCompare(b.tipo));
+  return `<details class="mc"><summary><b>Registro dei periodi verificati</b><span class="small mute">${L.length} mesi</span></summary><div style="padding:8px 12px"><table><thead><tr><th>Mese</th><th>Controllo</th><th>Esito</th><th class="num">Differenza</th><th>Nota</th><th>Chi / quando</th></tr></thead><tbody>${L.map(v=>`<tr><td>${meseLab(v.mese.slice(0,7))}</td><td>${v.tipo==='banca_app'?'Banca ↔ App':'Banca ↔ Agenzia Entrate'}</td><td><span class="chip ${v.esito==='ok'?'c-ok':'c-warn'}">${v.esito==='ok'?'Verificato':'Giustificato'}</span></td><td class="num">${n2(+v.differenza)}</td><td class="small">${esc(v.nota||'')}</td><td class="small mute">${esc(v.creato_da||'')} · ${dit((v.creato_il||'').slice(0,10))}</td></tr>`).join('')}</tbody></table></div></details>`;
+}
+function vControlli(){
+  const el=document.getElementById('v-controlli');const c=CTRL;
+  if(!ARCH.letto&&!ARCH.leggendo){ARCH.leggendo=true;Promise.all([archLista(),caricaVerifiche()]).then(()=>{ARCH.leggendo=false;if(VISTA==='controlli'){vControlli();if(ARCH.sel.size&&!CTRL.banca.length)archCaricaControlli()}}).catch(()=>{ARCH.leggendo=false})}
+  const fb=verificatoFino('banca_app'),fa=verificatoFino('banca_ade');
+  const ivB=unisciIntervalli(c.rangeB||[]),ivC=unisciIntervalli(c.rangeC||[]);
+  el.innerHTML=archHtml()+`<div class="card" style="max-width:1100px"><h2>Controlli automatici</h2>
+  <p class="small mute" style="margin-top:-6px">La banca comanda. <b>Controllo 1</b>: entrate e uscite della banca devono coincidere al centesimo con quelle registrate nell'app. <b>Controllo 2</b>: ogni uscita della banca deve avere la sua fattura all'Agenzia delle Entrate. Usano i file spuntati nell'archivio.</p>
+  <div style="margin:6px 0">${fb?`<span class="chip c-ok">✔ Banca ↔ App verificata fino al ${dit(fb)}</span>`:'<span class="chip c-grey">Banca ↔ App: nessun mese verificato</span>'} ${fa?`<span class="chip c-ok">✔ Banca ↔ Agenzia Entrate verificata fino al ${dit(fa)}</span>`:'<span class="chip c-grey">Banca ↔ Agenzia Entrate: nessun mese verificato</span>'}</div>
+  <div class="small" style="margin:8px 0">Estratti conto caricati: ${ivB.length?ivB.map(r=>`${dit(r.dal)} → ${dit(r.al)}`).join(', '):'nessuno'} · File Agenzia Entrate: ${ivC.length?ivC.map(r=>`${dit(r.dal)} → ${dit(r.al)}`).join(', '):'nessuno'}${c.cassetto.length?` (${c.cassetto.length} fatture)`:''}${(c.errB||[]).length||c.errC.length?` · <span style="color:var(--accent)">${(c.errB||[]).length+c.errC.length} file non letti</span>`:''}</div>
+  ${ivB.length>1?`<p class="small" style="color:var(--warn)">Attenzione: gli estratti conto hanno un buco tra ${ivB.slice(0,-1).map((r,i)=>`${dit(r.al)} e ${dit(ivB[i+1].dal)}`).join(', ')}.</p>`:''}
+  <div class="filters"><label>Dal<input type="date" id="cDal" value="${c.dal}"></label><label>Al<input type="date" id="cAl" value="${c.al}"></label><span style="flex:1"></span>
+   <button class="primary" id="cGo" ${c.banca.length?'':'disabled'}>Esegui controlli</button><button id="cPrint" ${c.res?'':'disabled'}>Stampa report</button></div>
+  ${(c.errB||[]).length||c.errC.length?`<details class="small"><summary>File non letti</summary>${[...(c.errB||[]),...c.errC].map(e=>`<div>${esc(e)}</div>`).join('')}</details>`:''}
+  ${registroHtml()}
+  </div><div id="cRes">${c.res?reportControlli(c.res):''}</div>`;
+  archBind();
+  cDal.onchange=e=>{c.dal=e.target.value};cAl.onchange=e=>{c.al=e.target.value};
+  cGo.onclick=()=>{if(!c.dal||!c.al||c.dal>c.al){alert('Controlla il periodo');return}
+    c.res={dal:c.dal,al:c.al,c1:controlloBancaApp(c.dal,c.al),c2:controlloBancaAdE(c.dal,c.al),multi:multiCat().filter(x=>!verificati.has(x.sid))};vControlli()};
+  cPrint.onclick=()=>window.print();
+}
+
+/* maschera di acquisizione: tipo, ente, periodo, nome standard */
+const TIPI_FILE={'estratto-conto':'Estratto conto','fatture-ricevute':'Fatture ricevute (Agenzia Entrate)'};
+const ENTI=['Caraglio','Passadore','AdE'];const ENTI_LAB={Caraglio:'Banca di Caraglio',Passadore:'Banca Passadore',AdE:'Agenzia delle Entrate'};
+async function analizzaFile(f){
+  const n=f.name.toLowerCase(),ext=(n.match(/\.([a-z0-9]+)$/)||[])[1]||'dat';const r={file:f,ext,tipo:'',ente:'',dal:'',al:'',nota:''};
+  const p=periodoDaNome(f.name);
+  try{
+    if(/\.(csv|txt)$/.test(n)){const t=await f.text();let b=null;try{b=parseBanca(t,f.name)}catch(e){}
+      if(b&&b.length){const ds=b.map(m=>m.data).sort();Object.assign(r,{tipo:'estratto-conto',ente:'Caraglio',dal:ds[0],al:ds[ds.length-1],nota:`${b.length} movimenti`})}
+      else{let c=[];try{c=parseCsvCassetto(t,f.name)}catch(e){}
+        if(c.length){const ds=c.map(x=>x.data).filter(Boolean).sort();Object.assign(r,{tipo:'fatture-ricevute',ente:'AdE',dal:ds[0]||'',al:ds[ds.length-1]||'',nota:`${c.length} fatture`})}
+        else Object.assign(r,{tipo:'estratto-conto',ente:'Passadore',nota:'formato non riconosciuto: scegli tipo, ente e periodo (i controlli per ora leggono solo gli estratti Caraglio)'})}}
+    else if(/\.(zip|xml|p7m)$/.test(n)){const c=await leggiCassetto([f]);const ds=c.fatture.map(x=>x.data).filter(Boolean).sort();
+      Object.assign(r,{tipo:'fatture-ricevute',ente:'AdE',dal:ds[0]||'',al:ds[ds.length-1]||'',nota:`${c.fatture.length} fatture${c.err.length?`, ${c.err.length} file non letti`:''}`})}
+    else r.nota='tipo di file non previsto';
+  }catch(e){r.nota='non leggibile: '+e.message}
+  if(p){r.dal=p.dal;r.al=p.al;if(ENTI.includes(p.ente))r.ente=p.ente}
+  return r;
+}
+const nomeStd=r=>`${r.dal||'0000-00-00'}_${r.al||'0000-00-00'}_${r.ente||'Altro'}_${r.tipo||'file'}.${r.ext}`;
+function apriMascheraAcq(L){return new Promise(ok=>{
+  let d=document.getElementById('dlgAcq');if(!d){d=document.createElement('dialog');d.id='dlgAcq';d.style.maxWidth='980px';document.body.appendChild(d)}
+  const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('');
+  d.innerHTML=`<form class="dlg" method="dialog"><h3>Acquisizione file</h3><div class="mute small" style="margin-bottom:10px">Controlla tipo, ente e periodo: il file verrà salvato con il nome standard indicato.</div>
+  <div class="tblwrap" style="max-height:60vh"><table><thead><tr><th>File</th><th>Tipo</th><th>Ente</th><th>Dal</th><th>Al</th><th>Nome nell'archivio</th></tr></thead><tbody>
+  ${L.map((r,i)=>`<tr data-i="${i}"><td class="small" style="max-width:180px;word-break:break-all">${esc(r.file.name)}<div class="mute">${esc(r.nota)}</div></td>
+   <td><select class="qT">${opt(TIPI_FILE,r.tipo)}</select></td><td><select class="qE">${opt(ENTI_LAB,r.ente)}</select></td>
+   <td><input type="date" class="qD" value="${r.dal}"></td><td><input type="date" class="qA" value="${r.al}"></td><td class="small qN" style="word-break:break-all"></td></tr>`).join('')}</tbody></table></div>
+  <div class="err" id="qErr"></div><div class="actions"><button value="no" type="button" id="qNo">Annulla</button><button class="primary" type="button" id="qOk">Salva nell'archivio</button></div></form>`;
+  const sync=()=>d.querySelectorAll('tr[data-i]').forEach(tr=>{const r=L[+tr.dataset.i];r.tipo=tr.querySelector('.qT').value;r.ente=tr.querySelector('.qE').value;r.dal=tr.querySelector('.qD').value;r.al=tr.querySelector('.qA').value;tr.querySelector('.qN').textContent=nomeStd(r)});
+  d.querySelectorAll('select,input').forEach(x=>{x.onchange=sync;x.oninput=sync});sync();
+  d.querySelector('#qNo').onclick=()=>{d.close();ok(null)};
+  d.querySelector('#qOk').onclick=()=>{sync();const bad=L.find(r=>!r.tipo||!r.ente||!r.dal||!r.al||r.dal>r.al);if(bad){d.querySelector('#qErr').textContent=`Completa tipo, ente e periodo di ${bad.file.name}.`;return}
+    if(L.some(r=>r.tipo==='fatture-ricevute'&&r.ente!=='AdE')||L.some(r=>r.tipo==='estratto-conto'&&r.ente==='AdE')){d.querySelector('#qErr').textContent='Le fatture ricevute vanno con l\'Agenzia delle Entrate, gli estratti conto con una banca.';return}
+    d.close();ok(L)};
+  d.showModal();
+})}
+async function archiviaFile(files){
+  if(!EDIT){alert(`Sola lettura: in questo momento sta modificando ${EDITOR?.nome||EDITOR?.email||'un altro utente'}.`);return}
+  caricamento(true);let L;try{L=await Promise.all(files.map(analizzaFile))}finally{caricamento(false)}
+  L=await apriMascheraAcq(L);if(!L)return;
+  caricamento(true);const ok=[],ko=[];
+  try{for(const r of L){const dir=r.tipo==='estratto-conto'?'estratti-conto':'cassetto-fiscale';const base=nomeStd(r);let path=dir+'/'+base,k=2;
+      let res=await sb.storage.from(BKT).upload(path,r.file,{upsert:false,contentType:r.file.type||'application/octet-stream'});
+      while(res.error&&/exist|duplicate/i.test(res.error.message)&&k<20){path=dir+'/'+base.replace(/(\.[^.]+)$/,`_${k++}$1`);res=await sb.storage.from(BKT).upload(path,r.file,{upsert:false})}
+      if(res.error){ko.push(r.file.name+': '+res.error.message);continue}ok.push(path);ARCH.sel.add(path)}
+    await archLista()}finally{caricamento(false)}
+  if(ko.length)alert('Non archiviati:\n'+ko.join('\n'));
+  if(ok.length){toast(`${ok.length} file salvati nell'archivio`);if(VISTA!=='controlli')go('controlli');await archCaricaControlli()}else vControlli();
+}
+function archHtml(){
+  return `<div class="card" style="max-width:1100px"><h2>Archivio file</h2>
+  <div class="drop">Trascina qui gli <b>estratti conto</b> (CSV) e i file dell'<b>Agenzia delle Entrate</b> (ZIP, XML, P7M o CSV): si apre una maschera per confermare tipo, ente e periodo, e il file viene salvato con un nome standard nella cartella giusta. Oppure <label>scegli i file<input type="file" id="aFile" multiple accept=".csv,.txt,.zip,.xml,.p7m" style="display:none"></label></div>
+  ${ARCH.err?`<p class="err">Archivio non disponibile: ${esc(ARCH.err)}</p>`:''}
+  <div class="grid2">${archCartella('Estratti conto',ARCH.b)}${archCartella('Agenzia delle Entrate – fatture ricevute',ARCH.c)}</div>
+  <div class="actions"><span class="small mute" style="margin-right:auto">Spunta i file da usare: per il controllo completo servono tutti gli estratti conto, senza buchi tra un periodo e l'altro.</span><button id="aLoad">Usa i file spuntati nei controlli</button></div></div>`;
 }
 
 /* ---------- MODULI: funzionano anche dove l'invio dei form è bloccato (anteprime, allegati) ---------- */
