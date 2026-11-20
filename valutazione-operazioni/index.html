@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Valutazione operazioni</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%231f3a5f%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial,sans-serif%22 font-size=%2232%22 font-weight=%22700%22 fill=%22white%22 text-anchor=%22middle%22%3EV%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#1f3a5f">
+<style>
+:root{color-scheme:light;--bg:#f5f6f8;--card:#fff;--ink:#1b2430;--mute:#677180;--line:#e2e5ea;--accent:#1f3a5f;--accent-soft:#e7edf5;--ok:#2e7d4f;--ok-soft:#e6f3ec;--warn:#a86400;--warn-soft:#fdf1df;--red:#b3261e;--red-soft:#fbeceb}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top{display:flex;align-items:center;gap:12px;padding:12px 20px;max-width:1280px;margin:auto;flex-wrap:wrap}
+.logo{width:30px;height:30px;border-radius:7px;background:var(--accent);color:#fff;font-weight:700;display:grid;place-items:center}
+h1{font-size:16px;margin:0}.sub{color:var(--mute);font-size:12px}
+nav{display:flex;gap:2px;padding:0 20px;max-width:1280px;margin:auto;overflow-x:auto}
+nav a{padding:10px 14px;color:var(--mute);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;font-weight:500;cursor:pointer}
+nav a.on{color:var(--ink);border-color:var(--accent)}nav a .n{background:var(--red-soft);color:var(--red);border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
+main{max-width:1280px;margin:auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}.card h2{font-size:15px;margin:0 0 12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}.kpi .l{color:var(--mute);font-size:12px}.kpi .v{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums}
+.kpi.big .v{font-size:24px}.pos{color:var(--ok)}.neg{color:var(--red)}
+input,select,textarea{font:inherit;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);min-width:0}
+button{font:inherit;font-weight:500;padding:7px 13px;border-radius:7px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}button.small{padding:3px 9px;font-size:12px}
+table{width:100%;border-collapse:collapse}th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);text-align:left;font-weight:600;padding:7px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0}
+td{padding:6px 7px;border-bottom:1px solid #eef0f3;vertical-align:middle}td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tblwrap{overflow:auto;border:1px solid var(--line);border-radius:8px;max-height:70vh}
+.chip{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11px;font-weight:600;white-space:nowrap}
+.c-ok{background:var(--ok-soft);color:var(--ok)}.c-warn{background:var(--warn-soft);color:var(--warn)}.c-red{background:var(--red-soft);color:var(--red)}.c-blue{background:var(--accent-soft);color:var(--accent)}.c-grey{background:#eceef1;color:var(--mute)}
+.mute{color:var(--mute)}.small{font-size:12px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 14px}
+label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute);font-weight:500}
+td input{width:100%;padding:4px 6px}td input.num{text-align:right}
+.note{background:var(--warn-soft);color:#6b4100;border:1px solid #f1d9ad;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+.info{background:var(--accent-soft);color:var(--accent);border:1px solid #cdd9e8;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+#login{position:fixed;inset:0;background:var(--bg);z-index:50;display:grid;place-items:center}
+#login .box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;width:min(380px,92vw)}
+.who{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--mute)}
+#loading{position:fixed;inset:0;background:rgba(245,246,248,.8);z-index:40;display:none;place-items:center;font-weight:600}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:.25s;pointer-events:none}.toast.on{opacity:1}
+.grp td{background:#f7f8fa;font-weight:600;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.03em}
+input[type=range]{width:100%}
+@media print{header,#login,.noprint{display:none!important}body{background:#fff}.card{border:0}}
+</style>
+</head>
+<body>
+<header>
+ <div class="top"><div class="logo">V</div><div><h1>Valutazione operazioni</h1><div class="sub">Simulatore di consuntivo e preventivo – accesso riservato agli amministratori</div></div>
+  <select id="opSel" style="margin-left:12px;max-width:320px"></select><button class="small" id="opNew">+ Operazione</button>
+  <div class="who"><span id="whoName"></span><button class="small" onclick="carica(true)">↻ Aggiorna</button><button class="small" onclick="esci()">Esci</button></div></div>
+ <nav id="nav"><a data-v="sintesi">Sintesi</a><a data-v="simulatore">Simulatore</a><a data-v="unita">Unità e listini</a><a data-v="costi">Costi</a><a data-v="checklist">Lista di controllo <span class="n" id="nMan"></span></a><a data-v="parametri">Parametri</a></nav>
+</header>
+<main><section id="view"></section></main>
+<div id="login"><form class="box" id="fLogin" onsubmit="return false"><div class="logo" style="margin-bottom:10px">V</div><h2 style="margin:0 0 4px;font-size:18px">Valutazione operazioni</h2>
+ <div class="mute small" style="margin-bottom:14px">Accesso riservato agli amministratori. Stesse credenziali dell'app contabilità.</div>
+ <div class="grid2"><label style="grid-column:1/-1">Email<input type="email" id="lEmail" autocomplete="username" required></label><label style="grid-column:1/-1">Password<input type="password" id="lPw" autocomplete="current-password" required></label></div>
+ <div id="lErr" style="color:var(--red);font-size:12px;min-height:16px;margin-top:6px"></div><div style="text-align:right;margin-top:10px"><button class="primary" id="lBtn">Entra</button></div></form></div>
+<div id="loading">Caricamento…</div><div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const sb=supabase.createClient('https://rrpvpvgdawfsstfcqyji.supabase.co','sb_publishable_Wk10Y3EASGqvH5g2ZQ_pOw_MAlzD7pf');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const eur=v=>(v<0?'−':'')+'€ '+Math.abs(v||0).toLocaleString('it-IT',{maximumFractionDigits:0});
+const eur2=v=>(v<0?'−':'')+'€ '+Math.abs(v||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=v=>(v*100).toLocaleString('it-IT',{maximumFractionDigits:1})+'%';
+const dit=s=>s?s.split('-').reverse().join('/'):'—';
+const num=v=>{if(v===''||v==null)return null;let t=String(v).trim().replace(/[€\s]/g,'');if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');else if(/^\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,'');const n=parseFloat(t);return isNaN(n)?null:n};
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2000)}
+const loading=v=>document.getElementById('loading').style.display=v?'grid':'none';
+async function db(q,msg){const {data,error}=await q;if(error){alert('Non salvato: '+error.message);throw error}if(msg)toast(msg);return data}
+async function tutto(tab,sel='*'){let out=[],da=0;for(;;){const {data,error}=await sb.from(tab).select(sel).order('id').range(da,da+999);if(error)throw error;out=out.concat(data);if(data.length<1000)break;da+=1000}return out}
+async function tuttoSenzaId(tab){const {data,error}=await sb.from(tab).select('*');if(error)throw error;return data}
+
+/* ---------- voci di un business plan immobiliare ---------- */
+const VOCI=[
+ ['Acquisizione','Acquisizione immobile o terreno','Prezzo d\'acquisto o valore di conferimento'],
+ ['Acquisizione','Imposte e notaio d\'acquisto','Registro, ipotecarie e catastali, notaio, agenzia d\'acquisto'],
+ ['Acquisizione','Due diligence e perizie','Verifiche urbanistiche, perizie di stima, rilievi'],
+ ['Progettazione','Progettazione e direzione lavori','Architetto, DL, varianti'],
+ ['Progettazione','Strutture, geologo e sicurezza','Strutturista, geologo, coordinatore sicurezza (CSP/CSE), collaudi'],
+ ['Progettazione','Professionisti e pratiche','Catasto, APE, certificazioni, pratiche comunali, consulenze'],
+ ['Oneri e concessioni','Oneri concessori e diritti comunali','Oneri di urbanizzazione, costo di costruzione, monetizzazioni, diritti, suolo pubblico'],
+ ['Oneri e concessioni','Allacci e utenze di cantiere','Allacci acqua, luce, gas, fognature'],
+ ['Costruzione','Opere edili e impianti','Impresa, impianti, ascensore'],
+ ['Costruzione','Finiture e pavimenti','Pavimenti, rivestimenti, serramenti, finiture'],
+ ['Costruzione','Arredi','Cucine, bagni, arredi'],
+ ['Costruzione','Sistemazioni esterne','Giardini, parcheggi, recinzioni'],
+ ['Finanziari','Interessi passivi mutuo','Solo gli interessi: la quota capitale delle rate non è un costo'],
+ ['Finanziari','Spese bancarie e istruttoria','Istruttoria, perizia della banca, commissioni'],
+ ['Finanziari','Assicurazioni e fideiussioni','Polizze CAR e decennale postuma, fideiussioni per acconti e oneri'],
+ ['Vendita','Agenzie di vendita','Provvigioni'],
+ ['Vendita','Marketing e pubblicità','Portali, rendering, cartellonistica'],
+ ['Vendita','Legali e notarili','Avvocati, notaio a carico del venditore'],
+ ['Gestione','Commercialista e amministrazione','Contabilità, bilanci, dichiarazioni'],
+ ['Gestione','Utenze e gestione','Utenze, pulizie, manutenzione nel periodo di vendita'],
+ ['Gestione','IMU e condominio sulle unità invendute','IMU e spese condominiali finché non si vende'],
+ ['Gestione','Altro','Voci non classificate']
+];
+const GRUPPI=[...new Set(VOCI.map(v=>v[0]))];
+const VOCI_NOMI=VOCI.map(v=>v[1]);
+
+/* ---------- stato ---------- */
+let D={op:[],unita:[],listini:[],prezzi:[],costi:[],check:[],mappa:[],vdoc:[],vcat:[]},OP=null,VISTA='sintesi',SIM={listino:null,delta:0};
+async function avvio(session){
+  if(!session){document.getElementById('login').style.display='grid';return}
+  const {data:m}=await sb.from('members').select('role,nome').eq('email',session.user.email).maybeSingle();
+  if(!m||m.role!=='admin'){document.getElementById('login').style.display='grid';lErr.textContent='Accesso riservato agli amministratori.';await sb.auth.signOut();return}
+  document.getElementById('whoName').textContent=m.nome||session.user.email;document.getElementById('login').style.display='none';await carica();
+}
+document.getElementById('fLogin').onsubmit=async e=>{e.preventDefault();lErr.textContent='';lBtn.disabled=true;const {data,error}=await sb.auth.signInWithPassword({email:lEmail.value.trim(),password:lPw.value});lBtn.disabled=false;if(error){lErr.textContent='Email o password non corretti.';return}avvio(data.session)};
+async function esci(){try{await sb.auth.signOut({scope:'local'})}catch(e){}try{Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k))}catch(e){}document.getElementById('login').style.display='grid';lPw.value=''}
+async function carica(msg){
+  loading(true);
+  try{const [op,unita,listini,prezzi,costi,check,mappa]=await Promise.all([tutto('val_operazioni'),tutto('val_unita'),tutto('val_listini'),tuttoSenzaId('val_prezzi'),tutto('val_costi'),tuttoSenzaId('val_checklist'),tuttoSenzaId('val_mappa')]);
+    let vdoc=[],vcat=[];if(op.some(o=>o.fonte_consuntivo==='vac2')){[vdoc,vcat]=await Promise.all([tutto('vac2_documenti','id,verso,categoria_id,imponibile,estranea,data_doc'),tutto('vac2_categorie','id,nome,gruppo')])}
+    D={op,unita,listini,prezzi,costi,check,mappa,vdoc,vcat};
+    const keep=OP&&op.find(o=>o.id===OP.id);OP=keep||op[0]||null;render();if(msg)toast('Dati aggiornati')}
+  catch(e){alert('Errore nel caricamento: '+(e.message||e))}finally{loading(false)}
+}
+
+/* ---------- calcoli ---------- */
+const DI=k=>D[k].filter(x=>x.operazione_id===OP.id);
+function consuntivoVac2(){
+  const out={},cat={};if(OP.fonte_consuntivo!=='vac2')return {perVoce:out,perCat:cat,altriRicavi:0};
+  const map=Object.fromEntries(DI('mappa').map(m=>[m.vac2_categoria_id,m.voce]));const G=Object.fromEntries(D.vcat.map(c=>[c.id,c]));let altri=0;
+  for(const d of D.vdoc){if(d.estranea)continue;const c=G[d.categoria_id];if(!c)continue;const imp=+d.imponibile||0;
+    if(c.gruppo==='costo_operazione'||c.gruppo==='onere_finanziario'){cat[c.id]=(cat[c.id]||0)+imp;const v=map[c.id]||'Altro';out[v]=(out[v]||0)+imp}
+    else if(c.gruppo==='altro_ricavo')altri+=imp}
+  return {perVoce:out,perCat:cat,altriRicavi:altri};
+}
+function prezzo(listinoId,unitaId){const p=D.prezzi.find(x=>x.listino_id===listinoId&&x.unita_id===unitaId);return p&&p.prezzo!=null?+p.prezzo:null}
+function calcola(listinoId,delta){
+  const cv=consuntivoVac2();const C=DI('costi');const voci={};
+  for(const v of VOCI_NOMI)voci[v]={cons:0,prev:0};const add=(v,k,x)=>{(voci[v]=voci[v]||{cons:0,prev:0})[k]+=x};
+  for(const [v,x] of Object.entries(cv.perVoce))add(v,'cons',x);
+  for(const c of C)add(c.voce,c.tipo==='consuntivo'?'cons':'prev',+c.importo||0);
+  const prevCostr=C.filter(c=>c.tipo==='previsto'&&VOCI.find(v=>v[1]===c.voce)?.[0]==='Costruzione').reduce((a,c)=>a+(+c.importo||0),0);
+  const imprevisti=prevCostr*(+OP.imprevisti_perc||0)/100;
+  const costiCons=Object.values(voci).reduce((a,v)=>a+v.cons,0),costiPrev=Object.values(voci).reduce((a,v)=>a+v.prev,0)+imprevisti;
+  const U=DI('unita');const vend=U.filter(u=>u.stato==='venduto');const libere=U.filter(u=>u.stato!=='venduto');
+  const ricVend=vend.reduce((a,u)=>a+(+u.prezzo_venduto||0),0);
+  let base=0,senzaPrezzo=[];for(const u of libere){const p=listinoId?prezzo(listinoId,u.id):null;if(p==null)senzaPrezzo.push(u);else base+=p}
+  const ricDaVend=base*(1+delta);const ricavi=ricVend+cv.altriRicavi+ricDaVend;const costi=costiCons+costiPrev;
+  const ul=ricavi-costi;const interessi=(voci['Interessi passivi mutuo']?.cons||0)+(voci['Interessi passivi mutuo']?.prev||0);
+  const ires=Math.max(0,ul*(+OP.ires_perc||0)/100),irap=Math.max(0,(ul+interessi)*(+OP.irap_perc||0)/100);const un=ul-ires-irap;
+  const mqLib=libere.reduce((a,u)=>a+(+u.mq||0),0);
+  const pareggioDelta=base>0?(costi-ricVend-cv.altriRicavi)/base-1:null;const pareggioMq=mqLib>0?(costi-ricVend-cv.altriRicavi)/mqLib:null;
+  return {voci,imprevisti,costiCons,costiPrev,costi,ricVend,altriRicavi:cv.altriRicavi,base,ricDaVend,ricavi,ul,ires,irap,un,interessi,margine:ricavi?un/ricavi:0,roi:costi?un/costi:0,nVend:vend.length,nLib:libere.length,senzaPrezzo,mqLib,pareggioDelta,pareggioMq,perCat:cv.perCat};
+}
+function checklist(){const r=calcola(SIM.listino,0);const ns=new Set(DI('check').map(c=>c.voce));
+  return VOCI.map(([g,v,h])=>{const x=r.voci[v]||{cons:0,prev:0};let st=x.cons>0.5?'sostenuto':x.prev>0.5?'previsto':ns.has(v)?'non_serve':'manca';
+    if(v==='Interessi passivi mutuo'&&st==='manca'&&OP.fonte_consuntivo==='vac2')st='manca';return {g,v,h,cons:x.cons,prev:x.prev,st}})}
+
+/* ---------- viste ---------- */
+function render(){
+  const ops=document.getElementById('opSel');ops.innerHTML=D.op.map(o=>`<option value="${o.id}" ${OP&&o.id===OP.id?'selected':''}>${esc(o.nome)}</option>`).join('')||'<option>Nessuna operazione</option>';
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===VISTA));
+  if(!OP){document.getElementById('view').innerHTML='<div class="card">Nessuna operazione: crea la prima con "+ Operazione".</div>';return}
+  const L=DI('listini').sort((a,b)=>a.ordine-b.ordine);if(!SIM.listino||!L.find(l=>l.id===SIM.listino))SIM.listino=L[0]?.id||null;
+  document.getElementById('nMan').textContent=checklist().filter(c=>c.st==='manca').length||'';
+  ({sintesi:vSintesi,simulatore:vSim,unita:vUnita,costi:vCosti,checklist:vCheck,parametri:vParam})[VISTA]();
+}
+document.querySelectorAll('nav a').forEach(a=>a.onclick=()=>{VISTA=a.dataset.v;render();window.scrollTo(0,0)});
+document.getElementById('opSel').onchange=e=>{OP=D.op.find(o=>o.id===+e.target.value);SIM.listino=null;render()};
+document.getElementById('opNew').onclick=async()=>{const n=prompt('Nome della nuova operazione:');if(!n)return;const o=await db(sb.from('val_operazioni').insert({nome:n,stato:'preventivo'}).select().single(),'Operazione creata');await db(sb.from('val_listini').insert({operazione_id:o.id,nome:'Listino 1',ordine:1}));OP=o;VISTA='parametri';await carica()};
+const kpi=(l,v,cls='',big)=>`<div class="kpi${big?' big':''}"><div class="l">${l}</div><div class="v ${cls}">${v}</div></div>`;
+function selListino(){return `<select id="lsSel">${DI('listini').sort((a,b)=>a.ordine-b.ordine).map(l=>`<option value="${l.id}" ${l.id===SIM.listino?'selected':''}>${esc(l.nome)}</option>`).join('')}</select>`}
+function bindListino(){const s=document.getElementById('lsSel');if(s)s.onchange=e=>{SIM.listino=+e.target.value;render()}}
+function vSintesi(){
+  const r=calcola(SIM.listino,0);const man=checklist().filter(c=>c.st==='manca');
+  document.getElementById('view').innerHTML=`<div class="row" style="margin-bottom:12px"><b style="font-size:16px">${esc(OP.nome)}</b><span class="chip c-blue">${({preventivo:'Preventivo',in_corso:'In corso',concluso:'Concluso'})[OP.stato]}</span><span style="flex:1"></span><span class="small mute">Prezzi delle unità invendute:</span>${selListino()}</div>
+  ${man.length?`<div class="note"><b>Lista di controllo:</b> ${man.length} voci del business plan senza importo (${man.slice(0,6).map(m=>esc(m.v)).join(', ')}${man.length>6?'…':''}). Inserisci una stima o segnale come "non serve" nella <a href="#" onclick="VISTA='checklist';render();return false">lista di controllo</a>.</div>`:''}
+  ${r.senzaPrezzo.length?`<div class="note">${r.senzaPrezzo.length} unità invendute senza prezzo in questo listino (${r.senzaPrezzo.map(u=>esc(u.codice)).join(', ')}): non sono contate nei ricavi.</div>`:''}
+  <div class="kpis">${kpi('Ricavi totali',eur(r.ricavi),'',1)}${kpi('Costi totali',eur(r.costi),'',1)}${kpi('Utile prima delle imposte',eur(r.ul),r.ul>=0?'pos':'neg',1)}${kpi('Utile netto stimato',eur(r.un),r.un>=0?'pos':'neg',1)}</div>
+  <div class="kpis">${kpi(`Venduto (${r.nVend} unità)`,eur(r.ricVend))}${kpi(`Da vendere (${r.nLib} unità)`,eur(r.ricDaVend))}${kpi('Altri ricavi',eur(r.altriRicavi))}${kpi('Costi sostenuti',eur(r.costiCons))}${kpi('Costi a finire'+(r.imprevisti?' (con imprevisti)':''),eur(r.costiPrev))}${kpi('Margine netto sui ricavi',pct(r.margine),r.margine>=0?'pos':'neg')}${kpi('Rendimento sui costi (ROI)',pct(r.roi),r.roi>=0?'pos':'neg')}${kpi('Prezzo di pareggio invenduto',r.pareggioMq?eur(r.pareggioMq)+'/m²':'—')}</div>
+  <div class="card"><h2>Conto economico dell'operazione</h2><table><tbody>
+   <tr><td>Ricavi da unità vendute</td><td class="num">${eur(r.ricVend)}</td></tr><tr><td>Ricavi da unità da vendere (listino scelto)</td><td class="num">${eur(r.ricDaVend)}</td></tr><tr><td>Altri ricavi</td><td class="num">${eur(r.altriRicavi)}</td></tr>
+   <tr style="font-weight:600"><td>Totale ricavi</td><td class="num">${eur(r.ricavi)}</td></tr>
+   ${GRUPPI.map(g=>{const t=VOCI.filter(v=>v[0]===g).reduce((a,v)=>a+(r.voci[v[1]]?.cons||0)+(r.voci[v[1]]?.prev||0),0)+(g==='Costruzione'?r.imprevisti:0);return `<tr><td>− ${g}</td><td class="num">${eur(-t)}</td></tr>`}).join('')}
+   <tr style="font-weight:600"><td>Utile prima delle imposte</td><td class="num ${r.ul>=0?'pos':'neg'}">${eur(r.ul)}</td></tr>
+   <tr><td>− IRES ${OP.ires_perc}%</td><td class="num">${eur(-r.ires)}</td></tr><tr><td>− IRAP ${OP.irap_perc}% (stima su utile + interessi)</td><td class="num">${eur(-r.irap)}</td></tr>
+   <tr style="font-weight:700"><td>Utile netto stimato</td><td class="num ${r.un>=0?'pos':'neg'}">${eur(r.un)}</td></tr></tbody></table>
+   <p class="small mute">Importi al netto dell'IVA (recuperabile dalla società). Imposte stimate in modo semplificato: per il calcolo esatto serve il commercialista.${OP.fonte_consuntivo==='vac2'?' Le rate del mutuo dell\'app contabilità non sono contate (capitale + interessi insieme): gli interessi vanno inseriti nella voce "Interessi passivi mutuo".':''}</p></div>`;
+  bindListino();
+}
+function vSim(){
+  const L=DI('listini').sort((a,b)=>a.ordine-b.ordine);const r=calcola(SIM.listino,SIM.delta);const steps=[];for(let d=-30;d<=30;d+=5)steps.push(d/100);
+  const serie=L.map(l=>({l,pts:steps.map(d=>({d,un:calcola(l.id,d).un}))}));
+  const W=760,H=300,P=50;const ys=serie.flatMap(s=>s.pts.map(p=>p.un));const yMin=Math.min(0,...ys),yMax=Math.max(0,...ys);const sx=d=>P+(d+0.3)/0.6*(W-P-20),sy=v=>H-30-(v-yMin)/((yMax-yMin)||1)*(H-50);
+  const col=['#1f3a5f','#b3261e','#2e7d4f','#a86400','#6b3fa0'];
+  const svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px"><line x1="${P}" x2="${W-20}" y1="${sy(0)}" y2="${sy(0)}" stroke="#999" stroke-dasharray="4 3"/>
+   ${steps.map(d=>`<text x="${sx(d)}" y="${H-10}" font-size="11" text-anchor="middle" fill="#677180">${d>0?'+':''}${Math.round(d*100)}%</text>`).join('')}
+   ${[yMin,(yMin+yMax)/2,yMax].map(v=>`<text x="${P-6}" y="${sy(v)+4}" font-size="11" text-anchor="end" fill="#677180">${Math.round(v/1000).toLocaleString('it-IT')}k</text>`).join('')}
+   ${serie.map((s,i)=>`<polyline fill="none" stroke="${col[i%5]}" stroke-width="2.5" points="${s.pts.map(p=>sx(p.d)+','+sy(p.un)).join(' ')}"/>`).join('')}
+   <line x1="${sx(SIM.delta)}" x2="${sx(SIM.delta)}" y1="10" y2="${H-30}" stroke="#1f3a5f" stroke-width="1"/></svg>
+   <div class="row small">${serie.map((s,i)=>`<span><span style="display:inline-block;width:12px;height:3px;background:${col[i%5]};vertical-align:middle"></span> ${esc(s.l.nome)}</span>`).join('')}</div>`;
+  document.getElementById('view').innerHTML=`<div class="card"><h2>Simulatore: utile al variare dei prezzi di vendita</h2>
+   <div class="row" style="margin-bottom:10px"><span class="small mute">Listino delle unità invendute</span>${selListino()}<span style="flex:1"></span><b id="dLab">${SIM.delta>0?'+':''}${Math.round(SIM.delta*100)}%</b></div>
+   <input type="range" id="dRange" min="-30" max="30" step="1" value="${Math.round(SIM.delta*100)}">
+   <div class="small mute" style="display:flex;justify-content:space-between"><span>−30%</span><span>prezzi del listino</span><span>+30%</span></div>
+   <div class="kpis" style="margin-top:14px">${kpi('Ricavi da vendere',eur(r.ricDaVend))}${kpi('Utile prima delle imposte',eur(r.ul),r.ul>=0?'pos':'neg')}${kpi('Utile netto stimato',eur(r.un),r.un>=0?'pos':'neg',1)}${kpi('Margine netto',pct(r.margine),r.margine>=0?'pos':'neg')}
+   ${kpi('Pareggio: prezzi del listino',r.pareggioDelta==null?'—':(r.pareggioDelta>0?'+':'')+pct(r.pareggioDelta))}${kpi('Pareggio al m² (invenduto)',r.pareggioMq?eur(r.pareggioMq):'—')}</div>
+   ${svg}</div>
+  <div class="card"><h2>Tabella di sensibilità – utile netto stimato</h2><div class="tblwrap"><table><thead><tr><th>Prezzi</th>${L.map(l=>`<th class="num">${esc(l.nome)}</th>`).join('')}</tr></thead><tbody>
+   ${steps.map(d=>`<tr${Math.abs(d)<1e-9?' style="font-weight:700"':''}><td>${d>0?'+':''}${Math.round(d*100)}%</td>${serie.map(s=>{const v=s.pts.find(p=>p.d===d).un;return `<td class="num ${v>=0?'pos':'neg'}">${eur(v)}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>
+   <p class="small mute">Le percentuali si applicano ai prezzi delle sole unità non ancora vendute.</p></div>`;
+  bindListino();const rg=document.getElementById('dRange');rg.oninput=e=>{SIM.delta=+e.target.value/100;clearTimeout(rg._t);rg._t=setTimeout(()=>{vSim();document.getElementById('dRange').focus()},120);document.getElementById('dLab').textContent=(SIM.delta>0?'+':'')+e.target.value+'%'};
+}
+function vUnita(){
+  const U=DI('unita').sort((a,b)=>a.codice.localeCompare(b.codice,'it',{numeric:true}));const L=DI('listini').sort((a,b)=>a.ordine-b.ordine);
+  const tot=l=>U.filter(u=>u.stato!=='venduto').reduce((a,u)=>a+(prezzo(l.id,u.id)||0),0);
+  document.getElementById('view').innerHTML=`<div class="card"><h2>Unità e listini</h2>
+   <div class="info">Ogni colonna è un listino (scenario di prezzo). Per le unità vendute conta il prezzo di vendita. Le modifiche si salvano uscendo dalla casella.${OP.fonte_consuntivo==='vac2'?' <button class="small" id="sync">Aggiorna vendite da VAC2</button>':''}</div>
+   <div class="row" style="margin-bottom:10px"><button class="small" id="addU">+ Unità</button><button class="small" id="addL">+ Listino</button></div>
+   <div class="tblwrap"><table><thead><tr><th>Codice</th><th>Tipo</th><th class="num">m²</th><th>Stato</th><th class="num">Prezzo vendita</th><th>Data vendita</th>${L.map(l=>`<th class="num" style="min-width:130px">${esc(l.nome)} <a href="#" class="small" data-rl="${l.id}" title="Rinomina">✎</a> <a href="#" class="small" data-dl="${l.id}" title="Elimina">×</a></th>`).join('')}<th></th></tr></thead><tbody>
+   ${U.map(u=>`<tr data-u="${u.id}"><td><b>${esc(u.codice)}</b></td><td><input value="${esc(u.tipo||'')}" data-f="tipo" style="width:110px"></td><td><input class="num" value="${u.mq??''}" data-f="mq" style="width:70px"></td>
+    <td><select data-f="stato">${['in vendita','riservato','venduto'].map(s=>`<option ${s===u.stato?'selected':''}>${s}</option>`).join('')}</select></td>
+    <td><input class="num" value="${u.prezzo_venduto??''}" data-f="prezzo_venduto" style="width:110px" ${u.stato==='venduto'?'':'placeholder="—"'}></td><td><input type="date" value="${u.data_vendita||''}" data-f="data_vendita"></td>
+    ${L.map(l=>{const p=prezzo(l.id,u.id);return `<td><input class="num" data-l="${l.id}" value="${p??''}" ${u.stato==='venduto'?'style="opacity:.5"':''}></td>`}).join('')}<td><a href="#" class="small" data-du="${u.id}">×</a></td></tr>`).join('')}
+   <tr style="font-weight:600"><td colspan="4">Totale venduto / invenduto per listino</td><td class="num">${eur(U.filter(u=>u.stato==='venduto').reduce((a,u)=>a+(+u.prezzo_venduto||0),0))}</td><td></td>${L.map(l=>`<td class="num">${eur(tot(l))}</td>`).join('')}<td></td></tr></tbody></table></div></div>`;
+  document.querySelectorAll('tr[data-u] [data-f]').forEach(el=>el.onchange=async()=>{const id=+el.closest('tr').dataset.u,f=el.dataset.f;let v=el.value;if(['mq','prezzo_venduto'].includes(f))v=num(v);if(v==='')v=null;
+    try{await db(sb.from('val_unita').update({[f]:v}).eq('id',id),'Salvato');Object.assign(D.unita.find(x=>x.id===id),{[f]:v});if(f==='stato')vUnita()}catch(e){}});
+  document.querySelectorAll('tr[data-u] [data-l]').forEach(el=>el.onchange=async()=>{const u=+el.closest('tr').dataset.u,l=+el.dataset.l,v=num(el.value);
+    try{await db(sb.from('val_prezzi').upsert({listino_id:l,unita_id:u,prezzo:v}),'Prezzo salvato');const p=D.prezzi.find(x=>x.listino_id===l&&x.unita_id===u);p?p.prezzo=v:D.prezzi.push({listino_id:l,unita_id:u,prezzo:v})}catch(e){}});
+  addU.onclick=async()=>{const c=prompt('Codice della nuova unità (es. A12):');if(!c)return;await db(sb.from('val_unita').insert({operazione_id:OP.id,codice:c}),'Unità aggiunta');carica()};
+  addL.onclick=async()=>{const n=prompt('Nome del nuovo listino (es. Prezzo ottimistico):');if(!n)return;const L2=DI('listini');const l=await db(sb.from('val_listini').insert({operazione_id:OP.id,nome:n,ordine:L2.length+1}).select().single(),'Listino aggiunto');
+    const base=L2.sort((a,b)=>a.ordine-b.ordine)[0];if(base&&confirm('Copiare i prezzi dal listino "'+base.nome+'"?')){const rows=D.prezzi.filter(p=>p.listino_id===base.id).map(p=>({listino_id:l.id,unita_id:p.unita_id,prezzo:p.prezzo}));if(rows.length)await db(sb.from('val_prezzi').insert(rows))}carica()};
+  document.querySelectorAll('[data-rl]').forEach(a=>a.onclick=async e=>{e.preventDefault();const l=D.listini.find(x=>x.id===+a.dataset.rl);const n=prompt('Nuovo nome:',l.nome);if(!n)return;await db(sb.from('val_listini').update({nome:n}).eq('id',l.id),'Rinominato');carica()});
+  document.querySelectorAll('[data-dl]').forEach(a=>a.onclick=async e=>{e.preventDefault();const l=D.listini.find(x=>x.id===+a.dataset.dl);if(!confirm('Eliminare il listino "'+l.nome+'" e i suoi prezzi?'))return;await db(sb.from('val_listini').delete().eq('id',l.id),'Listino eliminato');carica()});
+  document.querySelectorAll('[data-du]').forEach(a=>a.onclick=async e=>{e.preventDefault();const u=D.unita.find(x=>x.id===+a.dataset.du);if(!confirm('Eliminare l\'unità '+u.codice+'?'))return;await db(sb.from('val_unita').delete().eq('id',u.id),'Unità eliminata');carica()});
+  const s=document.getElementById('sync');if(s)s.onclick=syncVac2;
+}
+async function syncVac2(){
+  loading(true);try{const [vu,du,dd]=await Promise.all([tutto('vac2_unita','id,codice,stato'),tutto('vac2_documenti_unita','id,documento_id,unita_id,imponibile'),tutto('vac2_documenti','id,data_doc,categoria_id')]);
+    let n=0;for(const u of DI('unita')){if(!u.vac2_unita_id)continue;const x=vu.find(v=>v.id===u.vac2_unita_id);if(!x)continue;const lk=du.find(d=>d.unita_id===x.id);const doc=lk&&dd.find(d=>d.id===lk.documento_id);
+      const nuovo={stato:x.stato==='venduto'?'venduto':(u.stato==='riservato'?'riservato':'in vendita'),prezzo_venduto:lk?+lk.imponibile:u.prezzo_venduto,data_vendita:doc?doc.data_doc:u.data_vendita};
+      if(nuovo.stato!==u.stato||+nuovo.prezzo_venduto!==+u.prezzo_venduto||nuovo.data_vendita!==u.data_vendita){await db(sb.from('val_unita').update(nuovo).eq('id',u.id));n++}}
+    toast(n?`${n} unità aggiornate`:'Nessuna differenza con VAC2')}catch(e){}finally{loading(false)}carica();
+}
+function vCosti(){
+  const r=calcola(SIM.listino,0);const C=DI('costi').sort((a,b)=>(a.data_prevista||'').localeCompare(b.data_prevista||''));const U=DI('unita');
+  const optV=v=>GRUPPI.map(g=>`<optgroup label="${g}">${VOCI.filter(x=>x[0]===g).map(x=>`<option ${x[1]===v?'selected':''}>${esc(x[1])}</option>`).join('')}</optgroup>`).join('');
+  document.getElementById('view').innerHTML=`<div class="card"><h2>Costi a finire (preventivati)</h2>
+   <div class="info">Inserisci le spese ancora da sostenere, al netto dell'IVA. La lista di controllo segnala le voci del business plan ancora senza importo.</div>
+   <div class="grid2" style="align-items:end"><label>Voce<select id="cV">${optV('Finiture e pavimenti')}</select></label><label>Descrizione<input id="cD" placeholder="es. pavimenti A05–A07"></label>
+    <label>Unità (facoltativa)<select id="cU"><option value="">— tutta l'operazione</option>${U.map(u=>`<option value="${u.id}">${esc(u.codice)}</option>`).join('')}</select></label>
+    <label>Importo € (senza IVA)<input id="cI" inputmode="decimal"></label><label>IVA %<input id="cIva" value="22"></label><label>Data prevista<input type="date" id="cDt"></label>
+    <label>Tipo<select id="cT"><option value="previsto">Preventivato (da sostenere)</option><option value="consuntivo">Già sostenuto (fuori contabilità)</option></select></label><div><button class="primary" id="cAdd">Aggiungi</button></div></div>
+   <div class="tblwrap" style="margin-top:12px"><table><thead><tr><th>Data</th><th>Voce</th><th>Descrizione</th><th>Unità</th><th>Tipo</th><th class="num">Importo</th><th class="num">IVA</th><th></th></tr></thead><tbody>
+   ${C.map(c=>`<tr data-c="${c.id}"><td>${dit(c.data_prevista)}</td><td>${esc(c.voce)}</td><td class="small">${esc(c.descrizione||'')}${c.note?`<div class="mute">${esc(c.note)}</div>`:''}</td><td>${esc(U.find(u=>u.id===c.unita_id)?.codice||'')}</td><td><span class="chip ${c.tipo==='previsto'?'c-warn':'c-grey'}">${c.tipo==='previsto'?'preventivato':'sostenuto'}</span></td><td><input class="num" value="${c.importo}" data-f="importo" style="width:120px"></td><td class="num">${c.iva_perc}%</td><td><a href="#" data-x="${c.id}">×</a></td></tr>`).join('')||'<tr><td colspan="8" class="mute">Nessun costo inserito.</td></tr>'}
+   ${r.imprevisti?`<tr><td></td><td>Imprevisti</td><td class="small">${OP.imprevisti_perc}% sui lavori di costruzione preventivati</td><td></td><td><span class="chip c-warn">calcolato</span></td><td class="num">${eur2(r.imprevisti)}</td><td></td><td></td></tr>`:''}</tbody></table></div></div>
+  ${OP.fonte_consuntivo==='vac2'?`<div class="card"><h2>Costi sostenuti – dall'app contabilità VAC2</h2><p class="small mute">Imponibile dei documenti di costo (spese estranee escluse). Scegli in quale voce del business plan conta ogni categoria della contabilità.</p>
+   <div class="tblwrap"><table><thead><tr><th>Categoria contabilità</th><th class="num">Importo</th><th>Voce del business plan</th></tr></thead><tbody>
+   ${D.vcat.filter(c=>c.gruppo==='costo_operazione'||c.gruppo==='onere_finanziario').map(c=>{const m=DI('mappa').find(x=>x.vac2_categoria_id===c.id);return `<tr><td>${esc(c.nome)}</td><td class="num">${eur2(r.perCat[c.id]||0)}</td><td><select data-m="${c.id}">${optV(m?m.voce:'Altro')}</select></td></tr>`}).join('')}
+   <tr class="small mute"><td>Rata mutuo (capitale + interessi)</td><td class="num">non contata</td><td>Inserisci gli interessi nella voce “Interessi passivi mutuo”</td></tr></tbody></table></div></div>`:''}`;
+  cAdd.onclick=async()=>{const imp=num(cI.value);if(!imp){alert('Inserisci l\'importo');return}
+    await db(sb.from('val_costi').insert({operazione_id:OP.id,voce:cV.value,descrizione:cD.value||null,unita_id:cU.value?+cU.value:null,importo:imp,iva_perc:num(cIva.value)??22,data_prevista:cDt.value||null,tipo:cT.value}),'Costo aggiunto');carica()};
+  document.querySelectorAll('[data-x]').forEach(a=>a.onclick=async e=>{e.preventDefault();if(!confirm('Eliminare questo costo?'))return;await db(sb.from('val_costi').delete().eq('id',+a.dataset.x),'Eliminato');carica()});
+  document.querySelectorAll('tr[data-c] [data-f]').forEach(el=>el.onchange=async()=>{const id=+el.closest('tr').dataset.c;const v=num(el.value)||0;await db(sb.from('val_costi').update({importo:v}).eq('id',id),'Salvato');D.costi.find(x=>x.id===id).importo=v});
+  document.querySelectorAll('[data-m]').forEach(el=>el.onchange=async()=>{await db(sb.from('val_mappa').upsert({operazione_id:OP.id,vac2_categoria_id:+el.dataset.m,voce:el.value}),'Voce aggiornata');carica()});
+}
+function vCheck(){
+  const L=checklist();const lab={sostenuto:['Sostenuto','c-ok'],previsto:['Preventivato','c-blue'],non_serve:['Non serve','c-grey'],manca:['MANCA','c-red']};
+  document.getElementById('view').innerHTML=`<div class="card"><h2>Lista di controllo del business plan</h2>
+   <div class="info">Ogni voce deve avere un importo (sostenuto o preventivato) oppure essere segnata come "non serve". Così non si dimentica nessun costo: progettisti, professionisti, costruzione, oneri e concessioni, mutuo, fideiussioni…</div>
+   <table><thead><tr><th>Voce</th><th class="num">Sostenuto</th><th class="num">Preventivato</th><th>Stato</th><th></th></tr></thead><tbody>
+   ${GRUPPI.map(g=>`<tr class="grp"><td colspan="5">${g}</td></tr>`+L.filter(x=>x.g===g).map(x=>`<tr><td>${esc(x.v)}<div class="small mute">${esc(x.h)}</div></td><td class="num">${x.cons?eur(x.cons):'<span class="mute">—</span>'}</td><td class="num">${x.prev?eur(x.prev):'<span class="mute">—</span>'}</td><td><span class="chip ${lab[x.st][1]}">${lab[x.st][0]}</span></td>
+     <td style="white-space:nowrap">${x.st==='manca'?`<button class="small" data-ns="${esc(x.v)}">Non serve</button> <button class="small" data-add="${esc(x.v)}">+ Stima</button>`:x.st==='non_serve'?`<button class="small" data-ri="${esc(x.v)}">Ripristina</button>`:''}</td></tr>`).join('')).join('')}
+   <tr class="grp"><td colspan="5">Calcolati</td></tr><tr><td>Imprevisti</td><td colspan="3" class="small mute">${OP.imprevisti_perc}% sui lavori di costruzione preventivati (modificabile nei Parametri)</td><td></td></tr>
+   <tr><td>IRES e IRAP</td><td colspan="3" class="small mute">IRES ${OP.ires_perc}% e IRAP ${OP.irap_perc}% calcolate sull'utile (modificabili nei Parametri)</td><td></td></tr></tbody></table></div>`;
+  document.querySelectorAll('[data-ns]').forEach(b=>b.onclick=async()=>{const nota=prompt('Perché questa voce non serve? (facoltativo)')??'';await db(sb.from('val_checklist').upsert({operazione_id:OP.id,voce:b.dataset.ns,stato:'non_serve',nota:nota||null}),'Segnata come non necessaria');carica()});
+  document.querySelectorAll('[data-ri]').forEach(b=>b.onclick=async()=>{await db(sb.from('val_checklist').delete().eq('operazione_id',OP.id).eq('voce',b.dataset.ri),'Ripristinata');carica()});
+  document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{VISTA='costi';render();cV.value=b.dataset.add;cI.focus()});
+}
+function vParam(){
+  const o=OP;document.getElementById('view').innerHTML=`<div class="card" style="max-width:760px"><h2>Parametri dell'operazione</h2><div class="grid2">
+   <label style="grid-column:1/-1">Nome<input id="pN" value="${esc(o.nome)}"></label><label style="grid-column:1/-1">Descrizione<input id="pDs" value="${esc(o.descrizione||'')}"></label>
+   <label>Stato<select id="pS">${[['preventivo','Preventivo'],['in_corso','In corso'],['concluso','Concluso']].map(([k,l])=>`<option value="${k}" ${k===o.stato?'selected':''}>${l}</option>`).join('')}</select></label>
+   <label>Inizio<input type="date" id="pI" value="${o.data_inizio||''}"></label><label>Fine prevista<input type="date" id="pF" value="${o.data_fine_prevista||''}"></label>
+   <label>IRES %<input id="pIres" value="${o.ires_perc}"></label><label>IRAP %<input id="pIrap" value="${o.irap_perc}"></label><label>Imprevisti % sui lavori a finire<input id="pImp" value="${o.imprevisti_perc}"></label></div>
+   <p class="small mute">${o.fonte_consuntivo==='vac2'?'I costi sostenuti e le vendite arrivano dall\'app contabilità VAC2.':'Operazione autonoma: inserisci a mano costi e unità.'}</p>
+   <div style="text-align:right"><button class="primary" id="pSave">Salva</button></div></div>`;
+  pSave.onclick=async()=>{const u={nome:pN.value.trim()||o.nome,descrizione:pDs.value||null,stato:pS.value,data_inizio:pI.value||null,data_fine_prevista:pF.value||null,ires_perc:num(pIres.value)??24,irap_perc:num(pIrap.value)??3.9,imprevisti_perc:num(pImp.value)??0};
+    await db(sb.from('val_operazioni').update(u).eq('id',o.id),'Parametri salvati');carica()};
+}
+sb.auth.getSession().then(({data})=>avvio(data.session));
+</script>
+</body>
+</html>
