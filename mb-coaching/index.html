@@ -1028,6 +1028,7 @@ function resizeImage(file, max, quality = 0.82) {
 
 /* ---------- rendering base ---------- */
 const ICONS = {
+  warmup: '<svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v6l-3 7M12 13l3 7M7 10l5-2 5 2"/></svg>',
   inbox: '<svg viewBox="0 0 24 24"><path d="M21 12l-8.5 8.5a5 5 0 0 1-7-7L14 5a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 8"/></svg>',
   cal: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
   drivers: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
@@ -1045,7 +1046,7 @@ ICONS.varie = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" r
 ICONS.teams = '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .7 3.5 2.5 3.5 5.5"/></svg>';
 ICONS.today = ICONS.home;
 const NAV = [['today', 'Home'], ['events', 'Eventi'], ['drivers', 'Piloti'], ['teams', 'Team'], ['money', 'Incassi'], ['varie', 'Varie']];
-const NAVOF = { inbox: 'varie', today: 'today', events: 'events', champ: 'events', event: 'events', cal: 'events', fc: 'events', drivers: 'drivers', driver: 'drivers', teams: 'teams', team: 'teams', fcc: 'dir', dir: 'dir', money: 'money', bill: 'money', varie: 'varie', home: 'varie', contacts: 'varie', deadlines: 'varie', convert: 'varie', set: 'varie' };
+const NAVOF = { inbox: 'varie', warmup: 'varie', today: 'today', events: 'events', champ: 'events', event: 'events', cal: 'events', fc: 'events', drivers: 'drivers', driver: 'drivers', teams: 'teams', team: 'teams', fcc: 'dir', dir: 'dir', money: 'money', bill: 'money', varie: 'varie', home: 'varie', contacts: 'varie', deadlines: 'varie', convert: 'varie', set: 'varie' };
 
 
 const THEMES = [['', 'Verde e nero'], ['blue', 'Blu e rosso'], ['light', 'Chiaro e rosso']];
@@ -1056,7 +1057,7 @@ function render() {
   if (!S.loaded) { app.innerHTML = `<div class="login"><div class="box muted">${S.err ? esc(S.err) : 'Caricamento…'}</div></div>`; return; }
   const gated = (S.view === 'money' || S.view === 'bill') && isLocked();
   if (!gated && (S.view === 'money' || S.view === 'bill')) touchLock();
-  const body = gated ? lockView() : { fcc: dirView, dir: dirView, teams: teamsView, team: teamPage, today: todayView, inbox: inboxView, events: eventsView, champ: champView, driver: driverPage, bill: billView, varie: varieView, home: varieView, contacts: contactsView, deadlines: deadlinesView, convert: convertView, event: eventView, cal: calPage, fc: fcView, drivers: driversView, money: moneyView, set: settingsView }[S.view]();
+  const body = gated ? lockView() : { fcc: dirView, dir: dirView, teams: teamsView, team: teamPage, today: todayView, inbox: inboxView, warmup: warmupView, events: eventsView, champ: champView, driver: driverPage, bill: billView, varie: varieView, home: varieView, contacts: contactsView, deadlines: deadlinesView, convert: convertView, event: eventView, cal: calPage, fc: fcView, drivers: driversView, money: moneyView, set: settingsView }[S.view]();
   app.innerHTML = `
   <div class="shell">
     <nav class="nav">
@@ -3301,6 +3302,10 @@ function inbDocsBlock(filter, title) {
   if (!list.length) return '';
   return `<div class="section-title"><h2>${title}</h2></div>` + inbFolders(list);
 }
+function warmupView() {
+  return `<div class="row" style="gap:8px;margin-bottom:10px"><button class="tbn" data-act="go" data-v="varie">← Indietro</button><a class="btn small" href="warmup.html" target="_blank" rel="noopener" style="margin-left:auto;text-decoration:none">Schermo intero ↗</a></div>
+    <iframe src="warmup.html" title="Warm Up fisico" style="width:100%;height:calc(100vh - 230px);min-height:620px;border:0;border-radius:16px;background:#FAF9F5" allow="autoplay"></iframe>`;
+}
 function inboxView() {
   const all = (S.inbox || []).filter((x) => x.status !== 'dismissed' || S.inbAll).sort((a, b) => (a.status === 'new' ? 0 : 1) - (b.status === 'new' ? 0 : 1) || (b.date || '').localeCompare(a.date || ''));
   return `<div class="row" style="gap:8px;margin-bottom:10px"><button class="tbn" data-act="go" data-v="varie">← Indietro</button></div><h1 style="font-size:30px;margin:6px 0 4px">Allegati dalla posta</h1>
@@ -3584,6 +3589,7 @@ function varieView() {
     ['cal', 'fc', 'fc', 'Campionati 2027', 'Scegli più eventi e abbinali ai piloti in un colpo.', '#4da3ff'],
     ['contacts', '', 'contacts', 'Rubrica del team', 'Piloti, assistenti, coach, ingegneri e meccanici.', '#b388ff'],
     ['inbox', '', 'inbox', 'Allegati dalla posta' + (inbNew().length ? ` (${inbNew().length} nuovi)` : ''), 'Time-table, classifiche, iscritti e documenti arrivati per mail.', '#39ff14'],
+    ['warmup', '', 'warmup', 'Warm Up fisico', 'Riscaldamento animato di 10 minuti con countdown e voce.', '#D52B1E'],
     ['deadlines', '', 'deadlines', 'Scadenze', 'Passaporto, ESTA, patente, visita medica.', '#2ee6c5'],
     ['convert', '', 'convert', 'Convertitore', 'bar/psi, °C/°F, km/mi, L/gal e altro.', '#ff8fb1'],
     ['set', '', 'set', 'Impostazioni', 'Campionati, attività, team, colori, Google, dati.', '#9aa7b2']

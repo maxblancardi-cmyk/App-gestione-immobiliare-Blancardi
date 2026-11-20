@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warm Up pilota 10 minuti · countdown</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#D52B1E;--ink:#141413;--bg:#FAF9F5;--mut:#5A5A55;--line:#E2DFD7}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 28px;display:flex;flex-direction:column;gap:14px;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:4px solid var(--red);padding-bottom:10px}
+.kick{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--red)}
+h1{margin:2px 0 0;font-family:'Space Grotesk',sans-serif;font-size:26px;line-height:1.1}
+.tot{font-family:'Space Grotesk',sans-serif;font-size:15px;color:var(--mut);text-align:right}
+.tot b{display:block;font-size:26px;color:var(--ink)}
+.stage{background:#fff;border:1.5px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.step{font-size:13px;font-weight:700;color:var(--mut);letter-spacing:.06em}
+.name{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;text-align:center;line-height:1.15}
+.figbox{position:relative;width:260px;height:260px}
+.figbox svg.ring{position:absolute;inset:0}
+.figbox .fig{position:absolute;left:50%;top:50%;width:170px;height:200px;transform:translate(-50%,-50%)}
+.count{font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:700;line-height:1}
+.cue{font-size:16px;line-height:1.45;text-align:center;color:#2B2B28;min-height:46px}
+.prep{font-size:92px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--red)}
+.controls{display:grid;grid-template-columns:1fr 2fr 1fr;gap:10px}
+button{font:inherit;font-weight:800;font-size:17px;border-radius:14px;border:2px solid var(--ink);background:#fff;color:var(--ink);min-height:56px;cursor:pointer}
+button.go{background:var(--red);border-color:var(--red);color:#fff;font-size:20px}
+button:disabled{opacity:.35}
+.next{font-size:14px;color:var(--mut);text-align:center}
+.list{display:flex;flex-direction:column;gap:6px}
+.li{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14px}
+.li .n{font-family:'Space Grotesk',sans-serif;font-weight:700;color:var(--red);width:22px}
+.li .t{flex:1}
+.li .m{color:var(--mut);font-size:12px}
+.li.done{opacity:.45}
+.li.now{border:2px solid var(--red);font-weight:700}
+.safe{font-size:12.5px;line-height:1.45;color:#2B2B28;border-top:1px solid var(--line);padding-top:10px}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;justify-content:center;color:var(--mut)}
+/* figure */
+.s{stroke:#141413;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.a{stroke:#D52B1E;stroke-width:3;stroke-linecap:round;fill:none}
+.paused *{animation-play-state:paused!important}
+@keyframes legA{0%,100%{transform:rotate(0)}50%{transform:rotate(-38deg)}}
+@keyframes legB{0%,100%{transform:rotate(-38deg)}50%{transform:rotate(0)}}
+@keyframes armA{0%,100%{transform:rotate(25deg)}50%{transform:rotate(-25deg)}}
+@keyframes armB{0%,100%{transform:rotate(-25deg)}50%{transform:rotate(25deg)}}
+@keyframes tilt{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}75%{transform:rotate(18deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes twist{0%,100%{transform:scaleX(1)}25%{transform:scaleX(.55)}50%{transform:scaleX(1)}75%{transform:scaleX(-.55)}}
+@keyframes hips{0%{transform:translate(0,0)}25%{transform:translate(8px,2px)}50%{transform:translate(0,4px)}75%{transform:translate(-8px,2px)}100%{transform:translate(0,0)}}
+@keyframes squat{0%,100%{transform:translateY(0)}50%{transform:translateY(22px)}}
+@keyframes knee{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.72)}}
+@keyframes toes{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes dot{0%{transform:translate(0,0)}25%{transform:translate(110px,0)}50%{transform:translate(110px,110px)}75%{transform:translate(0,110px)}100%{transform:translate(0,0)}}
+@keyframes grow{0%,100%{transform:scale(.8)}25%,50%{transform:scale(1.15)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header style="position:relative">
+<div><div class="kick">MB COACHING · PREPARAZIONE PILOTA</div><h1>Warm Up fisico 10'</h1></div>
+<div class="tot">tempo totale<b id="total">10:00</b></div>
+</header>
+
+<section class="stage" aria-live="polite">
+<div class="step" id="step">PRONTO? 10 ESERCIZI DA 1 MINUTO</div>
+<div class="name" id="name">Premi START</div>
+<div class="figbox">
+<svg class="ring" viewBox="0 0 260 260" aria-hidden="true">
+<circle cx="130" cy="130" r="120" stroke="#EEE9DF" stroke-width="12" fill="none"/>
+<circle id="ring" cx="130" cy="130" r="120" stroke="#D52B1E" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="753.98" stroke-dashoffset="0" transform="rotate(-90 130 130)"/>
+</svg>
+<div class="fig" id="fig"></div>
+</div>
+<div class="count" id="count">1:00</div>
+<div class="cue" id="cue">Ogni esercizio dura 1 minuto. Il cerchio rosso si svuota: quando finisce parte il successivo, con un segnale sonoro.</div>
+</section>
+
+<div class="controls">
+<button id="prev" aria-label="Esercizio precedente">◀︎</button>
+<button id="go" class="go">START</button>
+<button id="nextb" aria-label="Esercizio successivo">▶︎</button>
+</div>
+<label class="toggle"><input type="checkbox" id="voice" checked> Voce e segnale sonoro</label>
+<div class="next" id="nexttxt"></div>
+
+<div class="list" id="list"></div>
+
+<div class="safe"><b>Regole d'oro:</b> movimenti ampi ma controllati, mai fino al dolore; respira sempre; bevi acqua prima e dopo. <b>Fermati</b> in caso di dolore al petto, giramento di testa o fiato corto. Con problemi di cuore, articolazioni o pressione, fai approvare il programma dal medico.</div>
+</div>
+
+<script>
+(function(){
+var H='<circle class="s" cx="85" cy="30" r="15"/>';
+var BODY='<path class="s" d="M85 46 L85 112"/>';
+function g(css,o,inner){return '<g style="transform-origin:'+o+';animation:'+css+'">'+inner+'</g>';}
+var EX=[
+{t:'Marcia sul posto e respiro',c:'Ginocchia a metà altezza, braccia che oscillano. Inspira dal naso, espira lento dalla bocca.',
+ f:H+BODY+g('armA 1.1s ease-in-out infinite','85px 62px','<path class="s" d="M85 62 L66 104"/>')+g('armB 1.1s ease-in-out infinite','85px 62px','<path class="s" d="M85 62 L104 104"/>')+g('legA 1.1s ease-in-out infinite','85px 112px','<path class="s" d="M85 112 L72 178"/>')+g('legB 1.1s ease-in-out infinite','85px 112px','<path class="s" d="M85 112 L98 178"/>')},
+{t:'Collo',c:"Inclina l'orecchio verso la spalla, poi guarda a destra e sinistra. Lento, mai cerchi completi all'indietro.",
+ f:g('tilt 4s ease-in-out infinite','85px 46px',H)+BODY+'<path class="s" d="M85 62 L70 112 M85 62 L100 112 M85 112 L72 178 M85 112 L98 178"/>'},
+{t:'Spalle',c:'Braccia aperte: piccoli cerchi in avanti e indietro, 10 + 10. Poi spalle su verso le orecchie e giù.',
+ f:H+BODY+'<path class="s" d="M85 112 L72 178 M85 112 L98 178 M85 62 L40 62 M85 62 L130 62"/><circle class="a" cx="40" cy="62" r="12"/><circle class="a" cx="130" cy="62" r="12"/>'+g('spin 1.6s linear infinite','40px 62px','<circle cx="40" cy="50" r="5" fill="#141413"/>')+g('spin 1.6s linear infinite','130px 62px','<circle cx="130" cy="50" r="5" fill="#141413"/>')},
+{t:'Polsi, avambracci e mani',c:'Braccia avanti come sul volante: ruota i polsi, poi apri e stringi forte le mani 15 volte.',
+ f:H+BODY+'<path class="s" d="M85 112 L72 178 M85 112 L98 178 M85 62 L132 74 M85 66 L132 86"/>'+g('spin 1.2s linear infinite','140px 80px','<rect class="s" x="134" y="72" width="12" height="16" rx="4"/>')+'<path class="a" d="M152 64 A16 16 0 1 1 152 96"/>'},
+{t:'Rotazione del busto',c:'Mani sulle spalle, bacino fermo: ruota il busto a destra e sinistra, 10 per lato, senza strappi.',
+ f:g('twist 3s ease-in-out infinite','85px 80px',H+BODY+'<path class="s" d="M85 60 L64 70 L74 52 M85 60 L106 70 L96 52"/>')+'<path class="s" d="M85 112 L72 178 M85 112 L98 178"/><path class="a" d="M48 96 Q85 118 122 96"/>'},
+{t:'Anche',c:'Mani sui fianchi, cerchi ampi col bacino: 8 in un senso e 8 nell\'altro. Piedi alla larghezza delle spalle.',
+ f:H+'<path class="s" d="M85 46 L85 80"/>'+g('hips 2.4s linear infinite','85px 100px','<path class="s" d="M85 80 L85 112 M85 62 L66 92 L80 106 M85 62 L104 92 L90 106"/><ellipse class="a" cx="85" cy="114" rx="30" ry="8"/>')+'<path class="s" d="M85 112 L68 178 M85 112 L102 178"/>'},
+{t:'Mini squat con appoggio',c:'Mani su sedia o auto, scendi di poco come per sederti e risali. 10–12 ripetizioni, schiena dritta.',
+ f:g('squat 3s ease-in-out infinite','85px 112px',H+BODY+'<path class="s" d="M85 64 L134 72"/>')+g('knee 3s ease-in-out infinite','85px 178px','<path class="s" d="M85 112 L104 146 L94 178 M85 112 L74 146 L80 178"/>')+'<path d="M140 76 L140 178 M140 76 L160 76 L160 178" stroke="#8A8780" stroke-width="3" fill="none" stroke-linecap="round"/>'},
+{t:'Polpacci e caviglie',c:'Sali sulle punte e scendi 15 volte, poi cerchi con ogni caviglia: prepara i piedi ai pedali.',
+ f:g('toes 1.8s ease-in-out infinite','85px 178px',H+BODY+'<path class="s" d="M85 62 L68 110 M85 62 L102 110 M85 112 L76 172 M85 112 L94 172"/>')+'<path class="s" d="M70 182 L84 182 M88 182 L102 182"/>'},
+{t:'Reattività',c:'Passi rapidi sul posto 3 × 20 secondi, recupero 10 secondi. Sguardo avanti, mani pronte.',
+ f:H+BODY+'<path class="s" d="M85 62 L110 74 L122 62 M85 62 L60 74 L48 62"/>'+g('legA .35s ease-in-out infinite','85px 112px','<path class="s" d="M85 112 L66 176"/>')+g('legB .35s ease-in-out infinite','85px 112px','<path class="s" d="M85 112 L104 176"/>')},
+{t:'Respirazione e focus',c:'Inspira 4 s, trattieni 4 s, espira 4 s, pausa 4 s. Ripeti 4 volte e visualizza il primo giro.',
+ f:'<rect x="30" y="45" width="110" height="110" rx="8" class="a"/>'+'<g style="animation:dot 16s linear infinite"><circle cx="30" cy="45" r="9" fill="#D52B1E"/></g>'+'<g style="transform-origin:85px 100px;animation:grow 16s ease-in-out infinite"><circle cx="85" cy="100" r="22" fill="#F4D3CF"/></g>', breath:true}
+];
+var DUR=60, idx=-1, left=DUR, timer=null, running=false, prep=0;
+var $=function(id){return document.getElementById(id)};
+var ring=$('ring'), C=753.98;
+function fmt(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');}
+function renderList(){ $('list').innerHTML=EX.map(function(e,i){return '<div class="li '+(i<idx?'done':i===idx?'now':'')+'"><span class="n">'+(i+1)+'</span><span class="t">'+e.t+'</span><span class="m">'+fmt(i*60)+'</span></div>';}).join(''); }
+var ac=null;
+function beep(f,d){ if(!$('voice').checked) return; try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); var o=ac.createOscillator(),v=ac.createGain(); o.frequency.value=f; o.connect(v); v.connect(ac.destination); v.gain.setValueAtTime(.25,ac.currentTime); v.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d); o.start(); o.stop(ac.currentTime+d);}catch(e){} }
+function say(t){ if(!$('voice').checked) return; try{ var u=new SpeechSynthesisUtterance(t); u.lang='it-IT'; u.rate=1; speechSynthesis.cancel(); speechSynthesis.speak(u);}catch(e){} }
+function show(){
+  var e=EX[idx];
+  $('step').textContent='ESERCIZIO '+(idx+1)+' DI '+EX.length;
+  $('name').textContent=e.t; $('cue').textContent=e.c;
+  $('fig').innerHTML='<svg viewBox="0 0 170 200" width="170" height="200" role="img" aria-label="'+e.t+'">'+e.f+'</svg>';
+  $('nexttxt').textContent= idx<EX.length-1 ? 'Dopo: '+EX[idx+1].t : 'Ultimo esercizio';
+  renderList(); paint();
+}
+function paint(){
+  ring.setAttribute('stroke-dashoffset', String(C*(1-left/DUR)));
+  $('count').textContent=fmt(left);
+  $('total').textContent=fmt((EX.length-1-idx)*DUR+left);
+  $('fig').classList.toggle('paused',!running);
+  if(EX[idx]&&EX[idx].breath&&running){ var ph=Math.floor(((DUR-left)%16)/4); $('cue').innerHTML='<b style="font-size:24px;color:#D52B1E">'+['Inspira','Trattieni','Espira','Pausa'][ph]+'</b><br>'+EX[idx].c; }
+}
+function goTo(i){ idx=Math.max(0,Math.min(EX.length-1,i)); left=DUR; show(); say('Esercizio '+(idx+1)+'. '+EX[idx].t); }
+function tick(){
+  if(prep>0){ prep--; if(prep>0){ $('count').innerHTML='<span class="prep">'+prep+'</span>'; beep(660,.12);} else { beep(990,.35); goTo(0);} return; }
+  left-=1;
+  if(left<=3&&left>0) beep(660,.1);
+  if(left<=0){
+    if(idx>=EX.length-1){ stop(); beep(990,.6); $('step').textContent='COMPLETATO'; $('name').textContent='Warm Up finito: buona sessione!'; $('cue').textContent='Bevi un sorso d\'acqua e sali in macchina con calma.'; $('count').textContent='0:00'; $('go').textContent='RICOMINCIA'; idx=EX.length; renderList(); say('Warm up completato. Buona sessione'); idx=-1; return; }
+    beep(990,.35); goTo(idx+1); return;
+  }
+  paint();
+}
+function start(){ running=true; $('go').textContent='PAUSA'; if(idx<0){ prep=4; $('name').textContent='Si parte tra…'; say('Pronti. Si parte'); tick(); } else paint(); timer=setInterval(tick,1000); }
+function stop(){ running=false; clearInterval(timer); timer=null; $('go').textContent= idx<0?'START':'RIPRENDI'; if(idx>=0) paint(); }
+$('go').onclick=function(){ try{ ac=ac||new (window.AudioContext||window.webkitAudioContext)(); ac.resume(); }catch(e){} running?stop():start(); };
+$('nextb').onclick=function(){ if(idx<0){idx=-1;} goTo(idx+1); if(!running) paint(); };
+$('prev').onclick=function(){ goTo(idx<=0?0:idx-1); if(!running) paint(); };
+renderList();
+})();
+</script>
+</body>
+</html>
