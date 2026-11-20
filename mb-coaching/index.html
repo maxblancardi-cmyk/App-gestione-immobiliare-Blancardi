@@ -1442,7 +1442,8 @@ function eventForm(id, defaults = {}) {
     </div>
     <label class="f ${needsChamp ? '' : 'hidden'}" id="f-champ"><span>Campionato</span><select name="championship_id">${opts(S.champs, v.championship_id, (c) => c.name, '—')}</select></label>
     <div class="grid2">
-      <label class="f"><span>Pilota</span><select name="driver_id">${opts(S.drivers.filter((d) => d.active || d.id === v.driver_id), String(v.driver_id || '').startsWith('x:') ? '' : v.driver_id, dname, '— nessuno —')}</select></label>
+      <label class="f"><span>Pilota</span><select name="driver_id" onchange="var b=document.getElementById('newdrv');if(b)b.style.display=this.value==='__new'?'block':'none';if(this.value==='__new'){var i=b.querySelector('input');setTimeout(function(){i.focus()},50);}">${opts(S.drivers.filter((d) => d.active || d.id === v.driver_id), String(v.driver_id || '').startsWith('x:') ? '' : v.driver_id, dname, '— nessuno —')}<option value="__new">➕ Nuovo pilota…</option></select></label>
+      <div id="newdrv" style="display:none;grid-column:1/-1"><div class="grid2"><label class="f"><span>Nome nuovo pilota</span><input name="new_first" autocomplete="off"></label><label class="f"><span>Cognome</span><input name="new_last" autocomplete="off"></label></div><p class="subtle" style="margin:0 0 8px">Viene creata la scheda pilota: telefono, mail, foto e compenso li completi poi in Piloti.</p></div>
       <label class="f"><span>Team</span><select name="team_id">${opts(S.teams, tmId, (t) => t.name, '— nessuno —')}</select></label>
     </div>
     <label class="f"><span>Nome libero (se non è un pilota né un team)</span><input name="who_other" value="${esc(other)}" placeholder="es. cliente, gruppo, ospite"></label>`; })()}
@@ -1548,6 +1549,14 @@ function whoId(fd) {
 }
 async function saveEvent(f) {
   const fd = new FormData(f);
+  if (fd.get('driver_id') === '__new') {
+    const fn = (fd.get('new_first') || '').toString().trim(), ln = (fd.get('new_last') || '').toString().trim();
+    if (!fn && !ln) { toast('Scrivi nome e cognome del nuovo pilota', true); return; }
+    const nd = { id: uuid(), first_name: fn, last_name: ln, active: true, championship_id: (fd.get('championship_id') || '').toString() || null, currency: fd.get('currency') || 'EUR', daily_rate: Number(fd.get('daily_rate') || 0), created: new Date().toISOString() };
+    await put('drivers', nd);
+    fd.set('driver_id', nd.id);
+    toast('Pilota ' + (fn + ' ' + ln).trim() + ' creato');
+  }
   const val = (n) => (fd.get(n) || '').toString().trim() || null;
   const t = atype(fd.get('activity_type_id'));
   const p = {
