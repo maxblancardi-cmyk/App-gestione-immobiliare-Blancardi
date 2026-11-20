@@ -310,6 +310,20 @@ label.f > span, .lbl { color: color-mix(in srgb, var(--text) 75%, transparent); 
 input[name=col]:checked + .colpick { border-color: var(--neon); box-shadow: 0 0 10px var(--neon); }
 .ppos { font-family: ui-monospace, Menlo, monospace; font-weight: 900; color: var(--neon); font-size: 17px; flex: none; }
 table.cls td, table.cls th { padding: 6px 5px; font-size: 13px; white-space: nowrap; }
+#modal-root .sheet { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.clsx { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.clsx td, .clsx th { padding: 7px 4px; font-size: 14px; text-align: left; border-bottom: 1px solid var(--line); }
+.clsx th { font-size: 12px; color: var(--muted); }
+.clsx td.nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clsx td.r, .clsx th.r { text-align: right; font-variant-numeric: tabular-nums; }
+.clsx tr.mine td { background: color-mix(in srgb, var(--neon) 25%, transparent); font-weight: 700; }
+.gridx { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.gridx .gc { border: 2px solid var(--line); border-top-width: 4px; border-radius: 10px; padding: 6px 8px; background: var(--card); min-width: 0; }
+.gridx .gc.even { margin-top: 28px; }
+.gridx .gc.mine { border-color: var(--neon); background: color-mix(in srgb, var(--neon) 22%, var(--card)); }
+.gridx .gp { font-size: 12px; color: var(--muted); font-weight: 700; }
+.gridx .gn { font-weight: 800; font-size: 16px; }
+.gridx .gm { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 table.cls tr.mine td { background: color-mix(in srgb, var(--neon) 22%, transparent); font-weight: 700; }
 /* barra alta su due righe */
 .topbar { flex-direction: column; align-items: stretch !important; gap: 8px; padding-top: calc(10px + var(--safe-t)) !important; padding-bottom: 10px; }
@@ -2918,13 +2932,20 @@ async function importSession(f) {
   closeModal(); render();
   toast(`${rows.length} righe importate${found.length ? ' · ' + found.join(', ') : ' · nessun tuo pilota trovato'}`, !found.length);
 }
+function clsHtml(rows, isMine, type) {
+  if (/griglia|grid/i.test(type || '')) {
+    const g = rows.filter((r) => /^\d+$/.test(String(r.pos))).sort((a, b) => +a.pos - +b.pos);
+    const cell = (r) => `<div class="gc ${+r.pos % 2 ? 'odd' : 'even'} ${isMine(r) ? 'mine' : ''}"><div class="gp">P${esc(r.pos)}</div><div class="gn">#${esc(r.num)}</div><div class="gm">${esc(r.name || '')}</div>${r.best ? `<div class="subtle mono" style="font-size:12px">${esc(r.best)}</div>` : ''}</div>`;
+    return `<div class="subtle" style="margin-bottom:6px;text-align:center">🏁 Direzione di marcia ↑</div><div class="gridx">${g.map(cell).join('')}</div>`;
+  }
+  return `<table class="clsx"><colgroup><col style="width:38px"><col style="width:46px"><col><col style="width:78px"><col style="width:64px"></colgroup><tr><th>Pos</th><th>N°</th><th>Pilota</th><th class="r">Best</th><th class="r">Gap</th></tr>${rows.map((r) => `<tr class="${isMine(r) ? 'mine' : ''}"><td>${esc(r.pos)}</td><td><b>${esc(r.num)}</b></td><td class="nm">${esc(r.name || (r.raw || '').slice(0, 40))}${r.cls ? ` <span class="subtle">${esc(r.cls)}</span>` : ''}</td><td class="r mono">${esc(r.best || '')}</td><td class="r mono">${esc(r.gap || '')}</td></tr>`).join('')}</table>`;
+}
 function sessView(id) {
   const s = (S.sessions || []).find((x) => x.id === id); if (!s) return;
   const mineNums = new Set(S.drivers.map((d) => sessMatch(s, d)).filter(Boolean));
   const e = sessEvent(s);
   openModal(`${esc(s.type)}${e ? ' · ' + esc(e.circuit || '') : ''}`, `<div class="subtle" style="margin-bottom:10px">${s.date ? parse(s.date).toLocaleDateString(LOC()) : ''} · ${s.rows.length} righe · ${esc(s.title || '')}</div>
-    <div class="card" style="padding:4px 8px;overflow-x:auto"><table class="cls"><tr><th>Pos</th><th>N°</th><th>Pilota</th><th>Cl.</th><th class="r">Best</th><th class="r">Gap</th></tr>
-    ${s.rows.map((r) => `<tr class="${mineNums.has(r) ? 'mine' : ''}"><td>${esc(r.pos)}</td><td><b>${esc(r.num)}</b></td><td>${esc(r.name || (r.raw || '').slice(0, 40))}</td><td>${esc(r.cls)}</td><td class="r mono">${esc(r.best)}</td><td class="r mono">${esc(r.gap)}</td></tr>`).join('')}</table></div>
+    <div class="card" style="padding:6px 8px">${clsHtml(s.rows, (r) => mineNums.has(r), s.type)}</div>
     ${/^https?:/i.test(s.source_url || '') ? `<a class="btn" style="display:block;text-align:center;margin-top:10px;text-decoration:none" href="${esc(s.source_url)}" target="_blank" rel="noopener">📄 Apri il PDF originale</a>` : ''}<div class="row between" style="margin-top:12px"><button class="btn danger" data-act="sessdel" data-id="${s.id}">Elimina</button><span class="subtle">In verde i tuoi piloti</span></div>`);
 }
 
@@ -3159,7 +3180,7 @@ function inbPreview(it) {
     body = [...byDay.entries()].map(([d, rs]) => `<div class="lbl" style="margin:12px 0 4px">${esc(d ? ttDayLabel(d) : 'Senza giorno')}</div>` + rs.map((r) => { const sp = ttSplit(r); return `<div style="display:grid;grid-template-columns:86px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--gb)"><div class="mono" style="font-weight:700">${esc(r.start || '')}${r.end ? `<br><span style="font-weight:400;opacity:.7">${esc(r.end)}</span>` : ''}</div><div><b>${esc(sp.what)}</b>${sp.who ? `<div class="subtle">${esc(sp.who)}</div>` : ''}</div></div>`; }).join('')).join('');
   } else if (it.kind === 'results' && rows.length) {
     const nums = new Set(S.drivers.map((d) => String(d.race_number || '')).filter(Boolean));
-    body = `<div class="card" style="padding:4px 8px;overflow-x:auto"><table class="cls"><tr><th>Pos</th><th>N°</th><th>Pilota</th><th>Cl.</th><th class="r">Best</th><th class="r">Gap</th></tr>${rows.map((r) => `<tr class="${nums.has(String(r.num)) ? 'mine' : ''}"><td>${esc(r.pos)}</td><td><b>${esc(r.num)}</b></td><td>${esc(r.name)}</td><td>${esc(r.cls || '')}</td><td class="r mono">${esc(r.best || '')}</td><td class="r mono">${esc(r.gap || '')}</td></tr>`).join('')}</table></div>`;
+    body = `<div class="card" style="padding:6px 8px">${clsHtml(rows, (r) => nums.has(String(r.num)), it.parsed.session_type)}</div>`;
   } else body = `<p>${esc(it.summary || 'Anteprima non disponibile.')}</p>`;
   openModal(esc(it.filename || 'Allegato'), body + inbSrcLinks(it) + `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"><button class="btn primary" data-act="inbimp" data-id="${it.id}">⬇ Importa</button><button class="btn" data-act="inbsave" data-id="${it.id}">💾 Salva in…</button></div>`);
 }
