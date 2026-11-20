@@ -471,7 +471,7 @@ function vNuovo(){
   <div class="card small mute" style="max-width:760px">La maschera applica le regole confermate: la fattura si registra quando arriva e il pagamento (anche a rate) si aggiunge dopo con "Paga". Il totale e il residuo vengono calcolati, mai digitati. Se il nuovo documento ha lo stesso fornitore, numero e importo di uno esistente, la maschera avvisa del doppione.</div>`;
   const mkCat=(val)=>{const L=catSorted().filter(c=>(N.verso==='uscita'?GRUPPI_USCITA:GRUPPI_ENTRATA).includes(c.gruppo));
     dropdown(nCat,{options:[...L.map(c=>({v:String(c.id),l:c.nome+(c.nuova?' (nuova)':'')})),{v:'__new',l:'+ Nuova categoria…'}],value:val,search:true,placeholder:'Scegli la categoria…',
-      onChange:v=>{if(v==='__new'){const prev=nCat.dataset.prev||'';apriNuovaCat(N.verso,id=>{mkCat(id);nCat.dataset.prev=id;fDoc.dataset.ok='';fDoc.dataset.coer=''},prev)}else{nCat.dataset.prev=v;fDoc.dataset.coer='';fDoc.dataset.catok=''}}})};
+      onChange:v=>{if(v==='__new'){const prev=nCat.dataset.prev||'';apriNuovaCat(N.verso,id=>{mkCat(id);nCat.dataset.prev=id;fDoc.dataset.ok='';fDoc.dataset.coer='';fDoc.dataset.catok='';verificaCatSubito()},prev)}else{nCat.dataset.prev=v;fDoc.dataset.coer='';fDoc.dataset.catok='';verificaCatSubito()}}})};
   mkCat('');
   if(typeof dropF!=='undefined'&&dropF)dropF.onchange=e=>{const f=e.target.files[0];if(f)importaFattura(f)};
   if(N.verso==='entrata'){nAliq.value='0'}
@@ -494,7 +494,7 @@ function vNuovo(){
   nSogg.oninput=()=>{const q=nSogg.value.toLowerCase();const m=nomi.filter(n=>n.toLowerCase().includes(q)).slice(0,8);
     nSugg.innerHTML=m.map(n=>`<div>${esc(n)}</div>`).join('')+(q&&!nomi.some(n=>n.toLowerCase()===q)?`<div class="mute">+ Nuovo: "${esc(nSogg.value)}"</div>`:'');nSugg.style.display=q?'block':'none';
     [...nSugg.children].forEach((c,i)=>c.onmousedown=()=>{if(m[i])nSogg.value=m[i];nSugg.style.display='none';suggerisciCat()})};
-  nSogg.onblur=()=>setTimeout(()=>{nSugg.style.display='none';suggerisciCat()},150);
+  nSogg.onblur=()=>setTimeout(()=>{nSugg.style.display='none';suggerisciCat();verificaCatSubito()},150);
   function suggerisciCat(){const s=DATA.soggetti.find(x=>x.nome===nSogg.value);if(!s||nCat.value)return;const last=DATA.documenti.filter(d=>d.soggetto_id===s.id).sort((a,b)=>(b.data_doc||'').localeCompare(a.data_doc||''))[0];if(last&&cats.some(c=>c.id===last.categoria_id)){nCat.setValue(String(last.categoria_id));nCat.dataset.prev=String(last.categoria_id)}}
   fDoc.onreset=()=>setTimeout(()=>{nCat.setValue('');upd()},0);
   fDoc.onsubmit=async e=>{e.preventDefault();if(fDoc.dataset.busy)return;
@@ -522,6 +522,17 @@ function vNuovo(){
       toast('Documento salvato');IMPORT=null;F.q='';go('movimenti');
     }catch(e){}finally{fDoc.dataset.busy=''}
   };
+}
+
+/* avviso immediato: categoria diversa da quelle già usate per il fornitore */
+function verificaCatSubito(){
+  try{if(!nCat.value||nCat.value==='__new'||fDoc.dataset.catok)return;const s=DATA.soggetti.find(x=>x.nome.toLowerCase()===nSogg.value.trim().toLowerCase());if(!s)return;
+    const prec=DATA.documenti.filter(x=>x.soggetto_id===s.id&&x.verso===N.verso);if(!prec.length||prec.some(x=>x.categoria_id===+nCat.value))return;
+    const cnt={};prec.forEach(x=>cnt[x.categoria_id]=(cnt[x.categoria_id]||0)+1);const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+    const k=`${s.id}|${nCat.value}`;if(fDoc.dataset.catask===k)return;fDoc.dataset.catask=k;
+    setTimeout(()=>{if(confirm(`Attenzione: è stata selezionata una categoria diversa da quella già utilizzata per ${s.nome}.\n\nFinora: "${C[top].nome}"\nOra: "${C[+nCat.value].nome}"\n\nOK per confermare, Annulla per tornare a "${C[top].nome}".`)){fDoc.dataset.catok=1}
+      else{nCat.setValue(String(top));nCat.dataset.prev=String(top);fDoc.dataset.catask='';fDoc.dataset.catok=''}},30);
+  }catch(e){}
 }
 
 /* ---------- SCADENZARIO ---------- */
@@ -724,10 +735,10 @@ function xmlDaP7m(buf){
 function parseCsvCassetto(text,fname){
   const rows=csvRows(text);const h=rows[0].map(x=>x.toLowerCase());
   const f=(ks,no=[])=>{for(const k of ks){const i=h.findIndex(x=>x.includes(k)&&!no.some(n=>x.includes(n)));if(i>=0)return i}return -1};
-  const iNum=f(['numero']),iData=f(['data emissione','data documento','data fattura','data']),iForn=f(['denominazione','ragione sociale','cedente','fornitore'],['iva','identificativo','codice','fiscale']),iPiva=f(['partita iva','identificativo']),iImp=f(['imponibile']),iIva=f(['imposta'],['imponibile']),iTipo=f(['tipo documento']),iTot=f(['totale'],['imponibile','imposta']);
+  const iNum=f(['numero']),iRic=f(['data ricezione','ricezione']),iData=f(['data emissione','data documento','data fattura','data'],['ricezione']),iForn=f(['denominazione','ragione sociale','cedente','fornitore'],['iva','identificativo','codice','fiscale']),iPiva=f(['partita iva','identificativo']),iImp=f(['imponibile']),iIva=f(['imposta'],['imponibile']),iTipo=f(['tipo documento']),iTot=f(['totale'],['imponibile','imposta']);
   if(iForn<0||iImp<0)throw new Error('colonne non riconosciute (servono fornitore e imponibile)');
   return rows.slice(1).map(r=>{const tipo=String(r[iTipo]||'');const segno=/TD04|nota di credito/i.test(tipo)?-1:1;const imp=Math.abs(numIt(r[iImp]))*segno,iva=Math.abs(numIt(r[iIva]))*segno;
-    return {fornitore:String(r[iForn]||'').trim(),piva:iPiva>=0?String(r[iPiva]||'').trim():'',tipo,numero:iNum>=0?String(r[iNum]||'').trim():'',data:dataIt(r[iData]),imponibile:+imp.toFixed(2),iva:+iva.toFixed(2),totale:iTot>=0&&numIt(r[iTot])?+(segno*Math.abs(numIt(r[iTot]))).toFixed(2):+(imp+iva).toFixed(2),ritenuta:0,netto:null,file:fname,fonte:'csv'}}).filter(x=>x.fornitore&&(x.imponibile||x.totale));
+    return {fornitore:String(r[iForn]||'').trim(),piva:iPiva>=0?String(r[iPiva]||'').trim():'',tipo,numero:iNum>=0?String(r[iNum]||'').trim():'',data:dataIt(r[iData]),ricezione:iRic>=0?dataIt(r[iRic]):'',imponibile:+imp.toFixed(2),iva:+iva.toFixed(2),totale:iTot>=0&&numIt(r[iTot])?+(segno*Math.abs(numIt(r[iTot]))).toFixed(2):+(imp+iva).toFixed(2),ritenuta:0,netto:null,file:fname,fonte:'csv'}}).filter(x=>x.fornitore&&(x.imponibile||x.totale));
 }
 async function caricaJSZip(){if(window.JSZip)return;await new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';s.onload=ok;s.onerror=()=>ko(new Error('impossibile caricare il lettore ZIP'));document.head.appendChild(s)})}
 async function leggiCassetto(files){
@@ -948,7 +959,7 @@ async function archCaricaControlli(){
 async function archApri(path){const {data,error}=await sb.storage.from(BKT).createSignedUrl(path,120,{download:true});if(error){alert(error.message);return}window.open(data.signedUrl,'_blank')}
 async function archElimina(path){if(!confirm(`Eliminare dall'archivio il file\n${path.split('/').pop()}?`))return;const {error}=await sb.storage.from(BKT).remove([path]);if(error){alert('Non eliminato: '+error.message);return}ARCH.sel.delete(path);await archLista();vControlli()}
 function archCartella(t,L){
-  return `<div><h3 style="font-size:14px;margin:4px 0 6px">${t} <span class="mute">(${L.length})</span></h3>${L.length?`<div class="tblwrap" style="max-height:260px"><table>${L.map(x=>`<tr><td style="width:26px"><input type="checkbox" class="aSel" data-p="${esc(x.path)}" ${ARCH.sel.has(x.path)?'checked':''}></td><td class="small" style="word-break:break-all">${esc(x.name)}<div class="mute">caricato il ${dit((x.created_at||'').slice(0,10))} · ${kb(x.metadata&&x.metadata.size)}</div></td><td style="white-space:nowrap"><button class="small aDl" data-p="${esc(x.path)}">Scarica</button>${isAdmin()?` <button class="small aRm" data-p="${esc(x.path)}" title="Elimina">×</button>`:''}</td></tr>`).join('')}</table></div>`:'<p class="small mute">Nessun file.</p>'}</div>`;
+  return `<div><h3 style="font-size:14px;margin:4px 0 6px">${t} <span class="mute">(${L.length})</span></h3>${!L.length&&t==='Estratti conto'?`<p class="small" style="color:var(--warn)">L'archivio è dentro l'app: le cartelle di Google Drive non vengono lette. Trascina qui i CSV dell'estratto conto Caraglio (storico e lista movimenti), una volta sola.</p>`:''}${L.length?`<div class="tblwrap" style="max-height:260px"><table>${L.map(x=>`<tr><td style="width:26px"><input type="checkbox" class="aSel" data-p="${esc(x.path)}" ${ARCH.sel.has(x.path)?'checked':''}></td><td class="small" style="word-break:break-all">${esc(x.name)}<div class="mute">caricato il ${dit((x.created_at||'').slice(0,10))} · ${kb(x.metadata&&x.metadata.size)}</div></td><td style="white-space:nowrap"><button class="small aDl" data-p="${esc(x.path)}">Scarica</button>${isAdmin()?` <button class="small aRm" data-p="${esc(x.path)}" title="Elimina">×</button>`:''}</td></tr>`).join('')}</table></div>`:'<p class="small mute">Nessun file.</p>'}</div>`;
 }
 function archBind(){
   aFile.onchange=e=>{const L=[...e.target.files];if(L.length)archiviaFile(L)};
@@ -1089,39 +1100,51 @@ async function analizzaFile(f){
   const p=periodoDaNome(f.name);
   try{
     if(/\.(csv|txt)$/.test(n)){const t=await f.text();let b=null;try{b=parseBanca(t,f.name)}catch(e){}
-      if(b&&b.length){const ds=b.map(m=>m.data).sort();Object.assign(r,{tipo:'estratto-conto',ente:'Caraglio',dal:ds[0],al:ds[ds.length-1],nota:`${b.length} movimenti`})}
+      if(b&&b.length){const ds=b.map(m=>m.data).sort();Object.assign(r,{tipo:'estratto-conto',ente:'Caraglio',dal:ds[0],al:ds[ds.length-1],nota:`${b.length} movimenti dal ${dit(ds[0])} al ${dit(ds[ds.length-1])}`})}
       else{let c=[];try{c=parseCsvCassetto(t,f.name)}catch(e){}
-        if(c.length){const ds=c.map(x=>x.data).filter(Boolean).sort();Object.assign(r,{tipo:'fatture-ricevute',ente:'AdE',dal:ds[0]||'',al:ds[ds.length-1]||'',nota:`${c.length} fatture`})}
+        if(c.length){const ric=c.map(x=>x.ricezione).filter(Boolean).sort(),ds=(ric.length?ric:c.map(x=>x.data).filter(Boolean)).sort();Object.assign(r,{tipo:'fatture-ricevute',ente:'AdE',dal:ds[0]||'',al:ds[ds.length-1]||'',nota:`${c.length} fatture, ${ric.length?'ricevute':'emesse'} dal ${dit(ds[0])} al ${dit(ds[ds.length-1])}`})}
         else Object.assign(r,{tipo:'estratto-conto',ente:'Passadore',nota:'formato non riconosciuto: scegli tipo, ente e periodo (i controlli per ora leggono solo gli estratti Caraglio)'})}}
     else if(/\.(zip|xml|p7m)$/.test(n)){const c=await leggiCassetto([f]);const ds=c.fatture.map(x=>x.data).filter(Boolean).sort();
-      Object.assign(r,{tipo:'fatture-ricevute',ente:'AdE',dal:ds[0]||'',al:ds[ds.length-1]||'',nota:`${c.fatture.length} fatture${c.err.length?`, ${c.err.length} file non letti`:''}`})}
+      Object.assign(r,{tipo:'fatture-ricevute',ente:'AdE',dal:ds[0]||'',al:ds[ds.length-1]||'',nota:`${c.fatture.length} fatture${ds.length?` dal ${dit(ds[0])} al ${dit(ds[ds.length-1])}`:''}${c.err.length?`, ${c.err.length} file non letti`:''}`})}
     else r.nota='tipo di file non previsto';
   }catch(e){r.nota='non leggibile: '+e.message}
   if(p){r.dal=p.dal;r.al=p.al;if(ENTI.includes(p.ente))r.ente=p.ente}
+  try{r.hash=await hashFile(f)}catch(e){}
   return r;
 }
+async function hashFile(f){const b=await crypto.subtle.digest('SHA-256',await f.arrayBuffer());return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+/* doppioni: file identico già in archivio (stesso contenuto) o stesso periodo */
+async function cercaDoppioni(L){
+  if(!ARCH.letto)await archLista();const tutti=[...ARCH.b,...ARCH.c];const cache={};
+  for(const [i,r] of L.entries()){r.dup='';r.stesso='';r.includi=true;
+    const prima=L.slice(0,i).find(x=>x.hash&&x.hash===r.hash);if(prima){r.dup='uguale a '+prima.file.name+' (caricato insieme)';r.includi=false;continue}
+    for(const x of tutti){const sz=x.metadata&&x.metadata.size;if(sz!==r.file.size||!r.hash)continue;
+      try{if(!cache[x.path])cache[x.path]=await hashFile(await archScarica(x.path));if(cache[x.path]===r.hash){r.dup=x.name;r.includi=false;break}}catch(e){}}
+  }
+}
+function stessoPeriodo(r){const dir=r.tipo==='estratto-conto'?ARCH.b:ARCH.c;const x=dir.find(x=>{const p=periodoDaNome(x.name);return p&&p.ente===r.ente&&p.dal===r.dal&&p.al===r.al});return x?x.name:''}
 const nomeStd=r=>`${r.dal||'0000-00-00'}_${r.al||'0000-00-00'}_${r.ente||'Altro'}_${r.tipo||'file'}.${r.ext}`;
 function apriMascheraAcq(L){return new Promise(ok=>{
   let d=document.getElementById('dlgAcq');if(!d){d=document.createElement('dialog');d.id='dlgAcq';d.style.maxWidth='980px';document.body.appendChild(d)}
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('');
   d.innerHTML=`<form class="dlg" method="dialog"><h3>Acquisizione file</h3><div class="mute small" style="margin-bottom:10px">Controlla tipo, ente e periodo: il file verrà salvato con il nome standard indicato.</div>
   <div class="tblwrap" style="max-height:60vh"><table><thead><tr><th>File</th><th>Tipo</th><th>Ente</th><th>Dal</th><th>Al</th><th>Nome nell'archivio</th></tr></thead><tbody>
-  ${L.map((r,i)=>`<tr data-i="${i}"><td class="small" style="max-width:180px;word-break:break-all">${esc(r.file.name)}<div class="mute">${esc(r.nota)}</div></td>
+  ${L.map((r,i)=>`<tr data-i="${i}"><td class="small" style="max-width:200px;word-break:break-all">${esc(r.file.name)}<div class="mute">${esc(r.nota)}</div>${r.dup?`<div style="color:var(--accent);font-weight:600">File già nell'archivio: ${esc(r.dup)}. Non verrà salvato.</div><label style="flex-direction:row;align-items:center;gap:4px;font-weight:400"><input type="checkbox" class="qInc"> salvalo lo stesso</label>`:''}<div class="qSt" style="color:var(--warn);font-weight:600"></div></td>
    <td><select class="qT">${opt(TIPI_FILE,r.tipo)}</select></td><td><select class="qE">${opt(ENTI_LAB,r.ente)}</select></td>
    <td><input type="date" class="qD" value="${r.dal}"></td><td><input type="date" class="qA" value="${r.al}"></td><td class="small qN" style="word-break:break-all"></td></tr>`).join('')}</tbody></table></div>
   <div class="err" id="qErr"></div><div class="actions"><button value="no" type="button" id="qNo">Annulla</button><button class="primary" type="button" id="qOk">Salva nell'archivio</button></div></form>`;
-  const sync=()=>d.querySelectorAll('tr[data-i]').forEach(tr=>{const r=L[+tr.dataset.i];r.tipo=tr.querySelector('.qT').value;r.ente=tr.querySelector('.qE').value;r.dal=tr.querySelector('.qD').value;r.al=tr.querySelector('.qA').value;tr.querySelector('.qN').textContent=nomeStd(r)});
+  const sync=()=>d.querySelectorAll('tr[data-i]').forEach(tr=>{const r=L[+tr.dataset.i];r.tipo=tr.querySelector('.qT').value;r.ente=tr.querySelector('.qE').value;r.dal=tr.querySelector('.qD').value;r.al=tr.querySelector('.qA').value;const inc=tr.querySelector('.qInc');if(inc)r.includi=inc.checked;tr.style.opacity=r.includi?'':'.55';tr.querySelector('.qN').textContent=r.includi?nomeStd(r):'— non salvato';const sp=!r.dup&&stessoPeriodo(r);tr.querySelector('.qSt').textContent=sp?`Attenzione: in archivio c'è già un file dello stesso periodo (${sp}). Controlla le date: se è un altro periodo correggile.`:''});
   d.querySelectorAll('select,input').forEach(x=>{x.onchange=sync;x.oninput=sync});sync();
   d.querySelector('#qNo').onclick=()=>{d.close();ok(null)};
-  d.querySelector('#qOk').onclick=()=>{sync();const bad=L.find(r=>!r.tipo||!r.ente||!r.dal||!r.al||r.dal>r.al);if(bad){d.querySelector('#qErr').textContent=`Completa tipo, ente e periodo di ${bad.file.name}.`;return}
+  d.querySelector('#qOk').onclick=()=>{sync();const bad=L.find(r=>r.includi&&(!r.tipo||!r.ente||!r.dal||!r.al||r.dal>r.al));if(bad){d.querySelector('#qErr').textContent=`Completa tipo, ente e periodo di ${bad.file.name}.`;return}
     if(L.some(r=>r.tipo==='fatture-ricevute'&&r.ente!=='AdE')||L.some(r=>r.tipo==='estratto-conto'&&r.ente==='AdE')){d.querySelector('#qErr').textContent='Le fatture ricevute vanno con l\'Agenzia delle Entrate, gli estratti conto con una banca.';return}
     d.close();ok(L)};
   d.showModal();
 })}
 async function archiviaFile(files){
   if(!EDIT){alert(`Sola lettura: in questo momento sta modificando ${EDITOR?.nome||EDITOR?.email||'un altro utente'}.`);return}
-  caricamento(true);let L;try{L=await Promise.all(files.map(analizzaFile))}finally{caricamento(false)}
-  L=await apriMascheraAcq(L);if(!L)return;
+  caricamento(true);let L;try{L=await Promise.all(files.map(analizzaFile));await cercaDoppioni(L)}finally{caricamento(false)}
+  L=await apriMascheraAcq(L);if(!L)return;L=L.filter(r=>r.includi);if(!L.length){toast('Nessun file nuovo da salvare');return}
   caricamento(true);const ok=[],ko=[];
   try{for(const r of L){const dir=r.tipo==='estratto-conto'?'estratti-conto':'cassetto-fiscale';const base=nomeStd(r);let path=dir+'/'+base,k=2;
       let res=await sb.storage.from(BKT).upload(path,r.file,{upsert:false,contentType:r.file.type||'application/octet-stream'});
