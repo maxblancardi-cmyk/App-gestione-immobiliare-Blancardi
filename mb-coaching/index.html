@@ -1676,10 +1676,8 @@ function driverForm(id) {
         <label class="f"><span>Responsabile team</span><input name="team_manager_name" value="${esc(d.team_manager_name)}"></label>
         <label class="f"><span>Tel. responsabile</span><input type="tel" name="team_manager_phone" value="${esc(d.team_manager_phone)}"></label>
         <label class="f"><span>Mail responsabile</span><input type="email" name="team_manager_email" value="${esc(d.team_manager_email)}"></label>
-        <label class="f"><span>Ingegnere del pilota</span><input name="engineer_name" value="${esc(d.engineer_name)}"></label>
-        <label class="f"><span>Tel. ingegnere</span><input type="tel" name="engineer_phone" value="${esc(d.engineer_phone)}"></label>
-        <label class="f"><span>Meccanico del pilota</span><input name="mechanic_name" value="${esc(d.mechanic_name)}"></label>
-        <label class="f"><span>Tel. meccanico</span><input type="tel" name="mechanic_phone" value="${esc(d.mechanic_phone)}"></label>
+        <input type="hidden" name="engineer_name" value="${esc(d.engineer_name)}"><input type="hidden" name="engineer_phone" value="${esc(d.engineer_phone)}"><input type="hidden" name="mechanic_name" value="${esc(d.mechanic_name)}"><input type="hidden" name="mechanic_phone" value="${esc(d.mechanic_phone)}">
+        <p class="subtle" style="grid-column:1/-1;margin:0">Ingegnere e meccanici si aggiungono nella scheda del pilota, riquadro 🔧, con foto e rubrica.</p>
       </div>
       <h3 style="margin:4px 0 8px">Assistente personale</h3>
       <div class="grid2 drvg">
@@ -2318,7 +2316,7 @@ function driverPage() {
   const phn = d.phone || d.assistant_phone || '', phWho = d.phone ? '' : ' assist.';
   const digits = phn.replace(/[^\d+]/g, '');
   const evRow = (e) => { const cc = champ(e.championship_id), t = atype(e.activity_type_id); return `<div class="ev-item" data-act="evview" data-id="${e.id}"><div class="bar" style="background:${evColor(e)}"></div><div class="grow" style="min-width:0"><strong>${esc(e.circuit || cc?.name || t?.name || 'Evento')}</strong><div class="subtle">${fmtRange(e.start_date, e.end_date)} · ${esc(t?.name || '')}${cc ? ' · ' + esc(cc.name) : ''}</div></div><span class="chev">›</span></div>`; };
-  const people = [contactRow('Assistente', d.assistant_name, d.assistant_phone, d.assistant_email), contactRow('Coach', d.coach_name, d.coach_phone), contactRow('Resp. team', d.team_manager_name, d.team_manager_phone, d.team_manager_email), contactRow('Ingegnere', d.engineer_name, d.engineer_phone), contactRow('Meccanico', d.mechanic_name, d.mechanic_phone)].join('');
+  const people = [contactRow('Assistente', d.assistant_name, d.assistant_phone, d.assistant_email), contactRow('Coach', d.coach_name, d.coach_phone), contactRow('Resp. team', d.team_manager_name, d.team_manager_phone, d.team_manager_email)].join('');
   const m = S.mail[d.id];
   const ems = emailsOf(d);
   const mailBox = !ems.length ? '<p class="muted">Aggiungi la mail del pilota (o dell\'assistente) nella scheda per collegare Gmail.</p>'
@@ -2338,6 +2336,7 @@ function driverPage() {
   </div>
   ${phn || ems.length ? `<div class="subtle" style="margin:-4px 0 12px;text-align:center;word-break:break-all">${esc(phn)}${phn && ems.length ? ' · ' : ''}${esc(ems[0] || '')}</div>` : '<div class="subtle" style="margin:-4px 0 12px;text-align:center">Nessun telefono o mail: tocca ✎ Modifica scheda per aggiungerli.</div>'}
   ${people ? `<div class="card" style="margin-bottom:6px"><div class="subtle" style="margin-bottom:4px">Contatti del team</div>${people}</div>` : ''}
+  <div class="card" style="margin-bottom:6px"><div class="row between" style="margin-bottom:4px"><span class="subtle">🔧 Ingegnere e meccanici</span><button class="btn small primary" data-act="crewadd" data-id="${d.id}">+ Aggiungi</button></div>${crewOf(d).length ? crewOf(d).map((c, i) => personRow(c.role, c.name, c.phone, c.email, `data-act="crewedit" data-id="${d.id}" data-idx="${i}" style="cursor:pointer"`, c.photo)).join('') : '<p class="subtle" style="margin:4px 0">Nessuno inserito.</p>'}</div>
   ${d.vid_sys || d.vid_user ? `<div class="card" style="margin-bottom:6px"><div class="subtle" style="margin-bottom:4px">🎥 Acquisizione video / dati</div><div class="row between" style="gap:8px"><div style="font-weight:700;font-size:17px">${esc(d.vid_sys || '—')}</div>${d.vid_url || vidUrls()[d.vid_sys] ? `<button class="btn small primary" data-act="vidopen" data-id="${d.id}">↗ Apri ${esc(d.vid_sys || 'sistema')}</button>` : ''}</div>${d.vid_user ? `<div class="row between" style="gap:8px;margin-top:6px"><span class="subtle">Utente</span><span style="word-break:break-all">${esc(d.vid_user)}</span><button class="btn small" data-act="copytxt" data-v="${esc(d.vid_user)}">Copia</button></div>` : ''}${d.vid_pass ? `<div class="row between" style="gap:8px;margin-top:6px"><span class="subtle">Password</span><span class="mono" id="vp-${d.id}" data-p="${esc(d.vid_pass)}">••••••••</span><span class="row" style="gap:6px"><button class="btn small" data-act="vidshow" data-id="${d.id}">👁</button><button class="btn small" data-act="copytxt" data-v="${esc(d.vid_pass)}">Copia</button></span></div>` : ''}</div>` : ''}
   </div><div class="colB">
   <div class="section-title"><h2>Eventi a cui partecipa</h2><button class="btn small" data-act="drvnewev" data-id="${d.id}">+ Evento</button></div>
@@ -3388,6 +3387,42 @@ function parseVcf(txt) {
   return out;
 }
 const VID_DEFAULTS = { FG91: 'https://fg91motorsport.com/login/' };
+function crewOf(d) {
+  if (Array.isArray(d.crew)) return d.crew;
+  const out = [];
+  if (d.engineer_name || d.engineer_phone) out.push({ role: 'Ingegnere', name: d.engineer_name || '', phone: d.engineer_phone || '', email: '' });
+  if (d.mechanic_name || d.mechanic_phone) out.push({ role: 'Meccanico', name: d.mechanic_name || '', phone: d.mechanic_phone || '', email: '' });
+  return out;
+}
+function crewForm(did, idx) {
+  const d = driver(did); if (!d) return;
+  const c = idx >= 0 ? crewOf(d)[idx] || {} : { role: crewOf(d).some((x) => x.role === 'Ingegnere') ? 'Meccanico' : 'Ingegnere' };
+  const roles = ['Ingegnere', 'Meccanico', 'Capo meccanico', 'Gommista', 'Ingegnere dati', 'Assistente'];
+  openModal(idx >= 0 ? 'Modifica contatto' : 'Nuovo contatto del pilota', `<form data-form="crew" data-id="${did}" data-idx="${idx}">
+    <label class="f"><span>Ruolo</span><input name="role" list="crewroles" value="${esc(c.role || '')}" required><datalist id="crewroles">${roles.map((r) => `<option value="${r}">`).join('')}</datalist></label>
+    <button type="button" class="btn small primary" data-act="pickc" data-id="" style="width:100%;margin:4px 0 8px">📱 Prendi dalla rubrica del telefono</button>
+    <div class="row" style="margin-bottom:8px">${c.photo ? `<img class="avatar" src="${c.photo}" alt="">` : `<div class="avatar">${esc(((c.name || c.role || '?')[0] || '?').toUpperCase())}</div>`}<label class="f grow" style="margin:0"><span>Foto</span><input type="file" name="photo" accept="image/*"></label></div>
+    <label class="f"><span>Nome</span><input name="name" value="${esc(c.name || '')}"></label>
+    <div class="grid2"><label class="f"><span>Telefono</span><input type="tel" name="phone" value="${esc(c.phone || '')}"></label><label class="f"><span>Mail</span><input type="email" name="email" value="${esc(c.email || '')}"></label></div>
+    <div class="row between"><div>${idx >= 0 ? `<button type="button" class="btn danger" data-act="crewdel" data-id="${did}" data-idx="${idx}">Elimina</button>` : ''}</div><button class="btn primary" type="submit">Salva</button></div></form>`);
+}
+function crewSync(d, crew) {
+  const eng = crew.find((x) => /ingegnere/i.test(x.role)), mec = crew.find((x) => /meccanico/i.test(x.role));
+  return { ...d, crew, engineer_name: eng ? eng.name : '', engineer_phone: eng ? eng.phone : '', mechanic_name: mec ? mec.name : '', mechanic_phone: mec ? mec.phone : '' };
+}
+async function crewSave(f) {
+  const d = driver(f.dataset.id); if (!d) return;
+  const idx = parseInt(f.dataset.idx, 10), fd = new FormData(f), v = (n) => (fd.get(n) || '').toString().trim();
+  const list = crewOf(d).slice(), old = idx >= 0 ? list[idx] || {} : {};
+  const c = { role: v('role') || 'Contatto', name: v('name'), phone: v('phone'), email: v('email'), photo: old.photo || null };
+  const pf = fd.get('photo'); if (pf && pf.size) c.photo = await blobToDataURL(await resizeImage(pf, 240, 0.85));
+  if (idx >= 0) list[idx] = c; else list.push(c);
+  await put('drivers', crewSync(d, list)); closeModal(); render(); toast('Contatto salvato');
+}
+async function crewDel(did, idx) {
+  const d = driver(did); if (!d) return;
+  await put('drivers', crewSync(d, crewOf(d).filter((_, i) => i !== idx))); closeModal(); render(); toast('Contatto eliminato');
+}
 function vidUrls() { let m = {}; try { m = JSON.parse(localStorage.getItem('mbc_vidurls') || '{}'); } catch (_) { /* ok */ } return { ...VID_DEFAULTS, ...m }; }
 window.vidUrls = vidUrls;
 async function pickOneContact() {
@@ -4013,6 +4048,9 @@ document.addEventListener('click', async (ev) => {
       case 'xcimport': xcImportView(); break;
       case 'xcimpgo': await xcImportGo(); break;
       case 'pickc': await pickContactInto(el, id || ''); break;
+      case 'crewadd': crewForm(id, -1); break;
+      case 'crewedit': crewForm(id, parseInt(el.dataset.idx, 10)); break;
+      case 'crewdel': await crewDel(id, parseInt(el.dataset.idx, 10)); break;
       case 'vidopen': { const d = driver(id); if (!d) break; const url = d.vid_url || vidUrls()[d.vid_sys]; if (!url) break; if (d.vid_pass && navigator.clipboard) navigator.clipboard.writeText(d.vid_pass).catch(() => {}); window.open(/^https?:/i.test(url) ? url : 'https://' + url, '_blank', 'noopener'); toast(d.vid_pass ? 'Password copiata: incollala nel campo password' : 'Apro ' + (d.vid_sys || 'il sistema')); break; }
       case 'vidshow': { const sp = document.getElementById('vp-' + id); if (sp) sp.textContent = sp.textContent.startsWith('•') ? sp.dataset.p : '••••••••'; break; }
       case 'copytxt': { try { await navigator.clipboard.writeText(el.dataset.v || ''); toast('Copiato'); } catch (_) { toast('Non riesco a copiare', true); } break; }
@@ -4126,6 +4164,7 @@ document.addEventListener('submit', async (ev) => {
       case 'tcontact': await saveTContact(f); break;
       case 'sessimport': await importSession(f); break;
       case 'ttimport': await ttImport(f); break;
+      case 'crew': await crewSave(f); break;
       case 'inbsave': await inbSaveSubmit(f); break;
       case 'ttedit': await ttEditSave(f); break;
       case 'lockopen': case 'lockset': case 'lockchange': await lockSubmit(f.dataset.form, f); break;
