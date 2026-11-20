@@ -30,6 +30,8 @@ button{font:inherit;font-weight:800;font-size:17px;border-radius:14px;border:2px
 button.go{background:var(--red);border-color:var(--red);color:#fff;font-size:22px;width:124px;height:124px;min-height:0;border-radius:50%;padding:0;letter-spacing:.04em;box-shadow:0 6px 18px rgba(213,43,30,.35)}
 button.go:active{transform:scale(.96)}
 button:disabled{opacity:.35}
+button.mode{min-height:44px;border-radius:22px;padding:0 18px;font-size:16px}
+button.mode.on{background:var(--ink);color:#fff}
 .next{font-size:14px;color:var(--mut);text-align:center}
 .list{display:flex;flex-direction:column;gap:6px}
 .li{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14px}
@@ -154,6 +156,7 @@ button:disabled{opacity:.35}
 <button id="go" class="go">START</button>
 <button id="nextb" aria-label="Esercizio successivo">▶︎</button>
 </div>
+<div class="toggle" style="gap:10px"><button id="m10" class="mode on">10 minuti</button><button id="m6" class="mode">6 minuti</button></div>
 <label class="toggle"><input type="checkbox" id="voice" checked> Voce e segnale sonoro</label>
 <div class="next" id="nexttxt"></div>
 
@@ -205,7 +208,7 @@ function rig(n){
  var extra='<g class="xtra x3"><circle cx="20" cy="66" r="13" fill="none" stroke="'+RED+'" stroke-width="2.6" stroke-dasharray="5 5"/><circle cx="180" cy="66" r="13" fill="none" stroke="'+RED+'" stroke-width="2.6" stroke-dasharray="5 5"/></g>'+
   '<g class="xtra x7"><path d="M170 150 v104 M194 150 v104 M166 150 h32 M170 196 h24" stroke="#7E7A72" stroke-width="5" stroke-linecap="round" fill="none"/></g>';
  var curb=''; for(var i=0;i<10;i++) curb+='<rect x="'+(i*20)+'" y="256" width="20" height="8" fill="'+(i%2?WH:RED)+'"/>';
- return '<svg class="rig e'+n+'" viewBox="0 0 200 270" width="200" height="270" role="img" aria-label="'+EX[n-1].t+'">'+
+ return '<svg class="rig e'+n+'" viewBox="0 0 200 270" width="200" height="270" role="img" aria-label="'+EXALL[n-1].t+'">'+
  '<defs><linearGradient id="sh" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".18"/><stop offset=".35" stop-color="#000" stop-opacity="0"/><stop offset=".75" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient></defs>'+
  '<g opacity=".9">'+curb+'</g><g class="shadow"><ellipse cx="100" cy="255" rx="40" ry="5" fill="#00000026"/></g>'+extra+
  '<g class="all"><g class="bob">'+leg('L')+leg('R')+
@@ -229,6 +232,8 @@ function rig(n){
  '<circle cx="90" cy="36" r="2.6" fill="#E89C86" opacity=".35"/><circle cx="110" cy="36" r="2.6" fill="#E89C86" opacity=".35"/></g>'+
  '</g></g></g></svg>';
 }
+var EXALL=EX.slice(), ORD=[1,2,3,4,5,6,7,8,9,10];
+function setMode(m){ORD=m===6?[1,2,3,4,7,10]:[1,2,3,4,5,6,7,8,9,10];EX=ORD.map(function(k){return EXALL[k-1];});document.getElementById('m10').classList.toggle('on',m===10);document.getElementById('m6').classList.toggle('on',m===6);document.querySelector('h1').textContent='Warm Up fisico '+m+"'";idx=-1;left=DUR;renderList();$('total').textContent=fmt(EX.length*DUR);$('fig').innerHTML=rig(1);$('fig').classList.add('paused');}
 var DUR=60, idx=-1, left=DUR, timer=null, running=false, prep=0;
 var $=function(id){return document.getElementById(id)};
 var ring=$('ring'), C=860.8;
@@ -241,7 +246,7 @@ function show(){
   var e=EX[idx];
   $('step').textContent='ESERCIZIO '+(idx+1)+' DI '+EX.length;
   $('name').textContent=e.t; $('cue').textContent=e.c;
-  $('fig').innerHTML=rig(idx+1);
+  $('fig').innerHTML=rig(ORD[idx]);
   $('nexttxt').textContent= idx<EX.length-1 ? 'Dopo: '+EX[idx+1].t : 'Ultimo esercizio';
   renderList(); paint();
 }
@@ -270,6 +275,7 @@ $('nextb').onclick=function(){ if(idx<0){idx=-1;} goTo(idx+1); if(!running) pain
 $('prev').onclick=function(){ goTo(idx<=0?0:idx-1); if(!running) paint(); };
 renderList();
 $('fig').innerHTML=rig(1);$('fig').classList.add('paused');
+$('m10').onclick=function(){if(!running)setMode(10);};$('m6').onclick=function(){if(!running)setMode(6);};
 })();
 </script>
 </body>
