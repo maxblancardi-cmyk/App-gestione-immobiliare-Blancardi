@@ -3303,8 +3303,11 @@ function inbDocsBlock(filter, title) {
   return `<div class="section-title"><h2>${title}</h2></div>` + inbFolders(list);
 }
 function warmupView() {
-  return `<div class="row" style="gap:8px;margin-bottom:10px"><button class="tbn" data-act="go" data-v="varie">← Indietro</button><a class="btn small" href="warmup.html" target="_blank" rel="noopener" style="margin-left:auto;text-decoration:none">Schermo intero ↗</a></div>
-    <iframe src="warmup.html" title="Warm Up fisico" style="width:100%;height:calc(100vh - 230px);min-height:620px;border:0;border-radius:16px;background:#FAF9F5" allow="autoplay"></iframe>`;
+  const tab = S.wuTab || 'video';
+  return `<div class="row" style="gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="tbn" data-act="go" data-v="varie">← Indietro</button>
+    <button class="btn small ${tab === 'video' ? 'primary' : ''}" data-act="wutab" data-id="video">🎬 Filmato</button><button class="btn small ${tab === 'timer' ? 'primary' : ''}" data-act="wutab" data-id="timer">⏱ Countdown</button></div>
+    ${tab === 'video' ? `<h1 style="font-size:28px;margin:4px 0 8px">Warm Up fisico</h1><video src="warmup_fisico.mp4" poster="warmup_poster.jpg" controls playsinline preload="metadata" style="width:100%;max-width:480px;display:block;margin:0 auto;border-radius:16px;background:#141413"></video><p class="subtle" style="text-align:center">10 minuti · 10 esercizi da 1 minuto, con countdown e segnale sonoro. Premi ▶︎ e segui il pilota.</p>`
+    : `<iframe src="warmup.html" title="Warm Up fisico" style="width:100%;height:calc(100vh - 230px);min-height:620px;border:0;border-radius:16px;background:#FAF9F5" allow="autoplay"></iframe>`}`;
 }
 function inboxView() {
   const all = (S.inbox || []).filter((x) => x.status !== 'dismissed' || S.inbAll).sort((a, b) => (a.status === 'new' ? 0 : 1) - (b.status === 'new' ? 0 : 1) || (b.date || '').localeCompare(a.date || ''));
@@ -3791,6 +3794,7 @@ document.addEventListener('click', async (ev) => {
       case 'inbsave': closeModal(); inbSaveForm(id, false); break;
       case 'inbgo': closeModal(); S.view = 'inbox'; render(); window.scrollTo(0, 0); break;
       case 'inbfold': { S.inbOpen = S.inbOpen || new Set(); if (S.inbOpen.has(id)) S.inbOpen.delete(id); else S.inbOpen.add(id); render(); break; }
+      case 'wutab': S.wuTab = id; render(); break;
       case 'inball': S.inbAll = !S.inbAll; render(); break;
       case 'inbdismiss': { const it = (S.inbox || []).find((x) => x.id === id); if (it) await put('inbox', { ...it, status: 'dismissed' }); closeModal(); render(); inbCheck(); break; }
       case 'ttall': S.ttAll = !S.ttAll; render(); break;
