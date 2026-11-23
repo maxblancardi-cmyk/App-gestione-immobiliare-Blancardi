@@ -1045,7 +1045,7 @@ ICONS.events = '<svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h13l-2.5 4L18 12H5"
 ICONS.varie = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>';
 ICONS.teams = '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .7 3.5 2.5 3.5 5.5"/></svg>';
 ICONS.today = ICONS.home;
-const NAV = [['today', 'Home'], ['events', 'Eventi'], ['drivers', 'Piloti'], ['teams', 'Team'], ['money', 'Incassi'], ['varie', 'Varie']];
+const NAV = [['today', 'Home'], ['events', 'Eventi'], ['drivers', 'Piloti'], ['teams', 'Team'], ['money', 'Compensi'], ['varie', 'Varie']];
 const NAVOF = { inbox: 'varie', warmup: 'varie', today: 'today', events: 'events', champ: 'events', event: 'events', cal: 'events', fc: 'events', drivers: 'drivers', driver: 'drivers', teams: 'teams', team: 'teams', fcc: 'dir', dir: 'dir', money: 'money', bill: 'money', varie: 'varie', home: 'varie', contacts: 'varie', deadlines: 'varie', convert: 'varie', set: 'varie' };
 
 
@@ -1273,6 +1273,7 @@ function evMoneyCard(e, ttl) {
       <label class="btn small ghost" style="cursor:pointer" data-rcptlbl>📷 Scontrino<input type="file" name="receipt" accept="image/*,application/pdf,.pdf" hidden></label>
       <button class="btn primary" type="submit">＋ Aggiungi spesa</button>
     </form>
+    ${(() => { const m = evMoneyCalc(e); return `<div style="margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(57,255,20,.07);border:1px solid rgba(57,255,20,.35)"><div class="irow"><span>Compenso${e.paid ? ' (incassato)' : ''}</span><b>${e.paid ? '—' : money(m.comp, m.cur)}</b></div><div class="irow"><span>+ Spese da rimborsare dal pilota</span><b>${sumTxt(m.expD) || '—'}</b></div><div class="irow" style="border-top:1px solid rgba(255,255,255,.2);padding-top:6px"><span style="font-weight:800">= TOTALE DA CHIEDERE</span><b class="neon" style="font-size:18px">${sumTxt(m.tot) || '—'}</b></div></div>`; })()}
     <div class="row wrap" style="gap:6px;margin-top:10px">${noteChip(e)}</div></div>`;
 }
 async function saveExpInline(f) {
@@ -2088,7 +2089,8 @@ function todayView() {
   const raceHtml = races.map((g) => { const e = g[0], c = champ(e.championship_id), t = atype(e.activity_type_id); const dayN = diffDays(e.start_date, ds), tot = diffDays(e.start_date, e.end_date); return `<div class="tl" data-act="evview" data-id="${e.id}" style="border-left-color:${evColor(e)}"><div class="tlt">${tot > 1 ? `G ${dayN}/${tot}` : 'Tutto il giorno'}</div><div class="grow" style="min-width:0"><strong>${esc(e.circuit || c?.name || t?.name || 'Evento')}</strong><div class="subtle">${esc(c?.name || t?.name || '')}${e.nation ? ' · ' + esc(e.nation) : ''}</div><div class="subtle">${g.map((x) => esc(dname(driver(x.driver_id)))).join(', ')}</div></div><span class="chev">›</span></div>`; }).join('');
   const itemHtml = (x) => `<div class="tl" data-act="${x.k === 'ag' ? 'agedit' : 'gopen'}" data-id="${esc(x.id)}" style="border-left-color:${x.col}"><div class="tlt">${x.t ? `<b>${x.t}</b>${x.end ? `<br><span class="subtle">${x.end}</span>` : ''}` : 'Giorno'}</div><div class="grow" style="min-width:0"><strong>${esc(x.title)}</strong>${x.who ? `<div class="subtle">${esc(x.who)}</div>` : ''}${x.place ? `<div class="subtle">📍 ${esc(x.place)}</div>` : ''}<div class="subtle">${x.k === 'g' ? 'Google Calendar' : 'MB Coaching'}${x.k === 'ag' && x.dirty && MCP ? ' · <span style="color:var(--warn)">non ancora su Google</span>' : ''}</div></div>${x.t ? (x.alarm ? `<span class="bell on" title="${alarmTxt(x.alarm)}">🔔</span>` : `<button class="bell" data-act="${x.k === 'ag' ? 'agalarm' : 'galarm'}" data-id="${esc(x.id)}" title="Metti allarme 30 min prima">🔕</button>`) : ''}</div>`;
   const gstate = !MCP ? '' : gd?.loading ? '<p class="subtle">Carico gli impegni da Google Calendar…</p>' : gd?.err ? `<p class="subtle" style="color:var(--warn)">${esc(gd.err)} <button class="btn small" data-act="gdayreload">Riprova</button></p>` : '';
-  const list = raceHtml + allDay.map(itemHtml).join('') + timed.map(itemHtml).join('') + ttTodayHtml(ds);
+  const merged = timed.map((x) => ({ t: x.t || '', html: itemHtml(x) })).concat(ttTodayItems(ds)).sort((a, b) => a.t.localeCompare(b.t));
+  const list = raceHtml + allDay.map(itemHtml).join('') + merged.map((x) => x.html).join('');
   // riepilogo
   const now = new Date(), nowHM = pad(now.getHours()) + ':' + pad(now.getMinutes());
   const withAl = timed.filter((x) => x.alarm), noAl = timed.filter((x) => !x.alarm && (ds > todayS || (ds === todayS && x.t >= nowHM)));
@@ -2246,6 +2248,38 @@ function champEvents(x) {
   if (x.key === 'OT') return S.events.filter((e) => !e.championship_id && !progOf(e));
   return x.c ? S.events.filter((e) => e.championship_id === x.c.id) : [];
 }
+function archiveHtml() {
+  const todayS = iso(new Date());
+  const past = S.events.filter((e) => e.end_date < todayS);
+  if (!past.length) return '<p class="muted">Nessun evento concluso.</p>';
+  const folders = new Map();
+  past.forEach((e) => {
+    const d = driver(e.driver_id);
+    const key = d ? 'd:' + d.id : 'a:' + evProgLabel(e);
+    const name = d ? dname(d) : evProgLabel(e);
+    if (!folders.has(key)) folders.set(key, { name, isDrv: !!d, col: d ? (champ(d.championship_id)?.color || '#39ff14') : evColor(e), evs: [] });
+    folders.get(key).evs.push(e);
+  });
+  S.archOpen = S.archOpen || new Set();
+  const list = [...folders.entries()].sort((a, b) => (b[1].isDrv - a[1].isDrv) || a[1].name.localeCompare(b[1].name));
+  return `<p class="subtle" style="margin:0 0 10px">Eventi conclusi, una cartella per pilota (o per attività quando non c'è un pilota). Nelle altre pagine vedi solo quelli in arrivo.</p>` + list.map(([k, f]) => {
+    const open = S.archOpen.has(k), evs = f.evs.sort((a, b) => b.start_date.localeCompare(a.start_date));
+    let body = '';
+    if (open) {
+      let yr = '';
+      evs.forEach((e) => {
+        const y = e.start_date.slice(0, 4);
+        if (y !== yr) { yr = y; body += `<div class="lbl" style="margin:10px 0 4px">${y}</div>`; }
+        const mese = cap(parse(e.start_date).toLocaleDateString(LOC(), { month: 'long' }));
+        const what = [e.circuit || '', f.isDrv ? evProgLabel(e) : (driver(e.driver_id) ? dname(driver(e.driver_id)) : String(e.driver_id || '').replace(/^x:/, ''))].filter(Boolean).join(' · ');
+        const act = (atype(e.activity_type_id) || {}).name || '';
+        body += `<div class="ev-item" data-act="evview" data-id="${e.id}"><div class="bar" style="background:${evColor(e)}"></div><div class="grow" style="min-width:0"><div class="row between" style="gap:8px"><strong>${esc(mese)} · ${esc(what || 'Evento')}</strong><span class="subtle">${fmtRange(e.start_date, e.end_date)}</span></div><div class="subtle">${esc(act)}${e.paid ? ' · ✓ pagato' : ''}</div></div></div>`;
+      });
+    }
+    const yrs = [...new Set(evs.map((e) => e.start_date.slice(0, 4)))].join(', ');
+    return `<div class="card" style="margin-bottom:8px;padding:0;overflow:hidden;border-left:5px solid ${f.col}"><div data-act="archfold" data-id="${esc(k)}" style="display:flex;gap:10px;align-items:center;padding:12px;cursor:pointer"><div style="font-size:22px">${open ? '📂' : '📁'}</div><div class="grow" style="min-width:0"><strong style="font-size:17px">${f.isDrv ? '👤 ' : ''}${esc(f.name)}</strong><div class="subtle">${evs.length} ${evs.length === 1 ? 'evento' : 'eventi'} · ${yrs}</div></div><div class="subtle">${open ? '▾' : '▸'}</div></div>${open ? `<div style="padding:0 8px 8px">${body}</div>` : ''}</div>`;
+  }).join('');
+}
 function eventsView() {
   const todayS = iso(new Date());
   const tileArr = champList().map((x) => {
@@ -2255,16 +2289,16 @@ function eventsView() {
     return [champEvents(x).length > 0, `<button class="ctile" data-act="champopen" data-id="${x.key}" style="--cc:${x.color}"><span class="cdot"></span><span class="grow" style="min-width:0;text-align:left"><strong>${esc(x.name)} ${x.flag}</strong><span class="subtle" style="display:block">${rounds ? `${rounds} ${rounds === 1 ? 'evento' : 'eventi'} · ${pil} ${pil === 1 ? 'pilota' : 'piloti'}` : esc(x.sub)}</span>${nx ? `<span class="subtle neon" style="display:block">Prossimo: ${esc(nx.circuit || '')} · ${fmtRange(nx.start_date, nx.end_date)}</span>` : ''}</span><span class="chev">›</span></button>`];
   });
   const nInact = tileArr.filter((t) => !t[0]).length;
-  const evtabv = S.evTab === 'month' ? 'month' : 'seg';
+  const evtabv = S.evTab === 'month' ? 'month' : S.evTab === 'arch' ? 'arch' : 'seg';
   const otherChips = (() => { const o = champList().filter((x) => !champEvents(x).length); return o.length ? `<div class="lbl" style="margin:14px 0 6px">Altri campionati</div><div class="row wrap" style="gap:6px">${o.map((x) => `<button class="btn small" data-act="champopen" data-id="${x.key}" style="border-color:${x.color}">${esc(x.short || x.name)} ${x.flag || ''}</button>`).join('')}</div>` : ''; })();
   const tilesNew = evtabv === 'all' ? tileArr.map((t) => t[1]).join('') : tileArr.filter((t) => t[0]).map((t) => t[1]).join('');
-  const segBar = `<div class="seg" style="margin-bottom:14px">${[['seg', 'Campionati'], ['month', 'Anno e mese']].map(([k, l]) => `<button type="button" class="segb ${evtabv === k ? 'on' : ''}" data-act="evtab" data-id="${k}">${l}</button>`).join('')}</div>`;
-  const monthHtml = (() => { const grp = {}; groupEvents(S.events.slice().sort((a, b) => a.start_date.localeCompare(b.start_date))).forEach((g) => { const k = g[0].start_date.slice(0, 7); (grp[k] = grp[k] || []).push(g); }); return Object.keys(grp).sort().map((k) => `<div class="section-title"><h2>${cap(parse(k + '-01').toLocaleDateString(LOC(), { month: 'long' }))} ${k.slice(0, 4)}</h2><span class="subtle">${grp[k].length}</span></div>` + grp[k].map(evGroupItem).join('')).join('') || '<p class="muted">Nessun evento.</p>'; })();
+  const segBar = `<div class="seg" style="margin-bottom:14px">${[['seg', 'Campionati'], ['month', 'Anno e mese'], ['arch', '🗂 Archivio']].map(([k, l]) => `<button type="button" class="segb ${evtabv === k ? 'on' : ''}" data-act="evtab" data-id="${k}">${l}</button>`).join('')}</div>`;
+  const monthHtml = (() => { const grp = {}; groupEvents(S.events.filter((e) => e.end_date >= todayS).sort((a, b) => a.start_date.localeCompare(b.start_date))).forEach((g) => { const k = g[0].start_date.slice(0, 7); (grp[k] = grp[k] || []).push(g); }); return Object.keys(grp).sort().map((k) => `<div class="section-title"><h2>${cap(parse(k + '-01').toLocaleDateString(LOC(), { month: 'long' }))} ${k.slice(0, 4)}</h2><span class="subtle">${grp[k].length}</span></div>` + grp[k].map(evGroupItem).join('')).join('') || '<p class="muted">Nessun evento.</p>'; })();
   const tiles = tileArr.filter((t) => t[0]).map((t) => t[1]).join('') + (nInact ? `<details style="grid-column:1/-1;margin-top:6px"><summary class="subtle" style="cursor:pointer;padding:6px 0">Altri campionati non seguiti (${nInact}) ›</summary><div class="ctiles" style="margin-top:8px;opacity:.75">${tileArr.filter((t) => !t[0]).map((t) => t[1]).join('')}</div></details>` : '');
   const ups = S.events.filter((e) => e.end_date >= todayS && seasonOk(e)).sort((a, b) => a.start_date.localeCompare(b.start_date));
   return `<div class="row between wrap" style="margin-bottom:6px"><h1 style="font-size:30px">Eventi</h1><span class="row" style="gap:6px"><button class="btn small" data-act="go" data-v="cal">📅 Calendario</button><button class="btn small" data-act="circuits">🏁 Circuiti</button><button class="btn small" data-act="gsync">⟳ Google</button></span></div>
     <p class="subtle" style="margin:0 0 14px">Tocca un campionato per vedere date, circuiti, piloti e direttore gara.</p>
-    ${segBar}${evtabv === 'month' ? monthHtml : `<div class="ctiles">${tilesNew}</div>${otherChips}`}
+    ${segBar}${evtabv === 'month' ? monthHtml : evtabv === 'arch' ? archiveHtml() : `<div class="ctiles">${tilesNew}</div>${otherChips}`}
     <div class="section-title"><h2>Prossimi eventi</h2><button class="btn small primary" data-act="newevent">+ Evento</button></div>
     ${ups.length ? groupEvents(ups).slice(0, 8).map(evGroupItem).join('') : '<p class="muted">Nessun evento in programma.</p>'}`;
 }
@@ -2443,36 +2477,64 @@ function drvTotals(did, filt) {
   });
   return o;
 }
+function evMoneyCalc(e) {
+  const { rate, cur, comp } = evComp(e);
+  const expD = {}, expAll = {};
+  S.expenses.filter((x) => x.event_id === e.id).forEach((x) => { addTo(expAll, x.currency, Number(x.amount)); if (x.paid_by === 'pilota' && !x.reimbursed) addTo(expD, x.currency, Number(x.amount)); });
+  const tot = {}; if (!e.paid) addTo(tot, cur, comp); Object.entries(expD).forEach(([c, n]) => addTo(tot, c, n));
+  return { rate, cur, comp, expD, expAll, tot, note: noteOfEvent(e.id) };
+}
+function moneyRow(e) {
+  const d = driver(e.driver_id), m = evMoneyCalc(e), n = m.note;
+  const where = e.circuit || champ(e.championship_id)?.name || atype(e.activity_type_id)?.name || 'Evento';
+  const st = n ? `<span class="badge ${NSTATE[n.status]?.[1] || ''}">Nota ${esc(n.num)} · ${NSTATE[n.status]?.[0]}</span>` : '<span class="badge">Nota spese da fare</span>';
+  return `<div class="card" style="margin-bottom:10px;border-left:5px solid ${evColor(e)}">
+    <div class="row between" style="gap:8px;align-items:flex-start"><div style="min-width:0" data-act="billopen" data-id="${e.driver_id}"><strong style="font-size:18px">${esc(d ? dname(d) : 'Senza pilota')}</strong><div class="subtle">${esc(where)} · ${fmtRange(e.start_date, e.end_date)} ${e.start_date.slice(0, 4)}</div></div>${st}</div>
+    <table class="mt" style="width:100%;margin-top:10px;border-collapse:collapse;font-size:15px">
+      <tr><td style="padding:4px 0">Compenso<div class="subtle">${e.days || 0} ${Number(e.days) === 1 ? 'giorno' : 'giorni'} × ${m.rate ? money(m.rate, m.cur) : '<span style="color:var(--warn)">tariffa mancante</span>'}</div></td><td style="text-align:right;font-weight:700">${e.paid ? '<span class="subtle">già incassato</span>' : money(m.comp, m.cur)}</td></tr>
+      <tr><td style="padding:4px 0">Spese anticipate da me<div class="subtle">da rimborsare dal pilota</div></td><td style="text-align:right;font-weight:700">${sumTxt(m.expD) || '—'}</td></tr>
+      <tr style="border-top:1px solid rgba(255,255,255,.2)"><td style="padding:8px 0 0;font-weight:800">TOTALE DA CHIEDERE</td><td style="text-align:right;padding-top:8px;font-size:20px;font-weight:900" class="neon">${sumTxt(m.tot) || '—'}</td></tr>
+    </table>
+    <div class="row wrap" style="gap:6px;margin-top:10px">${n ? `<button class="btn small" data-act="noteopen" data-id="${n.id}">🧾 Apri nota</button>` : `<button class="btn small primary" data-act="notegen" data-id="${e.id}">🧾 Genera nota spese</button>`}${n && n.status !== 'pagata' ? `<button class="btn small" data-act="notepaidq" data-id="${n.id}" style="border-color:var(--neon);color:var(--neon)">✓ Pagata</button>` : !n ? `<button class="btn small" data-act="paid-toggle" data-id="${e.id}">✓ Incassato</button>` : ''}<button class="btn small ghost" data-act="event" data-id="${e.id}">✎ Giorni e spese</button></div></div>`;
+}
 function moneyView() {
   const years = [...new Set([new Date().getFullYear(), ...S.events.map((e) => +e.start_date.slice(0, 4))])].sort((a, b) => b - a);
-  const all = { tot: {}, paid: {}, due: {}, exp: {} };
-  const cards = S.drivers.map((d) => {
-    const o = drvTotals(d.id, yearOk);
-    if (!o.n) return '';
-    ['tot', 'paid', 'due', 'exp'].forEach((k) => Object.entries(o[k]).forEach(([c, n]) => addTo(all[k], c, n)));
-    const dueTxt = sumTxt(o.due), expTxt = sumTxt(o.exp);
-    return `<div class="icard" data-act="billopen" data-id="${d.id}">${avatar(d)}<div class="grow" style="min-width:0"><div class="row between" style="gap:8px"><strong>${esc(dname(d))}</strong><span class="chev">›</span></div>
-      <div class="subtle">${o.n} ${o.n === 1 ? 'evento' : 'eventi'} · ${o.days} giorni</div>
-      <div class="irow"><span>Maturato</span><b>${sumTxt(o.tot) || '—'}</b></div>
-      <div class="irow"><span>Incassato</span><b>${sumTxt(o.paid) || '—'}</b></div>
-      <div class="irow"><span>Da incassare</span><b class="${dueTxt ? 'neon' : ''}">${dueTxt || 'saldato'}</b></div>
-      ${(() => { const o = {}; notesOf(d.id).filter((n) => n.status !== 'pagata').forEach((n) => Object.entries(noteTotals(n.lines)).forEach(([c, v]) => addTo(o, c, v))); return sumTxt(o) ? `<div class="irow"><span>Note spese non pagate</span><b style="color:var(--warn)">${sumTxt(o)}</b></div>` : ''; })()}
-      ${expTxt ? `<div class="irow"><span>Spese da rimborsare</span><b style="color:var(--warn)">${expTxt}</b></div>` : ''}</div></div>`;
-  }).join('');
-  const unpaid = S.events.filter((e) => !e.paid && e.end_date <= iso(new Date()) && evComp(e).comp > 0).sort((a, b) => a.start_date.localeCompare(b.start_date));
-  return `<div class="row between wrap" style="margin-bottom:14px"><h1 style="font-size:30px">Incassi</h1>
-    <span class="row" style="gap:6px"><button class="btn small" data-act="lockoff">🔒 Blocca</button><button class="btn small" data-act="lockchg">Password</button></span>
-    <select id="yearsel" style="width:auto"><option value="0" ${S.year === 0 ? 'selected' : ''}>Tutti gli anni</option>${years.map((y) => `<option ${y === S.year ? 'selected' : ''}>${y}</option>`).join('')}</select></div>
-  <div class="bigcard" style="padding:16px"><div class="lbl">${S.year ? 'Anno ' + S.year : 'Tutti gli anni'}</div>
-    <div class="irow"><span>Maturato</span><b style="font-size:18px">${sumTxt(all.tot) || '—'}</b></div>
-    <div class="irow"><span>Incassato</span><b>${sumTxt(all.paid) || '—'}</b></div>
-    <div class="irow"><span>Da incassare</span><b class="neon">${sumTxt(all.due) || '—'}</b></div>
-    <div class="irow"><span>Spese da rimborsare</span><b>${sumTxt(all.exp) || '—'}</b></div>
-    <div class="subtle" style="margin-top:6px">Ogni valuta resta separata: nessuna conversione.</div></div>
-  <div class="section-title"><h2>Per pilota</h2></div>
-  ${cards ? `<div id="money-cards">${cards}</div>` : '<p class="muted">Nessun evento in questo periodo.</p>'}
-  <div class="section-title"><h2>Compensi da incassare</h2></div>
-  ${unpaid.length ? unpaid.map((e) => { const { cur, comp } = evComp(e); return `<div class="ev-item"><div class="bar" style="background:${evColor(e)}"></div><div class="grow" data-act="billopen" data-id="${e.driver_id}"><strong>${esc(dname(driver(e.driver_id)))}</strong><div class="subtle">${esc(e.circuit || atype(e.activity_type_id)?.name || '')} · ${fmtRange(e.start_date, e.end_date)}</div></div><div style="text-align:right"><div class="neon" style="font-weight:700">${money(comp, cur)}</div><button class="btn small" data-act="paid-toggle" data-id="${e.id}">Incassato</button></div></div>`; }).join('') : '<p class="muted">Tutto incassato per gli eventi passati.</p>'}`;
+  const todayS = iso(new Date());
+  const evs = S.events.filter(yearOk);
+  const T = { due: {}, paid: {}, fut: {}, exp: {} };
+  const open = [], drv = new Map();
+  evs.forEach((e) => {
+    const m = evMoneyCalc(e), past = e.end_date <= todayS;
+    const noteDone = m.note && m.note.status === 'pagata';
+    if (!past) addTo(T.fut, m.cur, m.comp);
+    else if (e.paid || noteDone) addTo(T.paid, m.cur, m.comp);
+    else addTo(T.due, m.cur, m.comp);
+    if (past && !noteDone) Object.entries(m.expD).forEach(([c, n]) => addTo(T.exp, c, n));
+    if (past && !noteDone && sumTxt(m.tot)) open.push(e);
+    const k = e.driver_id || ''; if (!drv.has(k)) drv.set(k, { n: 0, due: {}, paid: {} });
+    const o = drv.get(k); o.n++;
+    if (past && !noteDone) Object.entries(m.tot).forEach(([c, n]) => addTo(o.due, c, n));
+    if (e.paid || noteDone) addTo(o.paid, m.cur, m.comp);
+  });
+  open.sort((a, b) => a.start_date.localeCompare(b.start_date));
+  const tile = (lbl, val, sub, col) => `<div class="card" style="flex:1;min-width:140px;margin:0;padding:12px"><div class="lbl" style="margin:0">${lbl}</div><div style="font-size:22px;font-weight:900;color:${col || 'inherit'};margin:4px 0">${val || '—'}</div><div class="subtle" style="font-size:12px">${sub}</div></div>`;
+  const drvRows = [...drv.entries()].map(([k, o]) => ({ k, o, d: driver(k) })).filter((x) => x.d).sort((a, b) => dname(a.d).localeCompare(dname(b.d)))
+    .map(({ k, o, d }) => `<div class="lrow" data-act="billopen" data-id="${k}">${avatar(d)}<div class="grow" style="min-width:0"><strong>${esc(dname(d))}</strong><div class="subtle">${o.n} ${o.n === 1 ? 'evento' : 'eventi'} · incassato ${sumTxt(o.paid) || '—'}</div></div><div style="text-align:right"><div class="subtle" style="font-size:11px">DA INCASSARE</div><b class="${sumTxt(o.due) ? 'neon' : ''}">${sumTxt(o.due) || 'saldato'}</b></div><span class="chev">›</span></div>`).join('');
+  return `<div class="row between wrap" style="margin-bottom:12px;gap:8px"><h1 style="font-size:30px">Compensi e spese</h1>
+    <span class="row" style="gap:6px"><select id="yearsel" style="width:auto"><option value="0" ${S.year === 0 ? 'selected' : ''}>Tutti gli anni</option>${years.map((y) => `<option ${y === S.year ? 'selected' : ''}>${y}</option>`).join('')}</select><button class="btn small" data-act="lockoff">🔒</button></span></div>
+  <div class="row wrap" style="gap:8px;margin-bottom:6px">
+    ${tile('Da incassare', sumTxt(T.due), 'compensi di eventi finiti', 'var(--neon)')}
+    ${tile('Spese da rimborsare', sumTxt(T.exp), 'anticipate da me', 'var(--warn)')}
+    ${tile('Incassato', sumTxt(T.paid), S.year ? 'nel ' + S.year : 'totale')}
+    ${tile('In programma', sumTxt(T.fut), 'eventi futuri')}
+  </div>
+  <p class="subtle" style="margin:0 0 14px">Valute separate, nessuna conversione.</p>
+  <div class="section-title"><h2>① Da chiedere ai piloti</h2></div>
+  <p class="subtle" style="margin:-4px 0 10px">Ogni evento finito: compenso + spese = totale. Genera la nota spese, inviala, poi segnala “Pagata”.</p>
+  ${open.length ? open.map(moneyRow).join('') : '<p class="muted">✓ Tutto incassato per gli eventi finiti.</p>'}
+  <div class="section-title"><h2>② Per pilota</h2></div>
+  ${drvRows ? `<div class="lbox">${drvRows}</div>` : '<p class="muted">Nessun evento in questo periodo.</p>'}
+  <div class="row" style="gap:6px;margin-top:14px"><button class="btn small ghost" data-act="lockchg">Cambia password</button></div>`;
 }
 function billData(did, ym) {
   const evs = S.events.filter((e) => e.driver_id === did && (!ym || (ym.length === 4 ? e.start_date.slice(0, 4) === ym : e.start_date.slice(0, 7) === ym))).sort((a, b) => a.start_date.localeCompare(b.start_date));
@@ -3077,14 +3139,24 @@ function ttBlock(g) {
     ${noDay.length && day === days[0] ? `<div class="lbl" style="margin:12px 0 4px">Senza giorno</div>${ttFiltered(noDay, tt).map((r) => line(r, true)).join('')}` : ''}
     <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap">${tt.img ? `<button class="btn small" data-act="ttimg" data-id="${tt.id}">📄 Originale</button>` : ''}<button class="btn small" data-act="ttedit" data-id="${tt.id}">✏️ Correggi</button><button class="btn small danger" data-act="ttdel" data-id="${tt.id}">Elimina</button></div></div>`;
 }
-function ttTodayHtml(ds) {
+function evProgLabel(e) {
+  const p = progOf(e); if (p) return progName(p);
+  const c = champ(e.championship_id); if (c) return c.name;
+  return (atype(e.activity_type_id) || {}).name || 'Evento';
+}
+function ttTodayItems(ds) {
   const out = [];
   groupEvents(S.events.filter((e) => e.start_date <= ds && ds <= e.end_date)).forEach((g) => {
     const tt = ttOfGroup(g); if (!tt) return;
-    ttFiltered(ttSorted(tt).filter((r) => r.day === ds && (TT_SESS_RE.test(r.label) || r.end)), tt).forEach((r) => { const sp = ttSplit(r); out.push(`<div class="tl" data-act="evview" data-id="${g[0].id}" style="border-left-color:${evColor(g[0])}"><div class="tlt"><b>${r.start}</b>${r.end ? `<br><span class="subtle">${r.end}</span>` : ''}</div><div class="grow" style="min-width:0"><strong>${esc(sp.what)}</strong><div class="subtle">${esc(sp.who || evDove(g[0]).name)}</div></div></div>`); });
+    const col = evColor(g[0]), prog = evProgLabel(g[0]), who = g.map((e) => driver(e.driver_id)).filter(Boolean).map((d) => d.last_name || dname(d)).join(', ');
+    ttFiltered(ttSorted(tt).filter((r) => r.day === ds && (TT_SESS_RE.test(r.label) || r.end)), tt).forEach((r) => {
+      const sp = ttSplit(r);
+      out.push({ t: r.start, html: `<div class="tl" data-act="evview" data-id="${g[0].id}" style="border-left-color:${col}"><div class="tlt"><b>${r.start}</b>${r.end ? `<br><span class="subtle">${r.end}</span>` : ''}</div><div class="grow" style="min-width:0"><div style="font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:${col};margin-bottom:2px">${esc(prog)}${sp.who ? ' · ' + esc(sp.who) : ''}</div><strong style="font-size:19px">${esc(sp.what)}</strong>${who ? `<div class="subtle">👤 ${esc(who)}</div>` : ''}</div></div>` });
+    });
   });
-  return out.join('');
+  return out;
 }
+function ttTodayHtml(ds) { return ttTodayItems(ds).map((x) => x.html).join(''); }
 function ttForm(evId) {
   const e = S.events.find((x) => x.id === evId); if (!e) return;
   const c = champ(e.championship_id), url = c?.board_url || '';
@@ -3804,6 +3876,7 @@ document.addEventListener('click', async (ev) => {
       case 'inbgo': closeModal(); S.view = 'inbox'; render(); window.scrollTo(0, 0); break;
       case 'inbfold': { S.inbOpen = S.inbOpen || new Set(); if (S.inbOpen.has(id)) S.inbOpen.delete(id); else S.inbOpen.add(id); render(); break; }
       case 'wutab': S.wuTab = id; render(); break;
+      case 'archfold': { S.archOpen = S.archOpen || new Set(); if (S.archOpen.has(id)) S.archOpen.delete(id); else S.archOpen.add(id); render(); break; }
       case 'inball': S.inbAll = !S.inbAll; render(); break;
       case 'inbdismiss': { const it = (S.inbox || []).find((x) => x.id === id); if (it) await put('inbox', { ...it, status: 'dismissed' }); closeModal(); render(); inbCheck(); break; }
       case 'ttall': S.ttAll = !S.ttAll; render(); break;
