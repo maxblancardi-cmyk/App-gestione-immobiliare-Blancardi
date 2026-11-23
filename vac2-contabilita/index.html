@@ -102,6 +102,13 @@ select option:checked{background:var(--accent) linear-gradient(0deg,var(--accent
 .drop label{display:inline;color:var(--accent);font-weight:600;cursor:pointer;font-size:inherit}
 body.drag .drop,body.drag main{outline:3px dashed var(--accent);outline-offset:4px}
 #impInfo{display:none;background:var(--blue-soft);color:var(--blue);border:1px solid #c9d9ea;border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:13px}
+
+.atab td,.atab th{padding:5px 8px;font-size:12.5px;white-space:nowrap}.atab td.mute{max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.acq{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px}.acq.acqdup{background:#faf9f6;opacity:.85}
+.acqnome b{word-break:break-all}.acqcampi{display:grid;grid-template-columns:1.4fr 1.2fr 1fr 1fr;gap:10px}@media (max-width:640px){.acqcampi{grid-template-columns:1fr 1fr}}
+.acqmsg{background:var(--accent-soft);color:var(--accent);border-radius:7px;padding:6px 9px;font-size:12.5px;font-weight:600;margin-top:6px}
+#printArea{display:none}body.printing>*:not(#printArea){display:none!important}body.printing #printArea{display:block}
+#printArea table{width:100%;border-collapse:collapse;font-size:11px}#printArea td,#printArea th{border-bottom:1px solid #ddd;padding:3px 5px;text-align:left;vertical-align:top}#printArea .n{text-align:right;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -941,6 +948,7 @@ async function archLista(){
   if(a.error||b.error){ARCH.err=(a.error||b.error).message}else ARCH.err='';
   ARCH.b=(a.data||[]).filter(x=>x.id).map(x=>({...x,path:'estratti-conto/'+x.name}));ARCH.c=(b.data||[]).filter(x=>x.id).map(x=>({...x,path:'cassetto-fiscale/'+x.name}));
   if(!ARCH.letto){[...ARCH.b,...ARCH.c].forEach(x=>ARCH.sel.add(x.path));ARCH.letto=true}
+  try{await archRegistro();await archSana()}catch(e){}
 }
 async function classificaFile(f){
   const n=f.name.toLowerCase();if(/\.(zip|xml|p7m)$/.test(n))return 'cassetto-fiscale';
@@ -957,18 +965,6 @@ async function archCaricaControlli(){
   vControlli();
 }
 async function archApri(path){const {data,error}=await sb.storage.from(BKT).createSignedUrl(path,120,{download:true});if(error){alert(error.message);return}window.open(data.signedUrl,'_blank')}
-async function archElimina(path){if(!confirm(`Eliminare dall'archivio il file\n${path.split('/').pop()}?`))return;const {error}=await sb.storage.from(BKT).remove([path]);if(error){alert('Non eliminato: '+error.message);return}ARCH.sel.delete(path);await archLista();vControlli()}
-function archCartella(t,L){
-  return `<div><h3 style="font-size:14px;margin:4px 0 6px">${t} <span class="mute">(${L.length})</span></h3>${!L.length&&t==='Estratti conto'?`<p class="small" style="color:var(--warn)">L'archivio è dentro l'app: le cartelle di Google Drive non vengono lette. Trascina qui i CSV dell'estratto conto Caraglio (storico e lista movimenti), una volta sola.</p>`:''}${L.length?`<div class="tblwrap" style="max-height:260px"><table>${L.map(x=>`<tr><td style="width:26px"><input type="checkbox" class="aSel" data-p="${esc(x.path)}" ${ARCH.sel.has(x.path)?'checked':''}></td><td class="small" style="word-break:break-all">${esc(x.name)}<div class="mute">caricato il ${dit((x.created_at||'').slice(0,10))} · ${kb(x.metadata&&x.metadata.size)}</div></td><td style="white-space:nowrap"><button class="small aDl" data-p="${esc(x.path)}">Scarica</button>${isAdmin()?` <button class="small aRm" data-p="${esc(x.path)}" title="Elimina">×</button>`:''}</td></tr>`).join('')}</table></div>`:'<p class="small mute">Nessun file.</p>'}</div>`;
-}
-function archBind(){
-  aFile.onchange=e=>{const L=[...e.target.files];if(L.length)archiviaFile(L)};
-  document.querySelectorAll('.aSel').forEach(x=>x.onchange=()=>{x.checked?ARCH.sel.add(x.dataset.p):ARCH.sel.delete(x.dataset.p)});
-  document.querySelectorAll('.aDl').forEach(x=>x.onclick=()=>archApri(x.dataset.p));
-  document.querySelectorAll('.aRm').forEach(x=>x.onclick=()=>archElimina(x.dataset.p));
-  aLoad.onclick=archCaricaControlli;
-}
-
 /* ---------- CONTROLLI v2: banca ↔ app (1), banca ↔ Agenzia Entrate (2), periodi, registro ---------- */
 const NOMI_MESI=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
 const meseLab=m=>NOMI_MESI[+m.slice(5,7)-1]+' '+m.slice(0,4);
@@ -1114,53 +1110,132 @@ async function analizzaFile(f){
 }
 async function hashFile(f){const b=await crypto.subtle.digest('SHA-256',await f.arrayBuffer());return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 /* doppioni: file identico già in archivio (stesso contenuto) o stesso periodo */
+const nomeStd=r=>`${r.dal||'0000-00-00'}_${r.al||'0000-00-00'}_${r.ente||'Altro'}_${r.tipo||'file'}.${r.ext}`;
+/* ---------- ARCHIVIO v2: registro (vac2_archivio), tabella con filtro, niente doppioni, stampa/esporta ---------- */
+ARCH.reg=[];ARCH.filtro='';
+const TIPO_LAB={'estratto-conto':'Estratto conto','fatture-ricevute':'Agenzia Entrate'};
+async function archRegistro(){const {data,error}=await sb.from('vac2_archivio').select('*');if(!error)ARCH.reg=data||[];return ARCH.reg}
+async function archSana(){/* file in archivio senza riga di registro (caricati prima del 23/11): li registro */
+  const conReg=new Set(ARCH.reg.map(r=>r.path));
+  for(const x of [...ARCH.b,...ARCH.c]){if(conReg.has(x.path))continue;
+    try{const f=await archScarica(x.path);const a=await analizzaFile(f);const p=periodoDaNome(x.name)||{};
+      const row={path:x.path,nome_originale:null,tipo:x.path.startsWith('estratti-conto/')?'estratto-conto':'fatture-ricevute',ente:p.ente||a.ente||'Altro',dal:p.dal||a.dal||null,al:p.al||a.al||null,hash:a.hash,contenuto:a.nota,dimensione:f.size,caricato_il:x.created_at};
+      const {error}=await sb.from('vac2_archivio').insert(row);if(!error)ARCH.reg.push(row)}catch(e){console.warn('registro',x.path,e)}}
+}
+function archRighe(){
+  const reg=Object.fromEntries(ARCH.reg.map(r=>[r.path,r]));
+  return [...ARCH.b,...ARCH.c].map(x=>{const r=reg[x.path]||{};const p=periodoDaNome(x.name)||{};
+    return {path:x.path,name:x.name,tipo:r.tipo||(x.path.startsWith('estratti-conto/')?'estratto-conto':'fatture-ricevute'),ente:r.ente||p.ente||'',dal:r.dal||p.dal||'',al:r.al||p.al||'',orig:r.nome_originale||'',contenuto:r.contenuto||'',chi:r.caricato_da||'',quando:(r.caricato_il||x.created_at||'').slice(0,10),size:(x.metadata&&x.metadata.size)||r.dimensione}})
+   .sort((a,b)=>a.tipo.localeCompare(b.tipo)||(a.dal||'').localeCompare(b.dal||''));
+}
+function archTabella(){
+  const T=archRighe();const L=T.filter(x=>!ARCH.filtro||x.tipo===ARCH.filtro);const nB=T.filter(x=>x.tipo==='estratto-conto').length,nC=T.length-nB;
+  const vuotoB=!nB?`<p class="small" style="color:var(--warn);margin:6px 0">Nessun estratto conto: trascina qui i CSV della Caraglio (le cartelle di Google Drive non vengono lette).</p>`:'';
+  return `<div class="row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 8px">
+    <div class="seg" id="aSeg"><button type="button" data-f="" class="${!ARCH.filtro?'on':''}">Tutti (${T.length})</button><button type="button" data-f="estratto-conto" class="${ARCH.filtro==='estratto-conto'?'on':''}">Estratti conto (${nB})</button><button type="button" data-f="fatture-ricevute" class="${ARCH.filtro==='fatture-ricevute'?'on':''}">Agenzia Entrate (${nC})</button></div>
+    <span style="flex:1"></span><button class="small" id="aPrint">Stampa elenco</button><button class="small" id="aCsv">Esporta per Excel</button></div>${vuotoB}
+  <div class="tblwrap" style="max-height:340px"><table class="atab"><thead><tr><th style="width:28px"><input type="checkbox" id="aAll" title="Seleziona tutti"></th><th>Tipo</th><th>Ente</th><th>Dal</th><th>Al</th><th>Contenuto</th><th>File originale</th><th>Caricato</th><th></th></tr></thead><tbody>
+  ${L.map(x=>`<tr><td><input type="checkbox" class="aSel" data-p="${esc(x.path)}" ${ARCH.sel.has(x.path)?'checked':''}></td><td>${TIPO_LAB[x.tipo]}</td><td>${esc(ENTI_LAB[x.ente]||x.ente)}</td><td>${dit(x.dal)}</td><td>${dit(x.al)}</td><td class="mute">${esc(x.contenuto)}</td><td class="mute" title="${esc('Nome in archivio: '+x.name)}">${esc(x.orig||'—')}</td><td class="mute">${dit(x.quando)}${x.chi?' · '+esc(x.chi.split('@')[0]):''}</td><td style="white-space:nowrap"><button class="small aDl" data-p="${esc(x.path)}" title="Scarica">⤓</button>${isAdmin()?` <button class="small aRm" data-p="${esc(x.path)}" title="Elimina">×</button>`:''}</td></tr>`).join('')||'<tr><td colspan="9" class="mute">Nessun file.</td></tr>'}
+  </tbody></table></div>`;
+}
+function archHtml(){
+  return `<div class="card" style="max-width:1100px"><h2>Archivio file</h2>
+  <div class="drop">Trascina qui gli <b>estratti conto</b> (CSV) e i file dell'<b>Agenzia delle Entrate</b> (ZIP, XML, P7M o CSV). Oppure <label>scegli i file<input type="file" id="aFile" multiple accept=".csv,.txt,.zip,.xml,.p7m" style="display:none"></label></div>
+  ${ARCH.err?`<p class="err">Archivio non disponibile: ${esc(ARCH.err)}</p>`:''}
+  ${archTabella()}
+  <div class="actions"><span class="small mute" style="margin-right:auto">Spunta i file da usare: per il controllo completo servono tutti gli estratti conto, senza buchi tra un periodo e l'altro.</span><button id="aLoad">Usa i file spuntati nei controlli</button></div></div>`;
+}
+function archBind(){
+  aFile.onchange=e=>{const L=[...e.target.files];if(L.length)archiviaFile(L)};
+  document.querySelectorAll('.aSel').forEach(x=>x.onchange=()=>{x.checked?ARCH.sel.add(x.dataset.p):ARCH.sel.delete(x.dataset.p)});
+  const all=document.getElementById('aAll');if(all){const vis=[...document.querySelectorAll('.aSel')];all.checked=vis.length&&vis.every(x=>x.checked);all.onchange=()=>vis.forEach(x=>{x.checked=all.checked;all.checked?ARCH.sel.add(x.dataset.p):ARCH.sel.delete(x.dataset.p)})}
+  document.querySelectorAll('.aDl').forEach(x=>x.onclick=()=>archApri(x.dataset.p));
+  document.querySelectorAll('.aRm').forEach(x=>x.onclick=()=>archElimina(x.dataset.p));
+  document.querySelectorAll('#aSeg button').forEach(b=>b.onclick=()=>{ARCH.filtro=b.dataset.f;vControlli()});
+  aLoad.onclick=archCaricaControlli;aPrint.onclick=archStampa;aCsv.onclick=archEsporta;
+}
+/* contenuto dei file spuntati, per stampa ed esportazione */
+async function archContenuto(){
+  const sel=archRighe().filter(x=>ARCH.sel.has(x.path)&&(!ARCH.filtro||x.tipo===ARCH.filtro));
+  if(!sel.length){alert('Spunta almeno un file.');return null}
+  caricamento(true);try{
+    const fb=await Promise.all(sel.filter(x=>x.tipo==='estratto-conto').map(x=>archScarica(x.path)));const fc=await Promise.all(sel.filter(x=>x.tipo==='fatture-ricevute').map(x=>archScarica(x.path)));
+    const L=[];for(const f of fb){try{L.push(parseBanca(await f.text(),f.name))}catch(e){}}
+    const mov=L.length?unisciBanca(L):[];const fat=fc.length?(await leggiCassetto(fc)).fatture.sort((a,b)=>(a.data||'').localeCompare(b.data||'')):[];
+    return {sel,mov,fat}}finally{caricamento(false)}
+}
+const nomeFile=n=>{const r=archRighe().find(x=>x.name===n||x.path.endsWith('/'+n));return r?(r.orig||r.name):n};
+async function archStampa(){
+  const c=await archContenuto();if(!c)return;const perMese=(L,dk)=>{const g={};L.forEach(x=>{const m=(x[dk]||'').slice(0,7)||'senza data';(g[m]=g[m]||[]).push(x)});return Object.entries(g).sort((a,b)=>a[0].localeCompare(b[0]))};
+  let h=`<h1 style="font-size:18px">Via al Capo 2 – Elenco documenti importati</h1><p style="font-size:12px">Stampato il ${new Date().toLocaleString('it-IT')}</p>
+  <h2 style="font-size:15px">File</h2><table><thead><tr><th>Tipo</th><th>Ente</th><th>Dal</th><th>Al</th><th>Contenuto</th><th>File originale</th><th>Caricato</th></tr></thead><tbody>${c.sel.map(x=>`<tr><td>${TIPO_LAB[x.tipo]}</td><td>${esc(ENTI_LAB[x.ente]||x.ente)}</td><td>${dit(x.dal)}</td><td>${dit(x.al)}</td><td>${esc(x.contenuto)}</td><td>${esc(x.orig||x.name)}</td><td>${dit(x.quando)}</td></tr>`).join('')}</tbody></table>`;
+  if(c.mov.length){h+=`<h2 style="font-size:15px;page-break-before:always">Movimenti bancari (${c.mov.length}) – doppioni tra file tolti</h2>`;
+    for(const [m,L] of perMese(c.mov,'data')){const e=L.filter(x=>x.imp>0).reduce((a,x)=>a+x.imp,0),u=L.filter(x=>x.imp<0).reduce((a,x)=>a+x.imp,0);
+      h+=`<h3 style="font-size:13px;margin:12px 0 4px">${m.length===7?meseLab(m):m} · entrate ${eur(e)} · uscite ${eur(-u)}</h3><table><tbody>${L.map(x=>`<tr><td style="width:80px">${dit(x.data)}</td><td class="n" style="width:110px">${eur(x.imp)}</td><td>${esc(x.benef||'')} <span style="color:#777">${esc(x.desc.slice(0,110))}</span></td></tr>`).join('')}</tbody></table>`}}
+  if(c.fat.length){h+=`<h2 style="font-size:15px;page-break-before:always">Fatture ricevute – Agenzia Entrate (${c.fat.length})</h2>`;
+    for(const [m,L] of perMese(c.fat,'data')){h+=`<h3 style="font-size:13px;margin:12px 0 4px">${m.length===7?meseLab(m):m} · totale ${eur(L.reduce((a,x)=>a+x.totale,0))}</h3><table><tbody>${L.map(x=>`<tr><td style="width:80px">${dit(x.data)}</td><td>${esc(x.fornitore)}</td><td style="width:90px">n° ${esc(x.numero)}</td><td class="n" style="width:100px">${eur(x.imponibile)}</td><td class="n" style="width:90px">${eur(x.iva)}</td><td class="n" style="width:110px"><b>${eur(x.totale)}</b></td></tr>`).join('')}</tbody></table>`}}
+  let el=document.getElementById('printArea');if(!el){el=document.createElement('div');el.id='printArea';document.body.appendChild(el)}
+  el.innerHTML=h;document.body.classList.add('printing');const fine=()=>{document.body.classList.remove('printing');window.removeEventListener('afterprint',fine)};window.addEventListener('afterprint',fine);setTimeout(()=>{window.print();setTimeout(fine,500)},50);
+}
+async function archEsporta(){
+  const c=await archContenuto();if(!c)return;const q=v=>`"${String(v??'').replace(/"/g,'""')}"`;const n=v=>(+v||0).toFixed(2).replace('.',',');
+  const R=[['Fonte','Data','Mese','Soggetto / beneficiario','Numero','Descrizione','Imponibile','IVA','Importo','File']];
+  c.mov.forEach(x=>R.push(['Banca',dit(x.data),x.data.slice(0,7),x.benef||'','',x.desc,'','',n(x.imp),nomeFile(x.file)]));
+  c.fat.forEach(x=>R.push(['Agenzia Entrate',dit(x.data),(x.data||'').slice(0,7),x.fornitore,x.numero,x.tipo||'',n(x.imponibile),n(x.iva),n(x.totale),nomeFile(x.file)]));
+  const blob=new Blob(['﻿'+R.map(r=>r.map(q).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`VAC2_documenti_importati_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast(`Esportate ${R.length-1} righe`);
+}
+/* doppioni: stesso contenuto (impronta) o stesso tipo/ente/periodo -> bloccato */
 async function cercaDoppioni(L){
-  if(!ARCH.letto)await archLista();const tutti=[...ARCH.b,...ARCH.c];const cache={};
-  for(const [i,r] of L.entries()){r.dup='';r.stesso='';r.includi=true;
-    const prima=L.slice(0,i).find(x=>x.hash&&x.hash===r.hash);if(prima){r.dup='uguale a '+prima.file.name+' (caricato insieme)';r.includi=false;continue}
-    for(const x of tutti){const sz=x.metadata&&x.metadata.size;if(sz!==r.file.size||!r.hash)continue;
-      try{if(!cache[x.path])cache[x.path]=await hashFile(await archScarica(x.path));if(cache[x.path]===r.hash){r.dup=x.name;r.includi=false;break}}catch(e){}}
+  if(!ARCH.letto)await archLista();await archRegistro();const byHash=Object.fromEntries(ARCH.reg.map(r=>[r.hash,r]));
+  for(const [i,r] of L.entries()){r.dup='';
+    const prima=L.slice(0,i).find(x=>x.hash&&x.hash===r.hash);if(prima){r.dup=`è lo stesso file di «${prima.file.name}», già in questo caricamento`;continue}
+    const g=r.hash&&byHash[r.hash];if(g){r.dup=`è già nell'archivio (caricato il ${dit((g.caricato_il||'').slice(0,10))}${g.nome_originale?' come «'+g.nome_originale+'»':''})`;continue}
+    for(const x of [...ARCH.b,...ARCH.c]){if(ARCH.reg.some(z=>z.path===x.path))continue;const sz=x.metadata&&x.metadata.size;if(sz!==r.file.size||!r.hash)continue;
+      try{if(await hashFile(await archScarica(x.path))===r.hash){r.dup=`è già nell'archivio (${x.name})`;break}}catch(e){}}
   }
 }
-function stessoPeriodo(r){const dir=r.tipo==='estratto-conto'?ARCH.b:ARCH.c;const x=dir.find(x=>{const p=periodoDaNome(x.name);return p&&p.ente===r.ente&&p.dal===r.dal&&p.al===r.al});return x?x.name:''}
-const nomeStd=r=>`${r.dal||'0000-00-00'}_${r.al||'0000-00-00'}_${r.ente||'Altro'}_${r.tipo||'file'}.${r.ext}`;
+function stessoPeriodo(r){const x=archRighe().find(x=>x.tipo===r.tipo&&x.ente===r.ente&&x.dal===r.dal&&x.al===r.al);return x?(x.orig||x.name):''}
 function apriMascheraAcq(L){return new Promise(ok=>{
-  let d=document.getElementById('dlgAcq');if(!d){d=document.createElement('dialog');d.id='dlgAcq';d.style.maxWidth='980px';document.body.appendChild(d)}
+  let d=document.getElementById('dlgAcq');if(!d){d=document.createElement('dialog');d.id='dlgAcq';document.body.appendChild(d)}d.style.maxWidth='860px';
   const opt=(o,v)=>Object.entries(o).map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('');
-  d.innerHTML=`<form class="dlg" method="dialog"><h3>Acquisizione file</h3><div class="mute small" style="margin-bottom:10px">Controlla tipo, ente e periodo: il file verrà salvato con il nome standard indicato.</div>
-  <div class="tblwrap" style="max-height:60vh"><table><thead><tr><th>File</th><th>Tipo</th><th>Ente</th><th>Dal</th><th>Al</th><th>Nome nell'archivio</th></tr></thead><tbody>
-  ${L.map((r,i)=>`<tr data-i="${i}"><td class="small" style="max-width:200px;word-break:break-all">${esc(r.file.name)}<div class="mute">${esc(r.nota)}</div>${r.dup?`<div style="color:var(--accent);font-weight:600">File già nell'archivio: ${esc(r.dup)}. Non verrà salvato.</div><label style="flex-direction:row;align-items:center;gap:4px;font-weight:400"><input type="checkbox" class="qInc"> salvalo lo stesso</label>`:''}<div class="qSt" style="color:var(--warn);font-weight:600"></div></td>
-   <td><select class="qT">${opt(TIPI_FILE,r.tipo)}</select></td><td><select class="qE">${opt(ENTI_LAB,r.ente)}</select></td>
-   <td><input type="date" class="qD" value="${r.dal}"></td><td><input type="date" class="qA" value="${r.al}"></td><td class="small qN" style="word-break:break-all"></td></tr>`).join('')}</tbody></table></div>
-  <div class="err" id="qErr"></div><div class="actions"><button value="no" type="button" id="qNo">Annulla</button><button class="primary" type="button" id="qOk">Salva nell'archivio</button></div></form>`;
-  const sync=()=>d.querySelectorAll('tr[data-i]').forEach(tr=>{const r=L[+tr.dataset.i];r.tipo=tr.querySelector('.qT').value;r.ente=tr.querySelector('.qE').value;r.dal=tr.querySelector('.qD').value;r.al=tr.querySelector('.qA').value;const inc=tr.querySelector('.qInc');if(inc)r.includi=inc.checked;tr.style.opacity=r.includi?'':'.55';tr.querySelector('.qN').textContent=r.includi?nomeStd(r):'— non salvato';const sp=!r.dup&&stessoPeriodo(r);tr.querySelector('.qSt').textContent=sp?`Attenzione: in archivio c'è già un file dello stesso periodo (${sp}). Controlla le date: se è un altro periodo correggile.`:''});
+  d.innerHTML=`<form class="dlg" method="dialog"><h3>Importa file nell'archivio</h3>
+  <div class="small" style="background:var(--blue-soft);color:var(--blue);border-radius:8px;padding:8px 10px;margin:8px 0 12px">L'app ha letto ogni file e propone <b>tipo, ente e periodo</b>. Controllali e premi <b>Salva</b>: il file viene rinominato in modo uniforme (<i>dal_al_ente_tipo</i>) e messo nella cartella giusta. Lo stesso documento non può essere importato due volte.</div>
+  <div style="max-height:62vh;overflow:auto">${L.map((r,i)=>`<div class="acq${r.dup?' acqdup':''}" data-i="${i}">
+    <div class="acqnome"><span class="mute small">File ${i+1}</span> <b>${esc(r.file.name)}</b></div>
+    <div class="small mute" style="margin:2px 0 8px">Contenuto letto: ${esc(r.nota||'—')}</div>
+    ${r.dup?`<div class="acqmsg">Non verrà importato: ${esc(r.dup)}.</div>`:`<div class="acqcampi"><label>Tipo<select class="qT">${opt(TIPI_FILE,r.tipo)}</select></label><label>Ente<select class="qE">${opt(ENTI_LAB,r.ente)}</select></label><label>Dal<input type="date" class="qD" value="${r.dal}"></label><label>Al<input type="date" class="qA" value="${r.al}"></label></div>
+    <div class="small" style="margin-top:8px">Sarà salvato come: <b class="qN"></b></div><div class="acqmsg qSt" style="display:none"></div>`}</div>`).join('')}</div>
+  <div class="err" id="qErr"></div><div class="actions"><button type="button" id="qNo">${L.every(r=>r.dup)?'Chiudi':'Annulla'}</button>${L.every(r=>r.dup)?'':`<button class="primary" type="button" id="qOk">Salva ${L.filter(r=>!r.dup).length} file</button>`}</div></form>`;
+  const sync=()=>d.querySelectorAll('.acq[data-i]').forEach(el=>{const r=L[+el.dataset.i];if(r.dup)return;r.tipo=el.querySelector('.qT').value;r.ente=el.querySelector('.qE').value;r.dal=el.querySelector('.qD').value;r.al=el.querySelector('.qA').value;
+    el.querySelector('.qN').textContent=nomeStd(r);const sp=stessoPeriodo(r)||L.find(x=>x!==r&&!x.dup&&x.tipo===r.tipo&&x.ente===r.ente&&x.dal===r.dal&&x.al===r.al)?.file.name;r.sp=sp||'';const m=el.querySelector('.qSt');
+    m.style.display=sp?'block':'none';m.textContent=sp?`Esiste già un file con lo stesso tipo, ente e periodo («${sp}»): se è un periodo diverso correggi le date, se è lo stesso documento annulla.`:''});
   d.querySelectorAll('select,input').forEach(x=>{x.onchange=sync;x.oninput=sync});sync();
   d.querySelector('#qNo').onclick=()=>{d.close();ok(null)};
-  d.querySelector('#qOk').onclick=()=>{sync();const bad=L.find(r=>r.includi&&(!r.tipo||!r.ente||!r.dal||!r.al||r.dal>r.al));if(bad){d.querySelector('#qErr').textContent=`Completa tipo, ente e periodo di ${bad.file.name}.`;return}
-    if(L.some(r=>r.tipo==='fatture-ricevute'&&r.ente!=='AdE')||L.some(r=>r.tipo==='estratto-conto'&&r.ente==='AdE')){d.querySelector('#qErr').textContent='Le fatture ricevute vanno con l\'Agenzia delle Entrate, gli estratti conto con una banca.';return}
-    d.close();ok(L)};
+  const okb=d.querySelector('#qOk');if(okb)okb.onclick=()=>{sync();const V=L.filter(r=>!r.dup);const bad=V.find(r=>!r.tipo||!r.ente||!r.dal||!r.al||r.dal>r.al);if(bad){d.querySelector('#qErr').textContent=`Completa tipo, ente e periodo di «${bad.file.name}».`;return}
+    if(V.some(r=>r.sp)){d.querySelector('#qErr').textContent='Ci sono file con lo stesso tipo, ente e periodo di uno già presente: correggi le date o annulla.';return}
+    if(V.some(r=>r.tipo==='fatture-ricevute'&&r.ente!=='AdE')||V.some(r=>r.tipo==='estratto-conto'&&r.ente==='AdE')){d.querySelector('#qErr').textContent='Le fatture ricevute vanno con l\'Agenzia delle Entrate, gli estratti conto con una banca.';return}
+    d.close();ok(V)};
   d.showModal();
 })}
 async function archiviaFile(files){
   if(!EDIT){alert(`Sola lettura: in questo momento sta modificando ${EDITOR?.nome||EDITOR?.email||'un altro utente'}.`);return}
   caricamento(true);let L;try{L=await Promise.all(files.map(analizzaFile));await cercaDoppioni(L)}finally{caricamento(false)}
-  L=await apriMascheraAcq(L);if(!L)return;L=L.filter(r=>r.includi);if(!L.length){toast('Nessun file nuovo da salvare');return}
+  L=await apriMascheraAcq(L);if(!L||!L.length)return;
   caricamento(true);const ok=[],ko=[];
-  try{for(const r of L){const dir=r.tipo==='estratto-conto'?'estratti-conto':'cassetto-fiscale';const base=nomeStd(r);let path=dir+'/'+base,k=2;
-      let res=await sb.storage.from(BKT).upload(path,r.file,{upsert:false,contentType:r.file.type||'application/octet-stream'});
-      while(res.error&&/exist|duplicate/i.test(res.error.message)&&k<20){path=dir+'/'+base.replace(/(\.[^.]+)$/,`_${k++}$1`);res=await sb.storage.from(BKT).upload(path,r.file,{upsert:false})}
-      if(res.error){ko.push(r.file.name+': '+res.error.message);continue}ok.push(path);ARCH.sel.add(path)}
-    await archLista()}finally{caricamento(false)}
-  if(ko.length)alert('Non archiviati:\n'+ko.join('\n'));
+  try{for(const r of L){const dir=r.tipo==='estratto-conto'?'estratti-conto':'cassetto-fiscale';const path=dir+'/'+nomeStd(r);
+      const reg={path,nome_originale:r.file.name,tipo:r.tipo,ente:r.ente,dal:r.dal,al:r.al,hash:r.hash,contenuto:r.nota||null,dimensione:r.file.size,caricato_da:ME.email};
+      const ins=await sb.from('vac2_archivio').insert(reg);
+      if(ins.error){ko.push(`${r.file.name}: ${/duplicate|unique/i.test(ins.error.message)?'documento già presente nell\'archivio':ins.error.message}`);continue}
+      const res=await sb.storage.from(BKT).upload(path,r.file,{upsert:false,contentType:r.file.type||'application/octet-stream'});
+      if(res.error){await sb.from('vac2_archivio').delete().eq('path',path);ko.push(`${r.file.name}: ${/exist|duplicate/i.test(res.error.message)?'esiste già un file con lo stesso nome nell\'archivio':res.error.message}`);continue}
+      ok.push(path);ARCH.sel.add(path)}
+    await archLista();await archRegistro()}finally{caricamento(false)}
+  if(ko.length)alert('Non importati:\n'+ko.join('\n'));
   if(ok.length){toast(`${ok.length} file salvati nell'archivio`);if(VISTA!=='controlli')go('controlli');await archCaricaControlli()}else vControlli();
 }
-function archHtml(){
-  return `<div class="card" style="max-width:1100px"><h2>Archivio file</h2>
-  <div class="drop">Trascina qui gli <b>estratti conto</b> (CSV) e i file dell'<b>Agenzia delle Entrate</b> (ZIP, XML, P7M o CSV): si apre una maschera per confermare tipo, ente e periodo, e il file viene salvato con un nome standard nella cartella giusta. Oppure <label>scegli i file<input type="file" id="aFile" multiple accept=".csv,.txt,.zip,.xml,.p7m" style="display:none"></label></div>
-  ${ARCH.err?`<p class="err">Archivio non disponibile: ${esc(ARCH.err)}</p>`:''}
-  <div class="grid2">${archCartella('Estratti conto',ARCH.b)}${archCartella('Agenzia delle Entrate – fatture ricevute',ARCH.c)}</div>
-  <div class="actions"><span class="small mute" style="margin-right:auto">Spunta i file da usare: per il controllo completo servono tutti gli estratti conto, senza buchi tra un periodo e l'altro.</span><button id="aLoad">Usa i file spuntati nei controlli</button></div></div>`;
-}
+async function archElimina(path){if(!confirm(`Eliminare dall'archivio il file\n${path.split('/').pop()}?`))return;const {error}=await sb.storage.from(BKT).remove([path]);if(error){alert('Non eliminato: '+error.message);return}
+  await sb.from('vac2_archivio').delete().eq('path',path);ARCH.sel.delete(path);await archLista();await archRegistro();vControlli()}
 
 /* ---------- MODULI: funzionano anche dove l'invio dei form è bloccato (anteprime, allegati) ---------- */
 document.addEventListener('click',e=>{
