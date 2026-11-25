@@ -209,7 +209,7 @@ async function carica(msg){
   document.getElementById('loading').style.display='grid';
   try{
     const [so,ca,doc,pag,an]=await Promise.all([tutto('vac2_soggetti'),tutto('vac2_categorie'),tutto('vac2_documenti'),tutto('vac2_pagamenti'),tutto('vac2_anomalie')]);
-    DATA={soggetti:so,categorie:ca,documenti:doc,pagamenti:pag,anomalie:an.filter(a=>!a.risolta)};reindex();caricaQuesiti().then(()=>{if(VISTA==='quesiti')vQuesiti()});
+    DATA={soggetti:so,categorie:ca,documenti:doc,pagamenti:pag,anomalie:an.filter(a=>!a.risolta)};reindex();if(msg&&typeof ARCH!=='undefined'){ARCH.letto=false;ARCH.leggendo=false;CTRL.res=null}caricaQuesiti().then(()=>{if(VISTA==='quesiti')vQuesiti()});
     render();if(msg)toast('Dati aggiornati');
   }catch(e){alert('Errore nel caricamento dei dati: '+(e.message||e))}
   finally{document.getElementById('loading').style.display='none'}
@@ -1115,7 +1115,10 @@ const nomeStd=r=>`${r.dal||'0000-00-00'}_${r.al||'0000-00-00'}_${r.ente||'Altro'
 ARCH.reg=[];ARCH.filtro='';
 const TIPO_LAB={'estratto-conto':'Estratto conto','fatture-ricevute':'Agenzia Entrate'};
 async function archRegistro(){const {data,error}=await sb.from('vac2_archivio').select('*');if(!error)ARCH.reg=data||[];return ARCH.reg}
-async function archSana(){/* file in archivio senza riga di registro (caricati prima del 23/11): li registro */
+async function archSana(){/* registro allineato all'archivio: tolgo le righe senza file, registro i file senza riga */
+  const esist=new Set([...ARCH.b,...ARCH.c].map(x=>x.path));
+  for(const r of ARCH.reg.filter(r=>!esist.has(r.path))){try{await sb.from('vac2_archivio').delete().eq('path',r.path)}catch(e){}}
+  ARCH.reg=ARCH.reg.filter(r=>esist.has(r.path));
   const conReg=new Set(ARCH.reg.map(r=>r.path));
   for(const x of [...ARCH.b,...ARCH.c]){if(conReg.has(x.path))continue;
     try{const f=await archScarica(x.path);const a=await analizzaFile(f);const p=periodoDaNome(x.name)||{};
@@ -1187,7 +1190,7 @@ async function archEsporta(){
 }
 /* doppioni: stesso contenuto (impronta) o stesso tipo/ente/periodo -> bloccato */
 async function cercaDoppioni(L){
-  if(!ARCH.letto)await archLista();await archRegistro();const byHash=Object.fromEntries(ARCH.reg.map(r=>[r.hash,r]));
+  await archLista();await archRegistro();await archSana();const byHash=Object.fromEntries(ARCH.reg.map(r=>[r.hash,r]));
   for(const [i,r] of L.entries()){r.dup='';
     const prima=L.slice(0,i).find(x=>x.hash&&x.hash===r.hash);if(prima){r.dup=`è lo stesso file di «${prima.file.name}», già in questo caricamento`;continue}
     const g=r.hash&&byHash[r.hash];if(g){r.dup=`è già nell'archivio (caricato il ${dit((g.caricato_il||'').slice(0,10))}${g.nome_originale?' come «'+g.nome_originale+'»':''})`;continue}
